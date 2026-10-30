@@ -55,7 +55,8 @@ property of their authors and publishers; the archive only links to them and quo
 
 ## Automatically imported content
 Entries imported by the automatic archive import (`server/importer.ts`) use text from English
-Wikipedia under CC BY-SA 4.0; each entry names and links its article. Their cover photos are freely
+Wikipedia (and, in the German view, German Wikipedia) under CC BY-SA 4.0; each entry names and links
+its article. Their cover photos are freely
 licensed Wikimedia Commons files, downloaded once and stored in D1; the author and licence are shown
 on the photo and the file page is listed as a source. Cases without a photo of their own show one of
 the category symbol photos listed in `SYMBOL_IMAGES` (also free Commons files, captioned "Symbolbild").

@@ -274,6 +274,44 @@ export async function loadRelationships(db: Db, type: EntityType, id: number): P
   return result;
 }
 
+/**
+ * Imported entries can carry the article in the reader's language (body_json and claims_json translations):
+ * its sections replace the body, its claims replace the claims, cited to that language's article.
+ */
+async function overlayImportedArticle(db: Db, locale: Locale, detail: TheoryDetail): Promise<TheoryDetail> {
+  const rows = await db.all<{ field: string; value: string }>(
+    "SELECT field, value FROM translations WHERE entity_type = 'theory' AND entity_id = ? AND locale = ? AND field IN ('body_json', 'claims_json')",
+    detail.id,
+    locale,
+  );
+  const parse = (field: string): unknown => {
+    const value = rows.find((r) => r.field === field)?.value;
+    if (!value) return null;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  };
+  const body = parse('body_json');
+  const texts = parse('claims_json');
+  let out = detail;
+  if (body && (body as RichNode).type === 'doc') out = { ...out, body: body as RichNode };
+  if (Array.isArray(texts) && texts.length && texts.every((t) => typeof t === 'string')) {
+    const article = detail.generalSources.find((s) => s.note === 'Wikipedia article (automatic import)' && s.source.publisher === 'Wikipedia (Deutsch)');
+    out = {
+      ...out,
+      claims: (texts as string[]).map((text, i) => ({
+        id: detail.claims[i]?.id ?? -(i + 1),
+        text,
+        evidenceStatus: 'unverified',
+        evidence: article ? [{ ...article, relation: 'documents' }] : [],
+      })),
+    };
+  }
+  return out;
+}
+
 export async function loadTheoryDetail(db: Db, slug: string, locale: Locale, includeUnpublished = false): Promise<TheoryDetail | null> {
   const row = await db.first(
     `${THEORY_SUMMARY_SELECT} WHERE t.slug = ?${includeUnpublished ? '' : ' AND t.is_published = 1'}`,
@@ -357,6 +395,7 @@ export async function loadTheoryDetail(db: Db, slug: string, locale: Locale, inc
     claims = await translate(db, locale, 'claim', detail.claims, { text: 'text' });
     counterArguments = await translate(db, locale, 'counter_argument', detail.counterArguments, { text: 'text' });
     detail = { ...detail, claims, counterArguments };
+    if (detail.imported) detail = await overlayImportedArticle(db, locale, detail);
   }
   return detail;
 }

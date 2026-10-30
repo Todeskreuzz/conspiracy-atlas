@@ -55,6 +55,34 @@ export function article(title: string) {
   ].join('\n');
 }
 
+/** The German article as TextExtracts returns it. */
+export function germanArticle(title: string) {
+  return [
+    `${title} ist eine Verschwörungstheorie, die weit verbreitet ist.`,
+    `Anhänger behaupten, dass die Wahrheit über ${title} seit Jahrzehnten verborgen werde.`,
+    '',
+    '== Entstehung ==',
+    `Die Idee tauchte 1903 erstmals in einem Flugblatt auf.`,
+    '',
+    '== Behauptungen ==',
+    '=== Vertuschung ===',
+    'Anhänger sagen, die Regierung verstecke die Beweise. Sie verweisen auf fehlende Akten.',
+    '=== Geheimbund ===',
+    'Eine geheime Gruppe soll die Geschichte steuern.',
+    '',
+    '== Verbreitung ==',
+    'Die Theorie verbreitete sich in den 1990er Jahren über Radiosendungen.',
+    '',
+    '== Kritik ==',
+    'Fachleute haben die Behauptungen widerlegt.',
+    '',
+    '== Siehe auch ==',
+    'Andere Theorien',
+    '',
+    '== Einzelnachweise ==',
+  ].join('\n');
+}
+
 function fakeUpstream(
   bindings: unknown[],
   pages: Record<string, unknown | null>,
@@ -62,6 +90,7 @@ function fakeUpstream(
   images: Record<string, FakeImage> = {},
   extra: {
     articles?: Record<string, string | null>;
+    deArticles?: Record<string, string | null>;
     p18?: Record<string, string>;
     related?: Record<string, string>;
     pageFiles?: Record<string, string[]>;
@@ -98,6 +127,9 @@ function fakeUpstream(
       });
     }
     if (url.startsWith('https://upload.wikimedia.org/')) return new Response(JPEG);
+    if (url.includes('prop=extracts') && url.startsWith('https://de.wikipedia.org/')) {
+      return Response.json({ query: { pages: titles().map((t) => (extra.deArticles?.[t] === null ? { title: t, missing: true } : { title: t, extract: extra.deArticles?.[t] ?? germanArticle(t) })) } });
+    }
     if (url.includes('prop=extracts')) {
       return Response.json({ query: { pages: titles().map((t) => (extra.articles?.[t] === null ? { title: t, missing: true } : { title: t, extract: extra.articles?.[t] ?? article(t) })) } });
     }
@@ -380,6 +412,50 @@ describe('cover images', () => {
 });
 
 describe('article details', () => {
+  it('gives the German view the German article in full, structured like the English one, also for older entries', async () => {
+    const { visitor, raw } = await setup();
+    fakeUpstream(
+      [binding('Q100', 'Birds_Aren%27t_Real', 'Birds_Aren%E2%80%99t_Real'), binding('Q50', 'Flat_Earth')],
+      {
+        "en:Birds Aren't Real": summary("Birds Aren't Real"),
+        'de:Birds Aren’t Real': summary('Birds Aren’t Real', 'de'),
+        'en:Flat Earth': summary('Flat Earth'),
+      },
+    );
+    const r = await visitor.post('/api/import/run');
+    expect(r.json.detailedDe).toBe(1); // Flat Earth has no German article
+
+    const de = await visitor.get('/api/theories/birds-aren-t-real?lang=de');
+    expect(de.json.summary).toContain('Anhänger behaupten');
+    expect(de.json.originStory).toBe('Die Idee tauchte 1903 erstmals in einem Flugblatt auf.');
+    expect(de.json.claims.map((c: any) => c.text)).toEqual([
+      'Vertuschung: Anhänger sagen, die Regierung verstecke die Beweise. Sie verweisen auf fehlende Akten.',
+      'Geheimbund: Eine geheime Gruppe soll die Geschichte steuern.',
+    ]);
+    expect(de.json.claims[0].evidence[0].source.url).toBe('https://de.wikipedia.org/wiki/Birds_Aren%E2%80%99t_Real');
+    const headings = de.json.body.content.filter((n: any) => n.type === 'heading').map((n: any) => n.content[0].text);
+    expect(headings).toEqual(['Verbreitung', 'Kritik']);
+    expect(JSON.stringify(de.json.body)).toContain('Text aus dem Wikipedia-Artikel');
+
+    // The English view stays English.
+    const en = await visitor.get("/api/theories/birds-aren-t-real");
+    expect(en.json.claims[0].text).toContain('Cover-up');
+    expect(JSON.stringify(en.json.body)).not.toContain('Verbreitung');
+    // Without a German article the German view keeps the English text.
+    const flat = await visitor.get('/api/theories/flat-earth?lang=de');
+    expect(flat.json.claims[0].text).toContain('Cover-up');
+
+    // Older entries get their German text in a later run; a missing article is not retried.
+    raw.prepare("DELETE FROM translations WHERE field IN ('body_json', 'claims_json')").run();
+    raw.prepare("UPDATE settings SET value = '2000-01-01T00:00:00.000Z' WHERE key = 'import.last_run'").run();
+    fakeUpstream([], {}, [], {}, { deArticles: { 'Birds Aren’t Real': null } });
+    const again = await visitor.post('/api/import/run');
+    expect(again.json.detailedDe).toBe(0);
+    expect(raw.prepare("SELECT value FROM translations WHERE field = 'body_json'").get().value).toBe('');
+    const fallback = await visitor.get('/api/theories/birds-aren-t-real?lang=de');
+    expect(fallback.json.claims[0].text).toContain('Cover-up');
+  });
+
   it('fills older imported entries from the full article in later runs and keeps every run below the subrequest limit', async () => {
     const { visitor, raw } = await setup();
     const many = Array.from({ length: 20 }, (_, i) => binding(`Q${i + 10}`, `Theory_${i}`));

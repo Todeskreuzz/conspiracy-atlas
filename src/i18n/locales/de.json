@@ -276,14 +276,18 @@
   },
   "map": {
     "title": "Weltkarte",
-    "intro": "Orte historischer Ereignisse, dokumentierter Operationen und Organisationen. Die Kartendaten sind lokal eingebunden; es wird kein externer Kartendienst verwendet.",
+    "intro": "Fallakten, historische Ereignisse und Organisationen, angepinnt an den Orten, die das Archiv nennt. Die Kartendaten sind lokal eingebunden; es wird kein externer Kartendienst verwendet.",
     "layers": "Ebenen",
     "showEvents": "Ereignisse",
     "showOrganizations": "Organisationen",
     "showRegions": "Länder hervorheben",
     "places": "{count} Orte",
     "noLocation": "Ereignisse ohne Ort: {count}",
-    "selectPlace": "Wähle einen Ort auf der Karte aus."
+    "selectPlace": "Wähle einen Ort auf der Karte aus.",
+    "showCases": "Fallakten",
+    "cases": "Fallakten",
+    "casesHere": "Fallakten: {count}",
+    "casesPlaced": "{placed} von {total} Fallakten haben einen Ort"
   },
   "investigations": {
     "title": "Recherchen",

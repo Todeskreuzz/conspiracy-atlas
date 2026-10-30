@@ -197,26 +197,48 @@ publicRoutes.get('/map', async (c) => {
   if (!features.map_data.available) return c.json({ error: { code: 'unavailable', state: features.map_data.state, message: features.map_data.message } }, 503);
   const db = Db.from(c.env);
   const locale = c.get('locale');
-  const [locRows, eventRows, orgRows] = await Promise.all([
+  const [locRows, eventRows, orgRows, caseRows, theoryCount] = await Promise.all([
     db.all('SELECT * FROM locations ORDER BY name LIMIT 2000'),
     db.all(`${EVENT_SELECT} WHERE e.location_id IS NOT NULL ORDER BY e.start_year LIMIT 2000`),
     db.all('SELECT o.*, l.lat, l.lng, l.name AS location_name FROM organizations o JOIN locations l ON l.id = o.location_id LIMIT 2000'),
+    // Cases are placed where the archive itself names a place: a direct link, or the place of a linked event.
+    db.all(
+      `SELECT DISTINCT x.location_id, t.id, t.slug, t.title, t.subtitle, c.slug AS category FROM (
+         SELECT r.from_id AS theory_id, r.to_id AS location_id FROM relationships r WHERE r.from_type = 'theory' AND r.to_type = 'location'
+         UNION SELECT r.to_id, r.from_id FROM relationships r WHERE r.to_type = 'theory' AND r.from_type = 'location'
+         UNION SELECT r.from_id, e.location_id FROM relationships r JOIN events e ON e.id = r.to_id
+           WHERE r.from_type = 'theory' AND r.to_type = 'event' AND e.location_id IS NOT NULL
+         UNION SELECT r.to_id, e.location_id FROM relationships r JOIN events e ON e.id = r.from_id
+           WHERE r.to_type = 'theory' AND r.from_type = 'event' AND e.location_id IS NOT NULL
+       ) x JOIN theories t ON t.id = x.theory_id AND t.is_published = 1 JOIN categories c ON c.id = t.category_id
+       ORDER BY t.title LIMIT 5000`,
+    ),
+    db.first<{ n: number }>('SELECT COUNT(*) AS n FROM theories WHERE is_published = 1'),
   ]);
   const events = await translate(db, locale, 'event', eventRows.map(mapEvent), EVENT_FIELDS);
   const orgs = await translate(db, locale, 'organization', orgRows.map((r) => ({ ...mapOrganization(r), locationId: Number(r.location_id) })), {
     name: 'name',
     description: 'description',
   });
+  const cases = await translate(
+    db,
+    locale,
+    'theory',
+    caseRows.map((r) => ({ id: Number(r.id), slug: String(r.slug), title: String(r.title), subtitle: (r.subtitle as string) ?? null, category: String(r.category), locationId: Number(r.location_id) })),
+    { title: 'title', subtitle: 'subtitle' },
+  );
   const locations = locRows.map((r) => {
     const loc = mapLocation(r);
     return {
       ...loc,
       events: events.filter((e) => e.location?.id === loc.id),
       organizations: orgs.filter((o) => o.locationId === loc.id),
+      theories: cases.filter((t) => t.locationId === loc.id).map(({ locationId: _, ...t }) => t),
     };
   });
+  const placedCases = new Set(cases.map((t) => t.id)).size;
   publicCache(c, 600);
-  return c.json({ locations });
+  return c.json({ locations, caseCount: Number(theoryCount?.n ?? 0), placedCases });
 });
 
 publicRoutes.get('/documents', async (c) => {

@@ -276,14 +276,18 @@
   },
   "map": {
     "title": "World Map",
-    "intro": "Places of historical events, documented operations and organizations. Map data is bundled locally; no external map service is used.",
+    "intro": "Case files, historical events and organizations, pinned where the archive names a place. The map data is bundled locally; no external map service is used.",
     "layers": "Layers",
     "showEvents": "Events",
     "showOrganizations": "Organizations",
     "showRegions": "Highlight countries",
     "places": "{count} places",
     "noLocation": "Events without a location: {count}",
-    "selectPlace": "Select a place on the map."
+    "selectPlace": "Select a place on the map.",
+    "showCases": "Case files",
+    "cases": "Case files",
+    "casesHere": "case files: {count}",
+    "casesPlaced": "{placed} of {total} case files have a place"
   },
   "investigations": {
     "title": "Investigations",

@@ -7,9 +7,16 @@ import '@fontsource/ibm-plex-sans/500.css';
 import '@fontsource/ibm-plex-sans/600.css';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/special-elite/400.css';
+import '@fontsource/caveat/400.css';
+import '@fontsource/caveat/700.css';
+import '@fontsource/permanent-marker/400.css';
 import './styles/global.css';
 import './styles/wall.css';
+import './styles/board.css';
 import { App } from './App';
+import { installEffects } from './effects';
+
+installEffects();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

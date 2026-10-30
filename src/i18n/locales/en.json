@@ -143,7 +143,12 @@
     "p3Title": "Moderated community",
     "p3Text": "Anyone can submit a theory, with a display name or anonymously. Every submission is reviewed first.",
     "statsTheories": "case files",
-    "statsSources": "sources"
+    "statsSources": "sources",
+    "fileTab": "Case file · open",
+    "stamp": "Under review",
+    "tallyTitle": "The tally",
+    "tallySub": "{count} case files by category",
+    "sticky": "Follow the sources, not the noise."
   },
   "wall": {
     "title": "Investigation Wall",

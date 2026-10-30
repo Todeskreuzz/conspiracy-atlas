@@ -1,5 +1,6 @@
 /* The Conspiracy Atlas – design system
-   Dark investigation archive: anthracite surfaces, cork boards, beige paper, red threads, yellow markers. */
+   Investigation board: the page is a cork wall under a desk lamp; paper, polaroids, tape and stamps sit on it.
+   Base tokens are the dark "ink" set; paper surfaces re-map them to dark ink on paper (see board.css). */
 
 :root {
   --ink-950: #0d0c0b;
@@ -18,8 +19,13 @@
   --paper-ink: #2b2118;
   --paper-muted: #6b5a45;
 
-  --cork: #5b3d26;
+  --cork: #a2703f;
   --cork-dark: #3a2616;
+  --cork-light: #b07d4b;
+
+  --heading: #fbf3e3;
+  --link: var(--paper);
+  --link-hover: #fff;
 
   --red: #b3261e;
   --red-bright: #d23a2f;
@@ -41,6 +47,8 @@
   --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-type: 'Special Elite', 'Courier New', monospace;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
+  --font-hand: 'Caveat', 'Segoe Print', 'Comic Sans MS', cursive;
+  --font-marker: 'Permanent Marker', 'Caveat', 'Segoe Print', cursive;
 
   --radius: 6px;
   --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 10px 24px rgba(0, 0, 0, 0.45);
@@ -92,12 +100,12 @@ body::before {
 }
 
 a {
-  color: var(--paper);
+  color: var(--link);
   text-decoration-color: var(--red);
   text-underline-offset: 3px;
 }
 a:hover {
-  color: #fff;
+  color: var(--link-hover);
 }
 
 h1,
@@ -108,7 +116,7 @@ h4 {
   font-weight: 700;
   line-height: 1.2;
   margin: 0 0 0.5em;
-  color: #f4ecdc;
+  color: var(--heading);
 }
 h1 {
   font-size: clamp(2rem, 4vw, 3rem);

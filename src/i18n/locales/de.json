@@ -143,7 +143,12 @@
     "p3Title": "Moderierte Community",
     "p3Text": "Jeder kann eine Theorie einreichen, mit Anzeigenamen oder anonym. Jede Einreichung wird zuerst geprüft.",
     "statsTheories": "Akten",
-    "statsSources": "Quellen"
+    "statsSources": "Quellen",
+    "fileTab": "Akte · offen",
+    "stamp": "In Prüfung",
+    "tallyTitle": "Die Strichliste",
+    "tallySub": "{count} Akten nach Kategorie",
+    "sticky": "Folge den Quellen, nicht dem Lärm."
   },
   "wall": {
     "title": "Ermittlungswand",

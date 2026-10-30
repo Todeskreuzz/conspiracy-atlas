@@ -58,7 +58,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </a>
       <header className="site-header">
         <div className="site-header__inner">
-          <Link to="/" className="brand" aria-label={t('app.name')}>
+          <Link to="/" className="brand" aria-label={t('app.name')} viewTransition>
             <BrandMark />
             <span className="brand__name">
               The Conspiracy <span>Atlas</span>
@@ -66,7 +66,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </Link>
           <nav className={`main-nav${open ? ' open' : ''}`} aria-label="Main">
             {NAV_ITEMS.map(([to, key]) => (
-              <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `${isActive ? 'active' : ''}${to === '/submit' ? ' nav-submit' : ''}`}>
+              <NavLink key={to} to={to} end={to === '/'} viewTransition className={({ isActive }) => `${isActive ? 'active' : ''}${to === '/submit' ? ' nav-submit' : ''}`}>
                 {t(key)}
               </NavLink>
             ))}

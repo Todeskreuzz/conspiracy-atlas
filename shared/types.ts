@@ -120,6 +120,8 @@ export interface TheoryDetail extends TheorySummary {
   relationships: Relationship[];
   events: EventSummary[];
   imageCredit: string | null;
+  /** Imported automatically from Wikipedia; its body holds the article's sections. */
+  imported: boolean;
   /** Approved community images. */
   images: PublicImage[];
 }

@@ -1212,3 +1212,17 @@ body::after {
     animation: drop-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
   }
 }
+
+/* generated case-file cover for cases without a freely licensed photo */
+.case-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.dossier__photo .case-cover {
+  aspect-ratio: 4 / 3;
+  height: auto;
+}
+.case-of-day__img .case-cover {
+  min-height: 180px;
+}

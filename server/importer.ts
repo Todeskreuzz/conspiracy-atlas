@@ -2,8 +2,9 @@
 //
 // Every run takes a small batch of Wikidata items that are a "conspiracy theory" (Q159535, or one of its subclasses up to two levels deep)
 // and have an English Wikipedia article, plus the theory articles linked from Wikipedia's "List of conspiracy theories", skips everything already in the archive and stores the rest
-// as neutral entries: the Wikipedia lead text (CC BY-SA 4.0, attributed) plus the article as the source.
-// Nothing is invented: no claims, ratings or connections are derived from the text.
+// as neutral entries: the Wikipedia text (CC BY-SA 4.0, attributed) plus the article as the source.
+// A second step fills each entry from the full article: lead, origin, background, the article's sections and
+// the central claims as the article states them. Nothing is invented: no ratings or connections are derived.
 import type { Db } from './db';
 import { slugify } from '../shared/validation';
 import type { CategorySlug } from '../shared/constants';
@@ -16,8 +17,12 @@ const EN_WIKI = 'https://en.wikipedia.org/wiki/';
 const DE_WIKI = 'https://de.wikipedia.org/wiki/';
 const USER_AGENT = 'ConspiracyAtlasImporter/1.0 (https://conspiracy-atlas.pages.dev; archive import)';
 
-/** Items per run: 1 SPARQL request + max. 2 summaries per item stays far below the 50 subrequests of Workers Free. */
-export const IMPORT_BATCH = 10;
+/** New items per run (max. 2 summaries each). Together with details and images a run stays below MAX_SUBREQUESTS. */
+export const IMPORT_BATCH = 6;
+/** Workers Free allows 50 subrequests per request; the run stops fetching at this count. */
+export const MAX_SUBREQUESTS = 45;
+/** Entries filled from the full article per run (one request each), new and older imports alike. */
+export const DETAIL_BATCH = 6;
 /** Minimum time between two runs, whoever triggers them. */
 export const IMPORT_INTERVAL_MIN = 20;
 
@@ -25,8 +30,8 @@ export const LAST_RUN_KEY = 'import.last_run';
 export const LAST_RESULT_KEY = 'import.last_result';
 /** Wikidata items that have no usable article (disambiguation, deleted, too short); never retried. */
 export const SKIPPED_KEY = 'import.skipped';
-/** Imported theories whose article has no freely licensed lead image; never retried. */
-export const NO_IMAGE_KEY = 'import.no_image';
+/** Imported theories for which no freely licensed image was found in any source; they get the generated cover. */
+export const NO_IMAGE_KEY = 'import.no_image.v2';
 /** Cover images per run (one download each). Covers new entries and, step by step, older ones. */
 export const IMAGE_BATCH = 10;
 const IMAGE_WIDTH = 640;
@@ -72,6 +77,9 @@ export interface ImportResult {
   /** Cover images added in this run (new and older imported entries). */
   images: number;
   imageError?: string;
+  /** Entries filled from the full article in this run. */
+  detailed: number;
+  detailError?: string;
   error: string | null;
 }
 
@@ -130,8 +138,17 @@ export function parseCandidates(data: unknown): Candidate[] {
   return [...byQid.values()].sort((a, b) => qNumber(a.qid) - qNumber(b.qid));
 }
 
+/** Subrequests of the current run (fetch calls), checked against MAX_SUBREQUESTS. */
+let requests = 0;
+const budgetLeft = () => MAX_SUBREQUESTS - requests;
+
+function upstream(url: string, accept?: string): Promise<Response> {
+  requests++;
+  return importFetch.impl(url, { headers: { ...(accept ? { Accept: accept } : {}), 'User-Agent': USER_AGENT } });
+}
+
 async function getJson(url: string): Promise<unknown> {
-  const res = await importFetch.impl(url, { headers: { Accept: 'application/json', 'User-Agent': USER_AGENT } });
+  const res = await upstream(url, 'application/json');
   if (!res.ok) throw new Error(`HTTP ${res.status} from ${new URL(url).host}`);
   return res.json();
 }
@@ -368,6 +385,8 @@ const titlesParam = (titles: string[]) => titles.map((t) => encodeURIComponent(t
 interface ApiPage {
   title?: string;
   pageimage?: string;
+  extract?: string;
+  images?: { title?: string }[];
   imageinfo?: { thumburl?: string; thumbwidth?: number; thumbheight?: number; thumbmime?: string; mime?: string; descriptionurl?: string; extmetadata?: Record<string, { value?: string }> }[];
 }
 interface ApiQuery {
@@ -389,55 +408,101 @@ function pagesByRequestedTitle(data: ApiQuery, titles: string[]): Map<string, Ap
   return out;
 }
 
-async function addCoverImages(db: Db, imageBudgetBytes: number): Promise<number> {
-  const noImageRow = await db.first<{ value: string }>('SELECT value FROM settings WHERE key = ?', NO_IMAGE_KEY);
-  let noImage: number[] = [];
+async function readIdList(db: Db, key: string): Promise<Set<number>> {
+  const row = await db.first<{ value: string }>('SELECT value FROM settings WHERE key = ?', key);
   try {
-    noImage = noImageRow ? (JSON.parse(noImageRow.value) as number[]) : [];
+    return new Set(row ? (JSON.parse(row.value) as number[]) : []);
   } catch {
-    noImage = [];
+    return new Set();
   }
-  const skip = new Set(noImage);
-  const rows = await db.all<{ id: number; url: string }>(
-    `SELECT t.id, s.url FROM theories t
-     JOIN evidence e ON e.theory_id = t.id JOIN sources s ON s.id = e.source_id
+}
+
+/** Files on an article that are not worth a cover: icons, logos, flags, maintenance and sister-project symbols. */
+const NOT_A_COVER = /logo|icon|flag|symbol|seal|coat[ _]of[ _]arms|emblem|signature|portal|question[ _]book|commons|wiki(quote|source|data|news|books)|wiktionary|ambox|edit-clear|padlock|stub|locator|disambig|crystal|nuvola|text-x|folder|speaker|audio|sound|red[ _]pog|star[ _]of[ _]life/i;
+const PHOTO_FILE = /\.(jpe?g|png|webp|gif|tiff?)$/i;
+
+export function isCoverCandidate(file: string): boolean {
+  return PHOTO_FILE.test(file) && !NOT_A_COVER.test(file);
+}
+
+/** Wikidata "image" (P18) of each item, as Commons file titles. */
+async function wikidataImages(qids: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (!qids.length) return out;
+  const rows = (await sparql(`SELECT ?item ?img WHERE { VALUES ?item { ${qids.map((q) => `wd:${q}`).join(' ')} } ?item wdt:P18 ?img . }`)) as {
+    results?: { bindings?: Record<string, { value?: string }>[] };
+  };
+  for (const r of rows?.results?.bindings ?? []) {
+    const qid = r.item?.value?.split('/').pop() ?? '';
+    const name = r.img?.value?.split('/Special:FilePath/')[1];
+    if (/^Q\d+$/.test(qid) && name && !out.has(qid)) out.set(qid, `File:${decodeURIComponent(name).replace(/_/g, ' ')}`);
+  }
+  return out;
+}
+
+/**
+ * Cover images from free sources, tried in order: the article's lead image, the Wikidata image (P18) and the
+ * other photos in the article. Only freely licensed Commons files are used; whatever has none keeps the
+ * generated case-file cover of the frontend.
+ */
+async function addCoverImages(db: Db, imageBudgetBytes: number): Promise<number> {
+  const skip = await readIdList(db, NO_IMAGE_KEY);
+  const rows = await db.all<{ id: number; url: string; notes: string | null }>(
+    `SELECT t.id, s.url, s.notes FROM theories t
+     JOIN evidence e ON e.theory_id = t.id AND e.claim_id IS NULL JOIN sources s ON s.id = e.source_id
      WHERE t.image_path IS NULL AND s.publisher = 'Wikipedia (English)' AND s.notes LIKE 'Imported automatically%'
-     ORDER BY t.id LIMIT 200`,
+     ORDER BY t.id LIMIT 300`,
   );
   const todo = rows.filter((r) => !skip.has(r.id)).slice(0, IMAGE_BATCH);
-  if (!todo.length) return 0;
+  if (!todo.length || budgetLeft() < 4) return 0;
 
-  const titleOf = (url: string) => articleTitle(url);
-  const titles = todo.map((r) => titleOf(r.url));
-  const pi = pagesByRequestedTitle((await getJson(wikiApi(`prop=pageimages&piprop=name&pilicense=free&titles=${titlesParam(titles)}`))) as ApiQuery, titles);
-  const fileOf = new Map<number, string>();
+  const titleOf = new Map(todo.map((r) => [r.id, articleTitle(r.url)]));
+  const choices = new Map<number, string[]>(todo.map((r) => [r.id, []]));
+  const titles = [...titleOf.values()];
+  const pi = pagesByRequestedTitle((await getJson(wikiApi(`prop=pageimages&piprop=name&titles=${titlesParam(titles)}`))) as ApiQuery, titles);
   for (const r of todo) {
-    const name = pi.get(titleOf(r.url))?.pageimage;
-    if (name) fileOf.set(r.id, `File:${name.replace(/_/g, ' ')}`);
+    const name = pi.get(titleOf.get(r.id)!)?.pageimage;
+    if (name) choices.get(r.id)!.push(`File:${name.replace(/_/g, ' ')}`);
   }
-  const files = [...new Set(fileOf.values())];
-  const info = files.length
-    ? pagesByRequestedTitle(
-        (await getJson(
-          wikiApi(`prop=imageinfo&iiprop=url%7Cmime%7Cextmetadata&iiurlwidth=${IMAGE_WIDTH}&iiextmetadatafilter=LicenseShortName%7CArtist%7CNonFree&titles=${titlesParam(files)}`),
-        )) as ApiQuery,
-        files,
-      )
-    : new Map<string, ApiPage>();
+  const qidOf = new Map(todo.map((r) => [r.id, r.notes?.match(/Wikidata item (Q\d+)/)?.[1]]));
+  const p18 = await wikidataImages([...new Set([...qidOf.values()].filter((q): q is string => !!q))]).catch(() => new Map<string, string>());
+  for (const r of todo) {
+    const file = p18.get(qidOf.get(r.id) ?? '');
+    if (file) choices.get(r.id)!.push(file);
+  }
+  const imgData = (await getJson(wikiApi(`prop=images&imlimit=max&titles=${titlesParam(titles)}`))) as ApiQuery;
+  const imgPages = pagesByRequestedTitle(imgData, titles);
+  for (const r of todo) {
+    const files = imgPages.get(titleOf.get(r.id)!)?.images?.map((i) => i.title ?? '') ?? [];
+    choices.get(r.id)!.push(...files.filter(isCoverCandidate).slice(0, 4));
+  }
+
+  const files = [...new Set([...choices.values()].flat())];
+  const info = new Map<string, ApiPage>();
+  for (let i = 0; i < files.length && budgetLeft() > 0; i += 50) {
+    const part = files.slice(i, i + 50);
+    const data = (await getJson(
+      wikiApi(`prop=imageinfo&iiprop=url%7Cmime%7Cextmetadata&iiurlwidth=${IMAGE_WIDTH}&iiextmetadatafilter=LicenseShortName%7CArtist%7CNonFree&titles=${titlesParam(part)}`),
+    )) as ApiQuery;
+    for (const [k, v] of pagesByRequestedTitle(data, part)) info.set(k, v);
+  }
 
   let used = Number((await db.first<{ n: number }>('SELECT COALESCE(SUM(size), 0) AS n FROM images'))?.n ?? 0);
   let added = 0;
   for (const r of todo) {
-    const file = fileOf.get(r.id);
-    const ii = file ? info.get(file)?.imageinfo?.[0] : undefined;
-    const meta = ii?.extmetadata ?? {};
-    const license = meta.LicenseShortName?.value;
-    const thumb = ii?.thumburl;
-    if (!file || !ii || !thumb || !isCommonsThumb(thumb) || !isFreeLicense(license, meta.NonFree?.value)) {
+    if (budgetLeft() < 1) break; // the next run continues here
+    const pick = choices.get(r.id)!.map((file) => ({ file, ii: info.get(file)?.imageinfo?.[0] })).find(({ ii }) => {
+      const meta = ii?.extmetadata ?? {};
+      return !!ii?.thumburl && isCommonsThumb(ii.thumburl) && isFreeLicense(meta.LicenseShortName?.value, meta.NonFree?.value);
+    });
+    if (!pick?.ii) {
       skip.add(r.id);
       continue;
     }
-    const res = await importFetch.impl(thumb, { headers: { 'User-Agent': USER_AGENT } });
+    const { file, ii } = pick;
+    const meta = ii.extmetadata ?? {};
+    const license = meta.LicenseShortName!.value!;
+    const res = await upstream(ii.thumburl!);
     if (!res.ok) throw new Error(`HTTP ${res.status} from Wikimedia Commons`);
     const bytes = new Uint8Array(await res.arrayBuffer());
     const mime = sniffImageMime(bytes);
@@ -447,9 +512,9 @@ async function addCoverImages(db: Db, imageBudgetBytes: number): Promise<number>
       skip.add(r.id);
       continue;
     }
-    if (used + bytes.length > imageBudgetBytes) break; // free storage budget reached: keep the placeholder
+    if (used + bytes.length > imageBudgetBytes) break; // free storage budget reached: keep the generated cover
     const artist = stripHtml(meta.Artist?.value ?? '').slice(0, 150) || 'Unknown author';
-    const credit = `${artist} · ${stripHtml(license!)} · Wikimedia Commons`.slice(0, 300);
+    const credit = `${artist} · ${stripHtml(license)} · Wikimedia Commons`.slice(0, 300);
     const publicId = randomToken(12);
     const hash = toHex(await crypto.subtle.digest('SHA-256', bytes));
     const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
@@ -464,7 +529,7 @@ async function addCoverImages(db: Db, imageBudgetBytes: number): Promise<number>
       db.stmt(
         `INSERT INTO sources (title, publisher, source_type, is_primary, url, last_checked, quality_note, notes)
          VALUES (?, 'Wikimedia Commons', 'archive_collection', 0, ?, date('now'), 'Cover image; illustrates the topic, not evidence.', ?)`,
-        `${file} – Wikimedia Commons`, descUrl, `Cover image imported automatically. Licence: ${stripHtml(license!)}.`,
+        `${file} – Wikimedia Commons`, descUrl, `Cover image imported automatically. Licence: ${stripHtml(license)}.`,
       ),
       db.stmt("INSERT INTO evidence (source_id, theory_id, relation, note) VALUES ((SELECT MAX(id) FROM sources), ?, 'context', 'Cover image (automatic import)')", r.id),
     ]);
@@ -479,8 +544,197 @@ async function addCoverImages(db: Db, imageBudgetBytes: number): Promise<number>
   return added;
 }
 
+// ---------------------------------------------------------------------------
+// Details: the full article (plain text) split into the entry's sections. The text stays Wikipedia's,
+// attributed under CC BY-SA 4.0; sections are only sorted into the archive's fields.
+// ---------------------------------------------------------------------------
+
+export interface ArticleBlock {
+  heading: string | null;
+  paragraphs: string[];
+}
+export interface ArticleSection {
+  heading: string;
+  blocks: ArticleBlock[];
+}
+
+const paragraphsOf = (text: string) =>
+  text
+    .split(/\n+/)
+    .map((p) => p.replace(/\s+/g, ' ').trim())
+    .filter((p) => p.length > 1);
+
+/** Splits a plain-text extract (exsectionformat=wiki) into the lead and the top-level sections with their subsections. */
+export function parseArticle(extract: string): { lead: string[]; sections: ArticleSection[] } {
+  const parts = extract.split(/^(={2,6})[ \t]*(.+?)[ \t]*\1[ \t]*$/m);
+  const lead = paragraphsOf(parts[0] ?? '');
+  const sections: ArticleSection[] = [];
+  for (let i = 1; i + 1 < parts.length; i += 3) {
+    const level = parts[i].length;
+    const heading = parts[i + 1].trim();
+    const paragraphs = paragraphsOf(parts[i + 2] ?? '');
+    if (level === 2 || !sections.length) sections.push({ heading, blocks: [{ heading: null, paragraphs }] });
+    else sections[sections.length - 1].blocks.push({ heading, paragraphs });
+  }
+  return { lead, sections: sections.filter((s) => s.blocks.some((b) => b.paragraphs.length)) };
+}
+
+const SKIP_SECTION = /^(see also|references|notes|citations|sources|bibliography|further reading|external links|footnotes|works cited|literature|explanatory notes|notes and references|references and notes|gallery|selected bibliography|cited sources)$/i;
+const ORIGIN_SECTION = /\b(origins?|emergence|beginnings?|genesis|inception|roots|creation)\b/i;
+const BACKGROUND_SECTION = /\b(background|history|historical|context|overview|description)\b/i;
+const CLAIMS_SECTION = /\b(claims?|allegations?|beliefs?|tenets|premises?|assertions?|narratives?|content|the theory|theories|main ideas|ideology|thesis|arguments?|accusations?)\b/i;
+const RESPONSE_SECTION = /debunk|critic|refut|respon|reception|reaction|analysis|rebuttal|investigation|examination|evidence|fact[ -]check|scientific|legal|laws?\b|prosecution/i;
+const CLAIM_SENTENCE = /\b(claim(s|ed)?|alleg\w*|assert\w*|believe[sd]?|contend\w*|purport\w*|accus\w*|supposedly|posits?|holds? that|maintains? that|argues? that|theor\w* that|suggests? that)\b/i;
+
+const sentencesOf = (text: string) => text.split(/(?<=[.!?])\s+(?=["“(]?[A-Z0-9])/).filter(Boolean);
+
+/** Joins paragraphs up to max characters, cutting only at a paragraph or sentence end. */
+export function clip(paragraphs: string[], max: number): string[] {
+  const out: string[] = [];
+  let len = 0;
+  for (const p of paragraphs) {
+    if (len + p.length <= max) {
+      out.push(p);
+      len += p.length;
+      continue;
+    }
+    const room = max - len;
+    if (room > 200) out.push(firstSentences(p, room));
+    break;
+  }
+  return out;
+}
+
+const blockText = (sec: ArticleSection) => sec.blocks.flatMap((b) => b.paragraphs);
+
+export interface ArticleDetails {
+  summary: string | null;
+  background: string | null;
+  originStory: string | null;
+  claims: string[];
+  sections: ArticleSection[];
+}
+
+/** Sorts the article into the archive's fields. Claims are the article's own sentences, never rephrased. */
+export function articleDetails(extract: string): ArticleDetails {
+  const { lead, sections } = parseArticle(extract);
+  const usable = sections.filter((s) => !SKIP_SECTION.test(s.heading));
+  const take = (re: RegExp) => {
+    const i = usable.findIndex((s) => re.test(s.heading) && !RESPONSE_SECTION.test(s.heading));
+    return i < 0 ? null : usable.splice(i, 1)[0];
+  };
+  const origin = take(ORIGIN_SECTION);
+  const claimsSec = take(CLAIMS_SECTION);
+  const background = take(BACKGROUND_SECTION);
+
+  let claims: string[] = [];
+  if (claimsSec) {
+    const units = claimsSec.blocks.length > 1 ? claimsSec.blocks.filter((b) => b.paragraphs.length) : claimsSec.blocks[0].paragraphs.map((p) => ({ heading: null, paragraphs: [p] }));
+    claims = units.map((b) => {
+      const text = sentencesOf(b.paragraphs[0]).slice(0, 2).join(' ');
+      return firstSentences(b.heading ? `${b.heading}: ${text}` : text, 500);
+    });
+  }
+  if (!claims.length) {
+    // Only the theory's own statements: sections about criticism or responses are not searched.
+    const all = [...lead, ...usable.filter((x) => !RESPONSE_SECTION.test(x.heading)).flatMap(blockText)];
+    claims = all.flatMap(sentencesOf).filter((x) => CLAIM_SENTENCE.test(x) && x.length >= 40).slice(0, 4).map((x) => firstSentences(x, 500));
+  }
+  if (!claims.length && lead[0]) claims = [firstSentences(sentencesOf(lead[0])[0] ?? lead[0], 500)];
+
+  const joined = (sec: ArticleSection | null) => (sec ? clip(blockText(sec), 2500).join('\n\n') || null : null);
+  return {
+    summary: lead.length ? clip(lead, 1500).join('\n\n') : null,
+    background: joined(background),
+    originStory: joined(origin),
+    claims: [...new Set(claims)].slice(0, 6),
+    sections: usable.slice(0, 8),
+  };
+}
+
+const textNode = (text: string, marks?: RichNode['marks']): RichNode => ({ type: 'text', text, ...(marks ? { marks } : {}) });
+
+/** The article's remaining sections as an editor document, followed by the licence note. */
+export function detailsDoc(sections: ArticleSection[], title: string, url: string): RichNode {
+  const content: RichNode[] = [];
+  let total = 0;
+  for (const sec of sections) {
+    if (total > 16000) break;
+    content.push({ type: 'heading', attrs: { level: 2 }, content: [textNode(sec.heading.slice(0, 200))] });
+    let room = 3000;
+    for (const b of sec.blocks) {
+      const ps = clip(b.paragraphs, room);
+      if (!ps.length) continue;
+      if (b.heading) content.push({ type: 'heading', attrs: { level: 3 }, content: [textNode(b.heading.slice(0, 200))] });
+      for (const p of ps) {
+        content.push({ type: 'paragraph', content: [textNode(p)] });
+        room -= p.length;
+        total += p.length;
+      }
+      if (room < 200) break;
+    }
+  }
+  content.push({
+    type: 'paragraph',
+    content: [
+      textNode('Text from the Wikipedia article ', [{ type: 'italic' }]),
+      textNode(`„${title}“`, [{ type: 'italic' }, { type: 'link', attrs: { href: url } }]),
+      textNode(', licensed under CC BY-SA 4.0. Added to the archive automatically.', [{ type: 'italic' }]),
+    ],
+  });
+  return { type: 'doc', content };
+}
+
+async function fetchExtract(title: string): Promise<string | null> {
+  const data = (await getJson(wikiApi(`prop=extracts&explaintext=1&exsectionformat=wiki&titles=${titlesParam([title])}`))) as ApiQuery;
+  const page = pagesByRequestedTitle(data, [title]).get(title);
+  return typeof page?.extract === 'string' && page.extract.trim().length >= 40 ? page.extract : null;
+}
+
+/** Fills imported entries that have no claims yet from their full article (new ones first, older ones step by step). */
+async function addDetails(db: Db): Promise<number> {
+  const rows = await db.all<{ id: number; summary: string; source_id: number; url: string }>(
+    `SELECT t.id, t.summary, s.id AS source_id, s.url FROM theories t
+     JOIN evidence e ON e.theory_id = t.id AND e.claim_id IS NULL JOIN sources s ON s.id = e.source_id
+     WHERE s.publisher = 'Wikipedia (English)' AND s.notes LIKE 'Imported automatically%'
+       AND NOT EXISTS (SELECT 1 FROM claims c WHERE c.theory_id = t.id)
+     ORDER BY t.id DESC LIMIT ?`,
+    DETAIL_BATCH,
+  );
+  let done = 0;
+  for (const r of rows) {
+    if (budgetLeft() < 1) break;
+    const title = articleTitle(r.url);
+    const extract = await fetchExtract(title);
+    // Without an article text the entry keeps its summary; its first sentence becomes the claim so it is not retried.
+    const d = articleDetails(extract ?? r.summary);
+    const stmts: D1PreparedStatement[] = [];
+    if (extract) {
+      stmts.push(
+        db.stmt(
+          `UPDATE theories SET summary = COALESCE(?, summary), background = COALESCE(background, ?), origin_story = COALESCE(origin_story, ?), body_json = ?, updated_at = datetime('now') WHERE id = ?`,
+          d.summary, d.background, d.originStory, JSON.stringify(detailsDoc(d.sections, title, r.url)), r.id,
+        ),
+      );
+    }
+    d.claims.forEach((text, i) => {
+      stmts.push(db.stmt("INSERT INTO claims (theory_id, text, evidence_status, position) VALUES (?, ?, 'unverified', ?)", r.id, text, i));
+      stmts.push(
+        db.stmt(
+          "INSERT INTO evidence (source_id, theory_id, claim_id, relation, note) VALUES (?, ?, (SELECT MAX(id) FROM claims), 'documents', 'Wikipedia article (automatic import)')",
+          r.source_id, r.id,
+        ),
+      );
+    });
+    if (stmts.length) await db.batch(stmts);
+    done++;
+  }
+  return done;
+}
+
 export async function runImport(db: Db, batch = IMPORT_BATCH, imageBudgetBytes = IMAGE_LIMITS.defaultStorageMb * 1024 * 1024): Promise<ImportResult> {
-  const result: ImportResult = { ranAt: new Date().toISOString(), imported: [], skipped: 0, remaining: 0, images: 0, error: null };
+  const result: ImportResult = { ranAt: new Date().toISOString(), imported: [], skipped: 0, remaining: 0, images: 0, detailed: 0, error: null };
+  requests = 0;
   const known = await knownEntries(db);
   try {
     const candidates = await fetchCandidates();
@@ -502,7 +756,11 @@ export async function runImport(db: Db, batch = IMPORT_BATCH, imageBudgetBytes =
       result.imported.push({ slug, title: en.title });
     }
     result.remaining = fresh.length - picked.length;
-    // A failing image download never undoes or hides the imported entries.
+    // A failing detail or image step never undoes or hides the imported entries.
+    result.detailed = await addDetails(db).catch((err) => {
+      result.detailError = String((err as Error)?.message ?? err).slice(0, 200);
+      return 0;
+    });
     result.images = await addCoverImages(db, imageBudgetBytes).catch((err) => {
       result.imageError = String((err as Error)?.message ?? err).slice(0, 200);
       return 0;

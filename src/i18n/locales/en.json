@@ -248,7 +248,8 @@
     "notChecked": "Link not yet verified",
     "quality": "Source quality",
     "permalink": "Permanent link",
-    "images": "Images"
+    "images": "Images",
+    "details": "In detail"
   },
   "orgs": {
     "title": "Organizations",
@@ -612,5 +613,9 @@
     "moderationHint": "Your note is checked by an editor before it appears. Only the display name is stored, no e-mail or IP address.",
     "send": "Send for review",
     "sent": "Thank you! Your note will appear after an editor approves it."
+  },
+  "cover": {
+    "file": "FILE No. {n}",
+    "stamp": "ARCHIVE"
   }
 }

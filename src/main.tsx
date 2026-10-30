@@ -14,9 +14,10 @@ import './styles/global.css';
 import './styles/wall.css';
 import './styles/board.css';
 import { App } from './App';
-import { installEffects } from './effects';
+import { armScrollReveal, installEffects } from './effects';
 
 installEffects();
+armScrollReveal();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

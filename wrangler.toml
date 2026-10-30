@@ -22,12 +22,12 @@ FEATURE_COMMUNITY_UPLOADS = "true"    # images are compressed and stored in D1 (
 IMAGE_STORAGE_LIMIT_MB = "250"        # total image budget; the free D1 database holds 500 MB
 FEATURE_MAP_DATA = "true"
 FEATURE_AUTOMATIC_IMPORT = "false"
-FEATURE_TURNSTILE = "false"           # switch to "true" after creating a free Turnstile widget
+FEATURE_TURNSTILE = "true"            # free Turnstile widget for conspiracy-atlas.pages.dev
 FEATURE_ADMIN_PANEL = "true"
 FEATURE_INVESTIGATIONS = "true"
 FEATURE_REPORTS = "true"
 # Public Turnstile site key (not a secret). Leave empty until a widget exists.
-TURNSTILE_SITE_KEY = ""
+TURNSTILE_SITE_KEY = "0x4AAAAAAFsJ72PHY21MeM2j"
 ENVIRONMENT = "production"
 
 [[d1_databases]]

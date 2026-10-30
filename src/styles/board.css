@@ -885,26 +885,29 @@ body::after {
 }
 
 /* ------------------------------------------------------------------ entrance & scroll reveal */
+/* Only animate once effects.ts has seen a rendered frame in a visible tab (html.is-ready). A tab opened
+   in the background or put to sleep renders no frames, and a "both"-filled entrance would otherwise
+   stay frozen on its invisible first keyframe. Without the class, content is simply shown. */
 @media (prefers-reduced-motion: no-preference) {
-  .hero__file {
+  .is-ready .hero__file {
     animation: drop-in 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
   }
-  .tally {
+  .is-ready .tally {
     animation: drop-in 0.8s 0.15s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
   }
-  .hero__side .sticky {
+  .is-ready .hero__side .sticky {
     animation: drop-in 0.7s 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
   }
-  .hero__stamp {
+  .is-ready .hero__stamp {
     animation: slam 0.45s 0.9s cubic-bezier(0.3, 1.6, 0.6, 1) both;
   }
-  .hero__thread path {
+  .is-ready .hero__thread path {
     animation: draw 1.4s ease-out both;
   }
-  .hero__thread circle {
+  .is-ready .hero__thread circle {
     animation: pop 0.3s 0.6s ease-out both;
   }
-  .tally__marks line {
+  .is-ready .tally__marks line {
     animation: draw-mark 0.25s ease-out both;
     animation-delay: calc(0.6s + var(--d, 0) * 45ms);
   }
@@ -913,10 +916,10 @@ body::after {
   }
 
   @supports (animation-timeline: view()) {
-    .case-card,
-    .category-tile,
-    .panel,
-    .paper {
+    .is-ready .case-card,
+    .is-ready .category-tile,
+    .is-ready .panel,
+    .is-ready .paper {
       animation: pin-up linear both;
       animation-timeline: view();
       animation-range: entry 0% entry 55%;

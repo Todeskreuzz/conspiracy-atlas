@@ -2,6 +2,8 @@
 // One delegated listener, CSS variables only; skipped for touch devices and reduced motion.
 export function installEffects() {
   if (typeof window === 'undefined') return;
+  markReadyWhenVisible();
+  reloadOnStaleChunks();
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!fine || calm) return;
@@ -42,4 +44,32 @@ export function installEffects() {
 function resetCard(el: HTMLElement) {
   el.style.removeProperty('--rx');
   el.style.removeProperty('--ry');
+}
+
+// Entrance animations are scoped to html.is-ready (board.css): set it on the first frame of a visible tab.
+function markReadyWhenVisible() {
+  const ready = () => requestAnimationFrame(() => document.documentElement.classList.add('is-ready'));
+  if (document.visibilityState === 'visible') return ready();
+  const onVisible = () => {
+    if (document.visibilityState !== 'visible') return;
+    document.removeEventListener('visibilitychange', onVisible);
+    ready();
+  };
+  document.addEventListener('visibilitychange', onVisible);
+}
+
+// After a redeploy an open tab may ask for route chunks that no longer exist; Vite then fires
+// vite:preloadError. Reload once to pick up the new build (guarded so it can never loop).
+function reloadOnStaleChunks() {
+  window.addEventListener('vite:preloadError', (e) => {
+    try {
+      const last = Number(sessionStorage.getItem('ca.chunkReload') || 0);
+      if (Date.now() - last < 30_000) return;
+      sessionStorage.setItem('ca.chunkReload', String(Date.now()));
+    } catch {
+      return;
+    }
+    e.preventDefault();
+    window.location.reload();
+  });
 }

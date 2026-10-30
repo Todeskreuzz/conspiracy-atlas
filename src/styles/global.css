@@ -1262,3 +1262,38 @@ table.data th {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Community images */
+.btn.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.image-uploader__list,
+.image-gallery {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+.image-uploader__item,
+.image-gallery li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.image-uploader__item img,
+.image-gallery img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #fff;
+  padding: 6px 6px 18px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+}
+.image-gallery li:nth-child(odd) img {
+  transform: rotate(-1deg);
+}

@@ -33,6 +33,7 @@ import { arr, int, isoDateOrYear, oneOf, optOneOf, optStr, reqStr, slugify, url,
 import { THEORY_SUMMARY_SELECT, loadTheoryDetail, mapSource, mapTheorySummary } from '../repo';
 import { addEdge, addNode, deleteEdge, deleteNode, savePositions } from '../boards';
 import { BACKUP_TABLES, toCsv } from '../backup';
+import { imageResponse, imageStorageLimitBytes, imageStorageUsed, mapImage } from '../images';
 
 export const adminRoutes = new Hono<AppEnv>();
 type AdminCtx = Ctx & { session?: AdminSession };
@@ -157,7 +158,17 @@ adminRoutes.get('/submissions/:id', async (c) => {
   const row = await db.first(`${SUBMISSION_SELECT} WHERE s.id = ?`, idParam(c));
   if (!row) throw notFound('Submission');
   const history = await db.all('SELECT action, note, actor, created_at FROM moderation_actions WHERE submission_id = ? ORDER BY created_at, id', row.id);
-  return c.json({ ...mapSubmission(row), history });
+  const images = await db.all('SELECT public_id, mime, width, height, size, alt FROM images WHERE submission_id = ? ORDER BY position', row.id);
+  return c.json({ ...mapSubmission(row), history, images: images.map((r) => mapImage(r, '/api/admin/images')) });
+});
+
+/** Moderators can view images of submissions that are not public yet. */
+adminRoutes.get('/images/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!/^[0-9a-f]{24}$/.test(id)) throw notFound('Image');
+  const row = await Db.from(c.env).first('SELECT mime, data FROM images WHERE public_id = ?', id);
+  if (!row) throw notFound('Image');
+  return imageResponse(row, 'private');
 });
 
 /** Moderator edits content before publication. */
@@ -223,7 +234,12 @@ adminRoutes.post('/submissions/:id/action', async (c) => {
   let publishedSlug: string | null = null;
   if (action === 'publish') {
     publishedSlug = await publishSubmission(db, row);
-  } else if (action === 'withdraw' && row.published_theory_id) {
+  }
+  if (action === 'reject' || action === 'withdraw') {
+    // Rejected or withdrawn images are deleted to free the storage budget.
+    await db.run('DELETE FROM images WHERE submission_id = ?', id);
+  }
+  if (action === 'withdraw' && row.published_theory_id) {
     await db.batch([
       db.stmt("UPDATE theories SET is_published = 0, updated_at = datetime('now') WHERE id = ?", row.published_theory_id),
       db.stmt("DELETE FROM board_nodes WHERE entity_type = 'theory' AND entity_id = ?", row.published_theory_id),
@@ -272,6 +288,7 @@ async function publishSubmission(db: Db, row: Row): Promise<string> {
     row.language ?? 'en',
   );
   const theoryId = theory!.id;
+  await db.run("UPDATE images SET status = 'approved', theory_id = ? WHERE submission_id = ?", theoryId, row.id);
   const stmts: D1PreparedStatement[] = [];
 
   for (const tag of parseJsonArray<string>(row.tags_json)) {
@@ -765,6 +782,7 @@ export const FREE_LIMITS = {
   workers: '100,000 requests/day (shared by Pages Functions) · 10 ms CPU per request',
   d1: '5 million rows read/day · 100,000 rows written/day · 5 GB total storage (500 MB per database)',
   turnstile: 'Free plan: unlimited challenges for up to 20 widgets',
+  images: 'Stored in D1: max. 512 KB per image, total capped by IMAGE_STORAGE_LIMIT_MB (default 250 MB of the 500 MB free database)',
   r2: 'Not used. Intentionally disabled (no bucket, no binding).',
 };
 
@@ -773,6 +791,7 @@ adminRoutes.get('/services', async (c) => {
   let dbTest: { state: string; latencyMs: number | null; error: string | null } = { state: 'not_configured', latencyMs: null, error: null };
   let lastOk: string | null = null;
   let tableCounts: Record<string, number> | null = null;
+  let imageUsage: { used: number; limit: number } | null = null;
   if (c.env.DB) {
     const started = Date.now();
     try {
@@ -784,9 +803,10 @@ adminRoutes.get('/services', async (c) => {
         "INSERT INTO settings (key, value) VALUES ('last_db_ok', ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')",
         lastOk,
       );
+      imageUsage = { used: await imageStorageUsed(db), limit: imageStorageLimitBytes(c.env) };
       if (c.req.query('counts') === '1') {
         tableCounts = {};
-        for (const table of ['theories', 'sources', 'events', 'board_nodes', 'board_edges', 'community_submissions', 'investigations']) {
+        for (const table of ['theories', 'sources', 'events', 'board_nodes', 'board_edges', 'community_submissions', 'investigations', 'images']) {
           const r = await db.first<{ n: number }>(`SELECT COUNT(*) AS n FROM ${table}`);
           tableCounts[table] = Number(r?.n ?? 0);
         }
@@ -810,7 +830,16 @@ adminRoutes.get('/services', async (c) => {
       { service: 'Cloudflare Workers (Pages Functions)', enabled: true, state: 'available', test: 'This request was handled', lastOk: new Date().toISOString(), freeLimit: FREE_LIMITS.workers, usage: 'Currently unavailable!' },
       { service: 'Cloudflare D1', enabled: !!c.env.DB, state: dbTest.state, test: dbTest.latencyMs !== null ? `SELECT 1 ok (${dbTest.latencyMs} ms)` : dbTest.error ?? 'Not configured', lastOk, freeLimit: FREE_LIMITS.d1, usage: 'Currently unavailable!', tableCounts },
       { service: 'Cloudflare Turnstile', enabled: turnstileConfigured(c.env), state: features.turnstile.state, test: turnstileConfigured(c.env) ? 'Configured (verified on each submission)' : 'Not configured', lastOk: null, freeLimit: FREE_LIMITS.turnstile, usage: 'Currently unavailable!' },
-      { service: 'Cloudflare R2 (file uploads)', enabled: false, state: 'disabled', test: 'No binding exists', lastOk: null, freeLimit: FREE_LIMITS.r2, usage: 'Not applicable' },
+      {
+        service: 'Image storage (D1)',
+        enabled: features.community_uploads.available,
+        state: features.community_uploads.state,
+        test: imageUsage ? `${(imageUsage.used / 1048576).toFixed(1)} MB of ${(imageUsage.limit / 1048576).toFixed(0)} MB used` : 'Currently unavailable!',
+        lastOk: null,
+        freeLimit: FREE_LIMITS.images,
+        usage: imageUsage ? `${Math.round((imageUsage.used / imageUsage.limit) * 100)} %` : 'Currently unavailable!',
+      },
+      { service: 'Cloudflare R2', enabled: false, state: 'disabled', test: 'No binding exists', lastOk: null, freeLimit: FREE_LIMITS.r2, usage: 'Not applicable' },
     ],
     features,
   });

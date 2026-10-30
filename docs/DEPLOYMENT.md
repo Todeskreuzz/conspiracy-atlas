@@ -76,3 +76,10 @@ npm run backup:remote                         # writes backups/<time>-remote.sql
 npm run restore:remote -- backups/<file>.json # makes a fresh backup first, then restores
 ```
 The admin panel also offers JSON/CSV downloads (*Backup*).
+
+Community images live in the D1 table `images`. They are included in the `.sql` backup only;
+the JSON backup leaves them out (too large), and a JSON restore removes the images of the
+submissions it replaces. Use the `.sql` file to keep images.
+
+The new image table is created by the migration `0003_images.sql`; run
+`npm run db:migrate:remote` (step 3) before deploying this version.

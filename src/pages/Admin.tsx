@@ -23,6 +23,8 @@ import { RichEditor } from '../components/RichEditor';
 import { StatusBadge } from '../components/Badges';
 import { SourceItem } from '../components/SourceItem';
 import { Pagination } from '../components/TheoryCard';
+import { ImageGallery } from '../components/ImageGallery';
+import type { PublicImage } from '../../shared/images';
 
 type Api = ReturnType<typeof adminApi>;
 
@@ -88,6 +90,7 @@ interface SubmissionView {
   publishedTheorySlug: string | null;
   createdAt: string;
   history?: Array<{ action: string; note: string | null; actor: string; created_at: string }>;
+  images?: PublicImage[];
 }
 
 const ACTIONS_FOR: Record<SubmissionStatus, string[]> = {
@@ -190,6 +193,12 @@ function Moderation({ a }: { a: Api }) {
               <strong>{s.summary}</strong>
             </p>
             <RichText doc={s.body} />
+            {s.images && s.images.length > 0 && (
+              <>
+                <h4>{t('submit.uploads')}</h4>
+                <ImageGallery images={s.images} />
+              </>
+            )}
             <h4>{t('submit.sources')}</h4>
             <ul className="small">
               {s.sources.map((src, i) => (

@@ -232,7 +232,8 @@
     "lastChecked": "Last checked: {date}",
     "notChecked": "Link not yet verified",
     "quality": "Source quality",
-    "permalink": "Permanent link"
+    "permalink": "Permanent link",
+    "images": "Images"
   },
   "orgs": {
     "title": "Organizations",
@@ -347,8 +348,8 @@
     "addEvent": "Add event",
     "relatedTheories": "Connected archive entries",
     "relatedHint": "Connections to existing entries are marked as suggested until the editors verify them.",
-    "uploads": "Images and PDF files",
-    "uploadButton": "Upload file",
+    "uploads": "Images",
+    "uploadButton": "Add images",
     "publication": "Publication",
     "named": "With a display name",
     "anonymous": "Anonymous",
@@ -386,6 +387,15 @@
       "link": "Link",
       "linkPrompt": "Link URL (https://…)",
       "unlink": "Remove link"
+    },
+    "images": {
+      "hint": "Up to {max} images. They are compressed in your browser (max. 1600 px, a few hundred KB) and only become public when the submission is published. Location data is removed.",
+      "compressing": "Compressing …",
+      "alt": "Short description (alt text)",
+      "remove": "Remove",
+      "tooMany": "At most {max} images per submission.",
+      "notImage": "\"{name}\" is not an image.",
+      "failed": "\"{name}\" could not be read or compressed."
     }
   },
   "report": {
@@ -425,7 +435,7 @@
     "text1": "The Conspiracy Atlas is an international archive that documents conspiracy theories, historical mysteries, documented secret operations and the connections between them.",
     "text2": "It does not promote any theory. It shows what is documented, what is claimed and what has been refuted, and links every statement to its sources.",
     "costTitle": "Free-only infrastructure",
-    "costText": "The site runs exclusively on free plans of Cloudflare Pages, Workers, D1 and Turnstile. Features that would require paid or usage-billed services, such as file uploads, are intentionally disabled and marked \"Currently unavailable!\". When a free limit is reached, the affected feature pauses until the limit resets.",
+    "costText": "The site runs exclusively on free plans of Cloudflare Pages, Workers, D1 and Turnstile. Images are compressed in the browser and stored in the free D1 database under a hard storage cap; paid storage services are not used. Features that would require paid or usage-billed services stay disabled and are marked \"Currently unavailable!\". When a free limit is reached, the affected feature pauses until the limit resets or space is freed.",
     "privacyTitle": "Privacy",
     "privacyText": "No user accounts, no tracking, no advertising, no external fonts or scripts (except Cloudflare Turnstile on submission forms when enabled). Contributions store only the display name you choose. IP addresses are never stored in readable form; anti-abuse counters use salted hashes and are deleted within a day.",
     "licensesTitle": "Licenses",

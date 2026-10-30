@@ -7,47 +7,39 @@ import { rateLimit, verifyTurnstile, assertSameOrigin } from '../security';
 import { validateSubmission } from '../../shared/submission';
 import { ANONYMOUS_NAME, REPORT_REASONS } from '../../shared/constants';
 import { int, oneOf, optStr } from '../../shared/validation';
-import { ApiError } from '../errors';
+import { ApiError, notFound } from '../errors';
+import { assertImageQuota, imageInsertStatements, imageResponse, parseImages } from '../images';
+import { IMAGE_LIMITS } from '../../shared/images';
 
 export const communityRoutes = new Hono<AppEnv>();
+
+/** JSON body limit for submissions: text plus up to four base64-encoded images. */
+const MAX_SUBMISSION_BYTES = 200_000 + IMAGE_LIMITS.perSubmission * Math.ceil((IMAGE_LIMITS.maxBytes * 4) / 3 + 1000);
 
 /** Testing seam: Turnstile verification uses global fetch unless replaced. */
 export const turnstileFetch: { impl: typeof fetch } = { impl: (...args) => fetch(...args) };
 
-/** Uploads are intentionally not implemented: there is no object storage in the free-only architecture. */
-communityRoutes.all('/uploads/*', (c) =>
-  c.json(
-    {
-      error: {
-        code: 'unavailable',
-        state: 'disabled',
-        message: 'Currently unavailable! File storage is intentionally disabled in the free-only configuration.',
-      },
-    },
-    503,
-  ),
-);
-communityRoutes.all('/uploads', (c) =>
-  c.json(
-    {
-      error: {
-        code: 'unavailable',
-        state: 'disabled',
-        message: 'Currently unavailable! File storage is intentionally disabled in the free-only configuration.',
-      },
-    },
-    503,
-  ),
-);
+/** Approved community images (served from D1, cached by browsers for a year). */
+communityRoutes.get('/images/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!/^[0-9a-f]{24}$/.test(id)) throw notFound('Image');
+  const row = await Db.from(c.env).first("SELECT mime, data FROM images WHERE public_id = ? AND status = 'approved'", id);
+  if (!row) throw notFound('Image');
+  return imageResponse(row, 'public');
+});
 
 /** New community submission. Always lands in the moderation queue (pending_review). */
 communityRoutes.post('/submissions', async (c) => {
   assertSameOrigin(c.req.raw);
   requireFeature(c.env, 'community_submissions');
-  const input = validateSubmission(await readJson(c));
+  const raw = await readJson(c, MAX_SUBMISSION_BYTES);
+  const input = validateSubmission(raw);
+  const images = parseImages(raw.images);
+  if (images.length) requireFeature(c.env, 'community_uploads');
   await verifyTurnstile(c.env, input.turnstileToken, turnstileFetch.impl);
   const db = Db.from(c.env);
   await rateLimit(db, c.env, c.req.raw, 'submission', 5, 3600);
+  await assertImageQuota(db, c.env, images.reduce((n, img) => n + img.bytes.length, 0));
 
   const category = await db.first<{ id: number }>('SELECT id FROM categories WHERE slug = ?', input.category);
   if (!category) throw new ApiError(400, 'invalid', 'Unknown category', undefined, 'category');
@@ -59,27 +51,32 @@ communityRoutes.post('/submissions', async (c) => {
     isAnon ? ANONYMOUS_NAME : input.displayName,
     isAnon ? 1 : 0,
   );
-  const row = await db.first<{ id: number; created_at: string }>(
-    `INSERT INTO community_submissions
-       (title, subtitle, summary, body_json, category_id, tags_json, sources_json, document_links_json, counter_arguments_json,
-        related_events_json, related_theory_ids_json, language, author_id, display_mode, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_review') RETURNING id, created_at`,
-    input.title,
-    input.subtitle,
-    input.summary,
-    JSON.stringify(input.body),
-    category.id,
-    JSON.stringify(input.tags),
-    JSON.stringify(input.sources),
-    JSON.stringify(input.documentLinks),
-    JSON.stringify(input.counterArguments),
-    JSON.stringify(input.relatedEvents),
-    JSON.stringify(input.relatedTheoryIds),
-    input.language,
-    author?.id ?? null,
-    input.displayMode,
-  );
-  return c.json({ id: row?.id, status: 'pending_review', authorName: isAnon ? ANONYMOUS_NAME : input.displayName }, 201);
+  // Submission and its images are written in one transaction.
+  const results = await db.batch([
+    db.stmt(
+      `INSERT INTO community_submissions
+         (title, subtitle, summary, body_json, category_id, tags_json, sources_json, document_links_json, counter_arguments_json,
+          related_events_json, related_theory_ids_json, language, author_id, display_mode, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_review')`,
+      input.title,
+      input.subtitle,
+      input.summary,
+      JSON.stringify(input.body),
+      category.id,
+      JSON.stringify(input.tags),
+      JSON.stringify(input.sources),
+      JSON.stringify(input.documentLinks),
+      JSON.stringify(input.counterArguments),
+      JSON.stringify(input.relatedEvents),
+      JSON.stringify(input.relatedTheoryIds),
+      input.language,
+      author?.id ?? null,
+      input.displayMode,
+    ),
+    ...(await imageInsertStatements(db, images)),
+  ]);
+  const row = { id: Number(results[0]?.meta?.last_row_id) };
+  return c.json({ id: row.id, status: 'pending_review', authorName: isAnon ? ANONYMOUS_NAME : input.displayName, images: images.length }, 201);
 });
 
 /** Visitors can report content for moderation. */

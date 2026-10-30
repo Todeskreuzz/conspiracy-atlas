@@ -54,7 +54,8 @@ export function checkWranglerToml(text) {
     }
     const key = line.match(/^([a-z_]+)\s*=/i)?.[1];
     if (key && (FORBIDDEN_BINDINGS.includes(key) || FORBIDDEN_SETTINGS.includes(key))) problems.push(`wrangler.toml: forbidden key "${key}"`);
-    if (/^FEATURE_COMMUNITY_UPLOADS\s*=\s*"?true/i.test(line)) problems.push('wrangler.toml: FEATURE_COMMUNITY_UPLOADS must stay "false" (R2 is forbidden)');
+    const limit = line.match(/^IMAGE_STORAGE_LIMIT_MB\s*=\s*"?(\d+)/i)?.[1];
+    if (limit && Number(limit) > 400) problems.push('wrangler.toml: IMAGE_STORAGE_LIMIT_MB must not exceed 400 (D1 free database: 500 MB)');
   }
   return problems;
 }

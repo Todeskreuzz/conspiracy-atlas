@@ -20,8 +20,14 @@ export function computeFeatures(env: Env, dbState: ServiceState = 'available'): 
 
   const states: Record<FeatureKey, ServiceState> = {
     database,
-    // Uploads are hard-wired off: there is no object storage binding in the free-only architecture.
-    community_uploads: 'disabled',
+    // Images are stored in D1 (hard-limited on the free plan, never billed) and need Turnstile like submissions.
+    community_uploads: !flag(env.FEATURE_COMMUNITY_UPLOADS)
+      ? 'disabled'
+      : !flag(env.FEATURE_COMMUNITY_SUBMISSIONS, true)
+        ? 'disabled'
+        : !turnstileConfigured(env)
+          ? 'not_configured'
+          : needsDb('available'),
     turnstile: !flag(env.FEATURE_TURNSTILE) ? 'disabled' : turnstileConfigured(env) ? 'available' : 'not_configured',
     community_submissions: !flag(env.FEATURE_COMMUNITY_SUBMISSIONS, true)
       ? 'disabled'
@@ -39,6 +45,7 @@ export function computeFeatures(env: Env, dbState: ServiceState = 'available'): 
   for (const key of FEATURE_KEYS) map[key] = makeStatus(key, states[key]);
   // Turnstile is required for submissions: if it is missing, explain that specifically.
   if (states.community_submissions === 'not_configured') map.community_submissions = { ...map.turnstile, key: 'community_submissions', state: 'not_configured', available: false };
+  if (states.community_uploads === 'not_configured') map.community_uploads = { ...map.turnstile, key: 'community_uploads', state: 'not_configured', available: false };
   if (states.reports === 'not_configured') map.reports = { ...map.turnstile, key: 'reports', state: 'not_configured', available: false };
   return map;
 }
@@ -47,6 +54,6 @@ export function computeFeatures(env: Env, dbState: ServiceState = 'available'): 
 export function requireFeature(env: Env, key: FeatureKey): void {
   const status = computeFeatures(env)[key];
   if (!status.available) {
-    throw new UnavailableError(key === 'community_submissions' || key === 'reports' ? (status.state === 'not_configured' ? 'turnstile' : key) : key, status.state);
+    throw new UnavailableError(key === 'community_submissions' || key === 'reports' || key === 'community_uploads' ? (status.state === 'not_configured' ? 'turnstile' : key) : key, status.state);
   }
 }

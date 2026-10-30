@@ -8,6 +8,7 @@ import { LoadState } from '../components/Unavailable';
 import { RichText } from '../components/RichText';
 import { SourceItem } from '../components/SourceItem';
 import { ReportForm } from '../components/ReportForm';
+import { ImageGallery } from '../components/ImageGallery';
 
 export function entityPath(type: string, slug: string | null): string | null {
   if (!slug) return null;
@@ -118,6 +119,13 @@ export function TheoryPage() {
             <section>
               <h2>{t('theory.body')}</h2>
               <RichText doc={th.body} />
+            </section>
+          )}
+
+          {th.images.length > 0 && (
+            <section>
+              <h2>{t('theory.images')}</h2>
+              <ImageGallery images={th.images} />
             </section>
           )}
 

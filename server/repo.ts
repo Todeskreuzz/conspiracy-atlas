@@ -1,4 +1,5 @@
 // Read models and mappers. All queries are parameterised and bounded by LIMIT or indexed lookups.
+import { mapImage } from './images';
 import type { Db, Row } from './db';
 import { parseJsonArray } from './db';
 import type { EntityType, Locale } from '../shared/constants';
@@ -342,6 +343,9 @@ export async function loadTheoryDetail(db: Db, slug: string, locale: Locale, inc
     generalSources,
     relationships,
     events,
+    images: (
+      await db.all("SELECT public_id, mime, width, height, size, alt FROM images WHERE theory_id = ? AND status = 'approved' ORDER BY position", id)
+    ).map((r) => mapImage(r, '/api/images')),
   };
   if (locale !== 'en') {
     [detail] = await translate(db, locale, 'theory', [detail], {

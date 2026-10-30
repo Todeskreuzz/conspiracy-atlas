@@ -39,8 +39,13 @@ describe('feature status system', () => {
     expect(f.community_submissions.available).toBe(false);
   });
 
-  it('uploads stay disabled even if the flag is switched on', async () => {
-    expect(computeFeatures(await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'true' })).community_uploads.state).toBe('disabled');
+  it('image uploads need the flag, submissions and Turnstile', async () => {
+    expect(computeFeatures(await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'true' })).community_uploads.state).toBe('available');
+    expect(computeFeatures(await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'false' })).community_uploads.state).toBe('disabled');
+    expect(computeFeatures(await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'true', FEATURE_COMMUNITY_SUBMISSIONS: 'false' })).community_uploads.state).toBe('disabled');
+    const noTurnstile = computeFeatures(await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'true', TURNSTILE_SECRET_KEY: undefined })).community_uploads;
+    expect(noTurnstile.state).toBe('not_configured');
+    expect(noTurnstile.message).toBe('Currently unavailable! Anti-spam verification has not been configured.');
   });
 
   it('the client fallback map marks everything unavailable', () => {

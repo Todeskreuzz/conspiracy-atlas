@@ -14,6 +14,8 @@ import { RichText } from '../components/RichText';
 import { TurnstileWidget } from '../components/Turnstile';
 import { Unavailable } from '../components/Unavailable';
 import { CategoryBadge } from '../components/Badges';
+import { ImageUploader, toUploads, type PickedImage } from '../components/ImageUploader';
+import type { ImageUpload } from '../../shared/images';
 
 export interface Draft {
   title: string;
@@ -70,7 +72,7 @@ function loadDraft(language: 'en' | 'de'): Draft {
 }
 
 /** Converts the editor state into the API payload (also used for client-side validation). */
-export function draftToPayload(d: Draft, turnstileToken: string | null) {
+export function draftToPayload(d: Draft, turnstileToken: string | null, images: ImageUpload[] = []) {
   return {
     title: d.title,
     subtitle: d.subtitle || null,
@@ -90,6 +92,7 @@ export function draftToPayload(d: Draft, turnstileToken: string | null) {
     displayMode: d.displayMode,
     displayName: d.displayMode === 'named' ? d.displayName : null,
     turnstileToken,
+    ...(images.length ? { images } : {}),
   };
 }
 
@@ -128,6 +131,8 @@ export default function SubmitPage() {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState<{ id: number } | null>(null);
   const [savedNote, setSavedNote] = useState(false);
+  // Images are kept in memory only; they are never written to the local draft.
+  const [images, setImages] = useState<PickedImage[]>([]);
   const theories = useAsync((signal) => api<Paged<TheorySummary>>('/theories?pageSize=50&sort=title', { signal }), [locale]);
 
   // Autosave the draft locally (never sent anywhere until submitted).
@@ -167,10 +172,12 @@ export default function SubmitPage() {
     if (!submissions.available || !validate()) return;
     setSending(true);
     try {
-      const r = await api<{ id: number }>('/submissions', { method: 'POST', body: draftToPayload(draft, token), localized: false });
+      const r = await api<{ id: number }>('/submissions', { method: 'POST', body: draftToPayload(draft, token, uploads.available ? toUploads(images) : []), localized: false });
       setDone(r);
       window.localStorage.removeItem(DRAFT_KEY);
       setDraft(emptyDraft(locale));
+      images.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+      setImages([]);
     } catch (err) {
       setApiError(err instanceof ApiFailure ? err : new ApiFailure(0, 'error', String(err), 'temporary_error'));
       setResetKey((k) => k + 1);
@@ -353,9 +360,7 @@ export default function SubmitPage() {
 
               <fieldset className="panel field">
                 <legend className="label">{t('submit.uploads')}</legend>
-                <button type="button" className="btn btn--small" disabled data-testid="upload-button" aria-disabled="true">
-                  {t('submit.uploadButton')}
-                </button>
+                <ImageUploader images={images} onChange={setImages} disabled={!uploads.available} />
                 {!uploads.available && <Unavailable feature="community_uploads" state={uploads.state === 'backend_unavailable' ? 'disabled' : uploads.state} compact />}
               </fieldset>
 

@@ -18,7 +18,7 @@ class Stmt {
     return new Stmt(this.db, this.sql, params);
   }
   private conv() {
-    return this.params.map((p) => (p === undefined ? null : typeof p === 'boolean' ? (p ? 1 : 0) : p)) as never[];
+    return this.params.map((p) => (p === undefined ? null : typeof p === 'boolean' ? (p ? 1 : 0) : p instanceof ArrayBuffer ? new Uint8Array(p) : p)) as never[];
   }
   async first<T>(col?: string): Promise<T | null> {
     this.db.check(this.sql);

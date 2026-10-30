@@ -2,8 +2,23 @@
 
 ## Project code and artwork
 All source code in this repository and the card artwork in `public/media/cards/` and
-`public/favicon.svg` were written for this project. No stock images or third-party
-illustrations are included.
+`public/favicon.svg` were written for this project. The only third-party images are the
+case file photographs listed below.
+
+## Case file photographs
+Freely licensed photographs used as cover images of the seed case files, resized and compressed.
+They illustrate the topic only and are not presented as evidence for any claim.
+
+| File | Shows | Author | License | Source |
+|---|---|---|---|---|
+| `public/media/theories/moon-landing-conspiracy-theory.jpg` | Buzz Aldrin on the Moon, Apollo 11 (AS11-40-5903) | Neil A. Armstrong / NASA | Public domain | https://commons.wikimedia.org/wiki/File:Aldrin_Apollo_11.jpg |
+| `public/media/theories/illuminati-narratives.jpg` | Portrait of Adam Weishaupt (RP-P-1914-2087) | Rijksmuseum | CC0 | https://commons.wikimedia.org/wiki/File:Portret_van_Adam_Weishaupt,_RP-P-1914-2087.jpg |
+| `public/media/theories/mkultra.jpg` | Declassified MKUltra document | Central Intelligence Agency | Public domain | https://commons.wikimedia.org/wiki/File:DeclassifiedMKULTRA.jpg |
+| `public/media/theories/operation-northwoods.jpg` | Northwoods memorandum, first page (13 March 1962) | U.S. Joint Chiefs of Staff | Public domain | https://commons.wikimedia.org/wiki/File:NorthwoodsMemorandum.jpg |
+| `public/media/theories/watergate.jpg` | The Watergate complex from the air (2006) | Indutiomarus (English Wikipedia) | Public domain | https://commons.wikimedia.org/wiki/File:WatergateFromAir.JPG |
+| `public/media/theories/area-51.jpg` | Groom Lake and Papoose Lake (2010) | Doc Searls | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Groom_Lake_and_Papoose_Lake.jpg |
+| `public/media/theories/chemtrail-claims.jpg` | Contrails, 3 May 2025 | M. Cristian-Ioan | CC0 | https://commons.wikimedia.org/wiki/File:Contrails_3May_2025_(33).jpg |
+| `public/media/theories/jfk-related-conspiracy-narratives.jpg` | President Kennedy in the Dallas motorcade, 22 November 1963 | Walt Cisco, Dallas Morning News | Public domain | https://commons.wikimedia.org/wiki/File:JFK_limousine.png |
 
 ## Runtime libraries (bundled into the site)
 | Package | Version | License |

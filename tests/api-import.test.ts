@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import { client, makeEnv } from './helpers/app';
-import { importFetch, guessCategory, matchKey, parseCandidates, IMPORT_BATCH } from '../server/importer';
+import { importFetch, guessCategory, isTheoryPage, matchKey, parseCandidates, IMPORT_BATCH } from '../server/importer';
 import { runCostCheck } from '../scripts/cost-check.mjs';
 
 const original = importFetch.impl;
@@ -25,11 +25,17 @@ function summary(title: string, lang = 'en', type = 'standard') {
 }
 
 /** Fake Wikidata + Wikipedia. `pages` maps "lang:Title" to a summary, null = 404. */
-function fakeUpstream(bindings: unknown[], pages: Record<string, unknown | null>) {
+function fakeUpstream(bindings: unknown[], pages: Record<string, unknown | null>, listPages: unknown[][] = []) {
   const calls: string[] = [];
   importFetch.impl = (async (input: RequestInfo | URL) => {
     const url = String(input);
     calls.push(url);
+    if (url.startsWith('https://en.wikipedia.org/w/api.php')) {
+      // Two result pages, linked by a continuation token like the real API.
+      const n = url.includes('gplcontinue=') ? 1 : 0;
+      if (!listPages[n]) return new Response('not found', { status: 404 });
+      return Response.json({ query: { pages: listPages[n] }, ...(listPages[n + 1] ? { continue: { gplcontinue: 'x|0|B', continue: 'gplcontinue||' } } : {}) });
+    }
     if (url.startsWith('https://query.wikidata.org/')) {
       // The main query lists English articles only; German links come from a second query for the batch.
       const german = decodeURIComponent(url).includes('VALUES');
@@ -132,6 +138,46 @@ describe('automatic import', () => {
     expect(failed.status).toBe(502);
     expect(failed.json.error).toMatch(/HTTP 503/);
     expect((await visitor.get('/api/import/status')).json.last.error).toMatch(/HTTP 503/);
+  });
+});
+
+describe('second source: Wikipedia list', () => {
+  it('adds theory articles from the list after Wikidata, skipping people, places and duplicates', async () => {
+    const { visitor } = await setup();
+    const listPage = (title: string, qid: string, description?: string) => ({ title, description, pageprops: { wikibase_item: qid } });
+    fakeUpstream(
+      [binding('Q50', 'Flat_Earth')],
+      {
+        'en:Flat Earth': summary('Flat Earth'),
+        'en:Bielefeld conspiracy': summary('Bielefeld conspiracy'),
+        'en:Dundy County UFO hoax': summary('Dundy County UFO hoax'),
+      },
+      [
+        [listPage('Flat Earth', 'Q50', 'Conspiracy theory'), listPage('Rudy Giuliani', 'Q1', 'American attorney and politician (born 1944)'), listPage('Bielefeld conspiracy', 'Q2', 'German satirical conspiracy theory')],
+        [listPage('Hawaii', 'Q3', 'U.S. state'), listPage('Dundy County UFO hoax', 'Q4', '1884 American hoax')],
+      ],
+    );
+    const r = await visitor.post('/api/import/run');
+    expect(r.json.imported.map((i: any) => i.title)).toEqual(['Flat Earth', 'Bielefeld conspiracy', 'Dundy County UFO hoax']);
+    expect(r.json.remaining).toBe(0);
+  });
+
+  it('still imports from Wikidata when the list is unavailable', async () => {
+    const { visitor } = await setup();
+    fakeUpstream([binding('Q50', 'Flat_Earth')], { 'en:Flat Earth': summary('Flat Earth') });
+    const r = await visitor.post('/api/import/run');
+    expect(r.status).toBe(200);
+    expect(r.json.imported).toHaveLength(1);
+  });
+
+  it('recognises theory articles by their short description', () => {
+    expect(isTheoryPage('Chemtrail conspiracy theory', 'Conspiracy theory about contrails')).toBe(true);
+    expect(isTheoryPage('Holocaust denial', 'Denial of European Jewish genocide by Nazi Germany')).toBe(true);
+    expect(isTheoryPage('Israel-related conspiracy theories', undefined)).toBe(true);
+    expect(isTheoryPage('Alex Jones', 'American conspiracy theorist (born 1974)')).toBe(false);
+    expect(isTheoryPage('Beyoncé', 'American singer and songwriter (born 1981)')).toBe(false);
+    expect(isTheoryPage('Homeopathy', 'Pseudoscientific system of alternative medicine')).toBe(false);
+    expect(isTheoryPage('Hindi cinema', undefined)).toBe(false);
   });
 });
 

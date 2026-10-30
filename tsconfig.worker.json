@@ -9,5 +9,5 @@
     "noEmit": false,
     "outDir": "./node_modules/.tmp/worker"
   },
-  "include": ["server", "functions", "shared"]
+  "include": ["server", "functions", "shared", "workers"]
 }

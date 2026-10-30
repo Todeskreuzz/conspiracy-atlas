@@ -1,0 +1,28 @@
+name: Archive import
+
+# Calls the site's import endpoint, which adds a small batch of conspiracy theories from
+# Wikidata/Wikipedia to the archive. No secret is needed: the endpoint only reads from those
+# free public APIs and refuses to run more than once every 20 minutes.
+# Cost: about 1 GitHub Actions minute per run (8 runs/day ≈ 240 of the 2,000 free minutes/month).
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: archive-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Run import
+        run: |
+          status=$(curl -sS -o result.json -w '%{http_code}' -X POST --max-time 90 https://conspiracy-atlas.pages.dev/api/import/run)
+          cat result.json; echo
+          # 429 = another run happened shortly before; that is fine.
+          if [ "$status" != "200" ] && [ "$status" != "429" ]; then echo "Import failed with HTTP $status"; exit 1; fi

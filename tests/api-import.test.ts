@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import { client, makeEnv } from './helpers/app';
-import { importFetch, guessCategory, isFreeLicense, isTheoryPage, isCoverCandidate, commonsQuery, matchKey, parseCandidates, articleDetails, IMPORT_BATCH, MAX_SUBREQUESTS } from '../server/importer';
+import { importFetch, guessCategory, isFreeLicense, isTheoryPage, isCoverCandidate, commonsQuery, matchKey, parseCandidates, articleDetails, SYMBOL_IMAGES, IMPORT_BATCH, MAX_SUBREQUESTS } from '../server/importer';
 import { runCostCheck } from '../scripts/cost-check.mjs';
 
 const original = importFetch.impl;
@@ -334,6 +334,26 @@ describe('cover images', () => {
       'File:Popish plot playing cards.jpg – Wikimedia Commons',
       'File:Deep state protest sign.jpg – Wikimedia Commons',
     ]);
+  });
+
+  it('gives cases without any free photo the real symbol photo of their category, stored once', async () => {
+    const { visitor, raw } = await setup();
+    fakeUpstream(
+      [binding('Q50', 'Lizard_People'), binding('Q60', 'Phantom_Time')],
+      { 'en:Lizard People': summary('Lizard People'), 'en:Phantom Time': summary('Phantom Time') },
+      [],
+      {},
+      { licenses: { [SYMBOL_IMAGES.history]: 'CC BY-SA 3.0' } },
+    );
+    const r = await visitor.post('/api/import/run');
+    expect(r.json.images).toBe(2);
+    const a = (await visitor.get('/api/theories/lizard-people')).json;
+    const b = (await visitor.get('/api/theories/phantom-time')).json;
+    expect(a.imagePath).toMatch(/^\/api\/images\//);
+    expect(b.imagePath).toBe(a.imagePath);
+    expect(a.imageCredit).toBe('Symbol image · Jane Doe · CC BY-SA 3.0 · Wikimedia Commons');
+    expect(raw.prepare('SELECT COUNT(*) AS n FROM images').get().n).toBe(1);
+    expect(a.generalSources.some((s: any) => s.note === 'Symbol image (automatic import)')).toBe(true);
   });
 
   it('searches Commons without "conspiracy theory" and similar words', () => {

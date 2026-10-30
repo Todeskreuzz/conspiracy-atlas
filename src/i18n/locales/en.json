@@ -249,7 +249,8 @@
     "quality": "Source quality",
     "permalink": "Permanent link",
     "images": "Images",
-    "details": "In detail"
+    "details": "In detail",
+    "symbolImage": "Symbol image"
   },
   "orgs": {
     "title": "Organizations",

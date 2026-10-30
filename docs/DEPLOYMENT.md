@@ -81,7 +81,9 @@ real photos from Wikimedia Commons, only with a free licence, tried in this orde
 image, the Wikidata image (P18), the Wikidata images of the people, places, organisations and works the
 theory is about, other photos in the article (no icons, logos or flags) and a Commons search for the
 title (up to 5 per run). They are stored in D1 with author and licence shown on the image. Nothing is
-generated: a case without any free photo keeps the placeholder. A run stops fetching after 45
+generated: a case for which no free photo is found gets the real symbol photo of its category
+(`SYMBOL_IMAGES` in `server/importer.ts`, all freely licensed Commons photographs, stored once in D1),
+shown with the caption "Symbolbild" / "Symbol image" and its credit. A run stops fetching after 45
 requests, below the 50 subrequests of Workers Free.
 
 The run is started every 3 hours by the cron Worker in `workers/import-cron/` (Workers Free, Cron

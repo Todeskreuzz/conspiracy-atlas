@@ -52,3 +52,10 @@ The map is rendered entirely from this bundled file. No tile server or map API i
 ## Archive content
 Texts in the seed archive (`data/seed.mjs`) are original summaries. Cited works remain the
 property of their authors and publishers; the archive only links to them and quotes titles.
+
+## Automatically imported content
+Entries imported by the automatic archive import (`server/importer.ts`) use text from English
+Wikipedia under CC BY-SA 4.0; each entry names and links its article. Their cover photos are freely
+licensed Wikimedia Commons files, downloaded once and stored in D1; the author and licence are shown
+on the photo and the file page is listed as a source. Cases without a photo of their own show one of
+the category symbol photos listed in `SYMBOL_IMAGES` (also free Commons files, captioned "Symbolbild").

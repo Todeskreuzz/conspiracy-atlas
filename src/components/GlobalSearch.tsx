@@ -131,7 +131,7 @@ export function GlobalSearch() {
 
   return (
     <>
-      <button type="button" className="search-trigger" onClick={() => setOpen(true)} aria-haspopup="dialog">
+      <button type="button" className="search-trigger" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label={t('search.button')}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="10.5" cy="10.5" r="6.5" />
           <path d="M15.5 15.5L21 21" />

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { Link, useParams } from 'react-router-dom';
 import { formatDate, useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
@@ -64,14 +64,7 @@ export function TheoryPage() {
   const res = useAsync((signal) => api<TheoryDetail>(`/theories/${encodeURIComponent(slug)}`, { signal }), [slug, locale]);
   const th = res.data;
 
-  useEffect(() => {
-    if (!th) return;
-    const previous = document.title;
-    document.title = `${th.title} – The Conspiracy Atlas`;
-    return () => {
-      document.title = previous;
-    };
-  }, [th]);
+  usePageMeta(th?.title, th?.summary);
 
   if (!th) {
     return (
@@ -94,7 +87,7 @@ export function TheoryPage() {
             {th.imagePath && !th.imagePath.endsWith('.svg') && (
               <figure className="dossier__photo">
                 <span className="pin" aria-hidden="true" />
-                <img src={th.imagePath} alt={th.imageCredit ?? ''} />
+                <img src={th.imagePath} alt={th.imageCredit ?? ''} fetchPriority="high" decoding="async" />
                 {th.imageCredit && (
                   <figcaption className="dossier__credit">
                     {th.imageCredit.startsWith('Symbol image · ') ? `${t('theory.symbolImage')} · ${th.imageCredit.slice(15)}` : th.imageCredit}

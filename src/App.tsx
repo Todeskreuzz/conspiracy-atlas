@@ -4,6 +4,7 @@ import { I18nProvider, useT } from './i18n';
 import { StatusProvider } from './api/status';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { PageMeta } from './components/PageMeta';
 import { HomePage } from './pages/Home';
 import { ArchivePage } from './pages/Archive';
 import { TheoryPage } from './pages/Theory';
@@ -83,6 +84,7 @@ export function App() {
     <I18nProvider>
       <StatusProvider>
         <ScrollTop />
+        <PageMeta />
         <Layout>
           <AppRoutes />
         </Layout>

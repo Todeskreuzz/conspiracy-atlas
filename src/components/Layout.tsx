@@ -69,7 +69,7 @@ export function Layout({ children }: { children: ReactNode }) {
               The Conspiracy <span>Atlas</span>
             </span>
           </Link>
-          <nav className={`main-nav${open ? ' open' : ''}`} aria-label="Main">
+          <nav id="main-nav" className={`main-nav${open ? ' open' : ''}`} aria-label="Main">
             {NAV_ITEMS.map(([to, key]) => (
               <NavLink key={to} to={to} end={to === '/'} viewTransition className={({ isActive }) => `${isActive ? 'active' : ''}${to === '/submit' ? ' nav-submit' : ''}`}>
                 {t(key)}
@@ -79,7 +79,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="header-tools">
             <GlobalSearch />
             <LanguageSwitch />
-            <button type="button" className="btn btn--ghost btn--small menu-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            <button type="button" className="btn btn--ghost btn--small menu-toggle" aria-expanded={open} aria-controls="main-nav" onClick={() => setOpen((o) => !o)}>
               {t('app.menu')}
             </button>
           </div>

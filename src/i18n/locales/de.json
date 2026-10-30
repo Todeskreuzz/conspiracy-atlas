@@ -614,5 +614,21 @@
     "moderationHint": "Dein Hinweis wird vor der Veröffentlichung von der Redaktion geprüft. Gespeichert wird nur der Anzeigename, keine E-Mail- oder IP-Adresse.",
     "send": "Zur Prüfung senden",
     "sent": "Danke! Dein Hinweis erscheint, sobald die Redaktion ihn freigegeben hat."
+  },
+  "meta": {
+    "home": "Ein interaktives, weltweites Archiv zu Verschwörungstheorien, Rätseln und belegten Geheimoperationen. Jede Behauptung ist mit ihren Quellen verknüpft und nach Beweislage bewertet.",
+    "wall": "Die Ermittlungswand: Fallakten, Personen, Organisationen und Ereignisse an der Pinnwand, verbunden mit rotem Faden.",
+    "archive": "Alle Fallakten durchsuchen: Verschwörungstheorien, Rätsel und belegte Operationen, gefiltert nach Kategorie und Beweislage.",
+    "organizations": "Behörden, Institutionen, Firmen und Gruppen aus den Fallakten, mit ihren belegten Verbindungen.",
+    "events": "Die historischen Ereignisse hinter den Fallakten, mit Datum, Ort und Quellen.",
+    "timeline": "Ein Zeitstrahl belegter Ereignisse und Verschwörungstheorien von der Antike bis heute.",
+    "map": "Eine Weltkarte der Orte, an denen die Ereignisse hinter den Fallakten stattfanden.",
+    "saved": "Deine gespeicherten Fallakten.",
+    "investigations": "Offene Ermittlungen: gemeinsame Pinnwände, die Fälle, Personen und Dokumente verbinden.",
+    "community": "Von der Community eingereichte Theorien und Notizen, von Moderatoren geprüft.",
+    "submit": "Eine Theorie oder Quelle für das Archiv einreichen.",
+    "knowledge": "So liest du das Archiv: Bewertungen der Beweislage, Quellenarten und wie du eine Behauptung selbst prüfst.",
+    "experts": "Was Wissenschaftler, Historiker und Ermittler zu den bekanntesten Verschwörungstheorien sagen.",
+    "about": "Über The Conspiracy Atlas: was das Archiv ist, wie Fälle bewertet werden und woher die Quellen stammen."
   }
 }

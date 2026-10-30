@@ -1,6 +1,7 @@
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { api } from '../api/client';
 import type { Paged, TheoryDetail, TheorySummary } from '../../shared/types';
 import { EVIDENCE_STATUSES } from '../../shared/constants';
@@ -89,6 +90,7 @@ export function ExpertCasePage() {
   const { t, locale } = useI18n();
   const res = useAsync((signal) => api<TheoryDetail>(`/theories/${encodeURIComponent(slug)}`, { signal }), [slug, locale]);
   const th = res.data;
+  usePageMeta(th ? `${th.title} – ${t('nav.experts')}` : undefined, th?.summary);
   if (!th) {
     return (
       <div className="container page">

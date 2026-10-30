@@ -21,6 +21,8 @@ export const FORBIDDEN_SETTINGS = ['usage_model', 'limits', 'placement'];
 export const ALLOWED_HOSTS = [
   'challenges.cloudflare.com', 'www.w3.org', 'localhost', '127.0.0.1',
   // Free public APIs (no key, no account) used by the automatic archive import.
+  // Namespace identifiers in the sitemap and structured data; never contacted.
+  'www.sitemaps.org', 'schema.org',
   'query.wikidata.org', 'en.wikipedia.org', 'de.wikipedia.org', 'upload.wikimedia.org', 'thumb.wikimedia.org', 'commons.wikimedia.org', 'conspiracy-atlas.pages.dev',
 ];
 /** Hosts of paid / usage-billed products that must never appear in code. */

@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { api } from '../api/client';
 import type { Person, Relationship } from '../../shared/types';
 import { LoadState } from '../components/Unavailable';
@@ -11,6 +12,7 @@ export function PersonPage() {
   const { t, locale } = useI18n();
   const res = useAsync((signal) => api<Person & { relationships: Relationship[] }>(`/people/${encodeURIComponent(slug)}`, { signal }), [slug, locale]);
   const p = res.data;
+  usePageMeta(p?.name, p?.description);
   return (
     <div className="container page">
       <LoadState loading={res.loading} error={res.error} onRetry={res.reload} />

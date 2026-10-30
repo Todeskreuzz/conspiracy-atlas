@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useMemo } from 'react';
 import { formatDate, useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { api } from '../api/client';
 import type { EventSummary, Relationship } from '../../shared/types';
 import { LoadState } from '../components/Unavailable';
@@ -62,6 +63,7 @@ export function EventPage() {
   const { t, locale } = useI18n();
   const res = useAsync((signal) => api<EventSummary & { relationships: Relationship[] }>(`/events/${encodeURIComponent(slug)}`, { signal }), [slug, locale]);
   const e = res.data;
+  usePageMeta(e?.title, e?.description);
   return (
     <div className="container page">
       <LoadState loading={res.loading} error={res.error} onRetry={res.reload} />

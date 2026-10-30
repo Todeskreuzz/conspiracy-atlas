@@ -8,6 +8,8 @@ import type { Db } from './db';
 import { slugify } from '../shared/validation';
 import type { CategorySlug } from '../shared/constants';
 import type { RichNode } from '../shared/richtext';
+import { IMAGE_LIMITS, sniffImageMime } from '../shared/images';
+import { randomToken, toHex } from './crypto';
 
 export const WIKIDATA_SPARQL = 'https://query.wikidata.org/sparql';
 const EN_WIKI = 'https://en.wikipedia.org/wiki/';
@@ -15,7 +17,7 @@ const DE_WIKI = 'https://de.wikipedia.org/wiki/';
 const USER_AGENT = 'ConspiracyAtlasImporter/1.0 (https://conspiracy-atlas.pages.dev; archive import)';
 
 /** Items per run: 1 SPARQL request + max. 2 summaries per item stays far below the 50 subrequests of Workers Free. */
-export const IMPORT_BATCH = 12;
+export const IMPORT_BATCH = 10;
 /** Minimum time between two runs, whoever triggers them. */
 export const IMPORT_INTERVAL_MIN = 20;
 
@@ -23,6 +25,11 @@ export const LAST_RUN_KEY = 'import.last_run';
 export const LAST_RESULT_KEY = 'import.last_result';
 /** Wikidata items that have no usable article (disambiguation, deleted, too short); never retried. */
 export const SKIPPED_KEY = 'import.skipped';
+/** Imported theories whose article has no freely licensed lead image; never retried. */
+export const NO_IMAGE_KEY = 'import.no_image';
+/** Cover images per run (one download each). Covers new entries and, step by step, older ones. */
+export const IMAGE_BATCH = 10;
+const IMAGE_WIDTH = 640;
 
 /** Wikidata item "conspiracy theory" (the item of the English Wikipedia article "Conspiracy theory"). */
 export const CONSPIRACY_THEORY_ITEM = 'Q159535';
@@ -62,6 +69,9 @@ export interface ImportResult {
   imported: { slug: string; title: string }[];
   skipped: number;
   remaining: number;
+  /** Cover images added in this run (new and older imported entries). */
+  images: number;
+  imageError?: string;
   error: string | null;
 }
 
@@ -335,8 +345,142 @@ export async function claimRun(db: Db, now = new Date()): Promise<boolean> {
   return r.changes > 0;
 }
 
-export async function runImport(db: Db, batch = IMPORT_BATCH): Promise<ImportResult> {
-  const result: ImportResult = { ranAt: new Date().toISOString(), imported: [], skipped: 0, remaining: 0, error: null };
+// ---------------------------------------------------------------------------
+// Cover images: the article's lead image from Wikimedia Commons, only if it is freely licensed.
+// The image is downloaded once and stored in D1 like the other images (no hotlinking, no R2).
+// ---------------------------------------------------------------------------
+
+const FREE_LICENSE = /^(cc0|cc[ -]by(-sa)?([ -]\d(\.\d)?)?|public domain|pd\b|pd-|attribution|gfdl|no restrictions)/i;
+
+export function isFreeLicense(license: string | undefined, nonFree: string | undefined): boolean {
+  if (!license || (nonFree && nonFree !== 'false')) return false;
+  return FREE_LICENSE.test(license.trim());
+}
+
+const stripHtml = (html: string) =>
+  html.replace(/<[^>]*>/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
+
+const wikiApi = (params: string) => `https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&redirects=1&${params}`;
+// Commons serves thumbnails from either host.
+const isCommonsThumb = (url: string) => url.startsWith('https://thumb.wikimedia.org/') || url.startsWith('https://upload.wikimedia.org/');
+const titlesParam = (titles: string[]) => titles.map((t) => encodeURIComponent(t)).join('%7C');
+
+interface ApiPage {
+  title?: string;
+  pageimage?: string;
+  imageinfo?: { thumburl?: string; thumbwidth?: number; thumbheight?: number; thumbmime?: string; mime?: string; descriptionurl?: string; extmetadata?: Record<string, { value?: string }> }[];
+}
+interface ApiQuery {
+  query?: { pages?: ApiPage[]; normalized?: { from: string; to: string }[]; redirects?: { from: string; to: string }[] };
+}
+
+/** Maps each requested title to its page, following the API's title normalisation and redirects. */
+function pagesByRequestedTitle(data: ApiQuery, titles: string[]): Map<string, ApiPage> {
+  const q = data.query ?? {};
+  const byTitle = new Map((q.pages ?? []).map((p) => [p.title ?? '', p]));
+  const hop = new Map([...(q.normalized ?? []), ...(q.redirects ?? [])].map((r) => [r.from, r.to]));
+  const out = new Map<string, ApiPage>();
+  for (const t of titles) {
+    let cur = t;
+    for (let i = 0; i < 3 && hop.has(cur); i++) cur = hop.get(cur)!;
+    const page = byTitle.get(cur);
+    if (page) out.set(t, page);
+  }
+  return out;
+}
+
+async function addCoverImages(db: Db, imageBudgetBytes: number): Promise<number> {
+  const noImageRow = await db.first<{ value: string }>('SELECT value FROM settings WHERE key = ?', NO_IMAGE_KEY);
+  let noImage: number[] = [];
+  try {
+    noImage = noImageRow ? (JSON.parse(noImageRow.value) as number[]) : [];
+  } catch {
+    noImage = [];
+  }
+  const skip = new Set(noImage);
+  const rows = await db.all<{ id: number; url: string }>(
+    `SELECT t.id, s.url FROM theories t
+     JOIN evidence e ON e.theory_id = t.id JOIN sources s ON s.id = e.source_id
+     WHERE t.image_path IS NULL AND s.publisher = 'Wikipedia (English)' AND s.notes LIKE 'Imported automatically%'
+     ORDER BY t.id LIMIT 200`,
+  );
+  const todo = rows.filter((r) => !skip.has(r.id)).slice(0, IMAGE_BATCH);
+  if (!todo.length) return 0;
+
+  const titleOf = (url: string) => articleTitle(url);
+  const titles = todo.map((r) => titleOf(r.url));
+  const pi = pagesByRequestedTitle((await getJson(wikiApi(`prop=pageimages&piprop=name&pilicense=free&titles=${titlesParam(titles)}`))) as ApiQuery, titles);
+  const fileOf = new Map<number, string>();
+  for (const r of todo) {
+    const name = pi.get(titleOf(r.url))?.pageimage;
+    if (name) fileOf.set(r.id, `File:${name.replace(/_/g, ' ')}`);
+  }
+  const files = [...new Set(fileOf.values())];
+  const info = files.length
+    ? pagesByRequestedTitle(
+        (await getJson(
+          wikiApi(`prop=imageinfo&iiprop=url%7Cmime%7Cextmetadata&iiurlwidth=${IMAGE_WIDTH}&iiextmetadatafilter=LicenseShortName%7CArtist%7CNonFree&titles=${titlesParam(files)}`),
+        )) as ApiQuery,
+        files,
+      )
+    : new Map<string, ApiPage>();
+
+  let used = Number((await db.first<{ n: number }>('SELECT COALESCE(SUM(size), 0) AS n FROM images'))?.n ?? 0);
+  let added = 0;
+  for (const r of todo) {
+    const file = fileOf.get(r.id);
+    const ii = file ? info.get(file)?.imageinfo?.[0] : undefined;
+    const meta = ii?.extmetadata ?? {};
+    const license = meta.LicenseShortName?.value;
+    const thumb = ii?.thumburl;
+    if (!file || !ii || !thumb || !isCommonsThumb(thumb) || !isFreeLicense(license, meta.NonFree?.value)) {
+      skip.add(r.id);
+      continue;
+    }
+    const res = await importFetch.impl(thumb, { headers: { 'User-Agent': USER_AGENT } });
+    if (!res.ok) throw new Error(`HTTP ${res.status} from Wikimedia Commons`);
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const mime = sniffImageMime(bytes);
+    const width = Number(ii.thumbwidth) || 0;
+    const height = Number(ii.thumbheight) || 0;
+    if (!mime || bytes.length === 0 || bytes.length > IMAGE_LIMITS.maxBytes || width < 1 || height < 1 || width > 4096 || height > 4096) {
+      skip.add(r.id);
+      continue;
+    }
+    if (used + bytes.length > imageBudgetBytes) break; // free storage budget reached: keep the placeholder
+    const artist = stripHtml(meta.Artist?.value ?? '').slice(0, 150) || 'Unknown author';
+    const credit = `${artist} · ${stripHtml(license!)} · Wikimedia Commons`.slice(0, 300);
+    const publicId = randomToken(12);
+    const hash = toHex(await crypto.subtle.digest('SHA-256', bytes));
+    const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    const descUrl = ii.descriptionurl?.startsWith('https://') ? ii.descriptionurl : null;
+    await db.batch([
+      // Not linked to the theory, so it is the cover only and does not appear again in the case's gallery.
+      db.stmt(
+        `INSERT INTO images (public_id, mime, width, height, size, sha256, alt, position, status, data) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'approved', ?)`,
+        publicId, mime, width, height, bytes.length, hash, credit, data,
+      ),
+      db.stmt("UPDATE theories SET image_path = ?, image_credit = ?, updated_at = updated_at WHERE id = ? AND image_path IS NULL", `/api/images/${publicId}`, credit, r.id),
+      db.stmt(
+        `INSERT INTO sources (title, publisher, source_type, is_primary, url, last_checked, quality_note, notes)
+         VALUES (?, 'Wikimedia Commons', 'archive_collection', 0, ?, date('now'), 'Cover image; illustrates the topic, not evidence.', ?)`,
+        `${file} – Wikimedia Commons`, descUrl, `Cover image imported automatically. Licence: ${stripHtml(license!)}.`,
+      ),
+      db.stmt("INSERT INTO evidence (source_id, theory_id, relation, note) VALUES ((SELECT MAX(id) FROM sources), ?, 'context', 'Cover image (automatic import)')", r.id),
+    ]);
+    used += bytes.length;
+    added++;
+  }
+  await db.run(
+    "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')",
+    NO_IMAGE_KEY,
+    JSON.stringify([...skip]),
+  );
+  return added;
+}
+
+export async function runImport(db: Db, batch = IMPORT_BATCH, imageBudgetBytes = IMAGE_LIMITS.defaultStorageMb * 1024 * 1024): Promise<ImportResult> {
+  const result: ImportResult = { ranAt: new Date().toISOString(), imported: [], skipped: 0, remaining: 0, images: 0, error: null };
   const known = await knownEntries(db);
   try {
     const candidates = await fetchCandidates();
@@ -358,6 +502,11 @@ export async function runImport(db: Db, batch = IMPORT_BATCH): Promise<ImportRes
       result.imported.push({ slug, title: en.title });
     }
     result.remaining = fresh.length - picked.length;
+    // A failing image download never undoes or hides the imported entries.
+    result.images = await addCoverImages(db, imageBudgetBytes).catch((err) => {
+      result.imageError = String((err as Error)?.message ?? err).slice(0, 200);
+      return 0;
+    });
   } catch (err) {
     result.error = String((err as Error)?.message ?? err).slice(0, 200);
   }

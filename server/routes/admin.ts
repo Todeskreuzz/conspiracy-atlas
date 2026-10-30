@@ -957,7 +957,7 @@ adminRoutes.post('/import/run', async (c) => {
     LAST_RUN_KEY,
     new Date().toISOString(),
   );
-  return c.json(await runImport(db));
+  return c.json(await runImport(db, undefined, imageStorageLimitBytes(c.env)));
 });
 
 // ---------------------------------------------------------------------------

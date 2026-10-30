@@ -95,6 +95,7 @@ export function TheoryPage() {
               <figure className="dossier__photo">
                 <span className="pin" aria-hidden="true" />
                 <img src={th.imagePath} alt={th.imageCredit ?? ''} />
+                {th.imageCredit && <figcaption className="dossier__credit">{th.imageCredit}</figcaption>}
               </figure>
             )}
             <h1>{th.title}</h1>

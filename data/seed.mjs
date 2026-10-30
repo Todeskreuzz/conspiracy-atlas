@@ -113,7 +113,7 @@ export const sources = [
   { key: 'dickey-llr', title: 'Lunar Laser Ranging: A Continuing Legacy of the Apollo Program', author: 'J. O. Dickey et al.', publisher: 'Science, vol. 265, pp. 482–490', date: '1994', type: 'academic_paper', primary: true, url: null, quality: 'Peer-reviewed paper on decades of laser ranging to the retroreflectors left by Apollo missions.' },
   { key: 'kaysing-book', title: "We Never Went to the Moon: America's Thirty Billion Dollar Swindle", author: 'Bill Kaysing', publisher: 'Self-published', date: '1976', type: 'book', primary: true, url: null, quality: 'Origin of the claim. A primary source for the history of the theory, not evidence for it.' },
   // Illuminati
-  { key: 'britannica-illuminati', title: 'Illuminati', author: null, publisher: 'Encyclopaedia Britannica', date: null, type: 'reference_work', primary: false, url: null, quality: 'Reputable reference work summarising the historical order.' },
+  { key: 'britannica-illuminati', title: 'Illuminati', author: null, publisher: 'Encyclopaedia Britannica', date: null, type: 'reference_work', primary: false, url: 'https://www.britannica.com/topic/illuminati-group-designation', quality: 'Reputable reference work summarising the historical order.' },
   { key: 'barruel-memoirs', title: "Mémoires pour servir à l'histoire du jacobinisme", author: 'Augustin Barruel', publisher: 'London (various editions)', date: '1797', type: 'book', primary: true, url: null, quality: 'Origin of the revolutionary-conspiracy narrative. Primary source for the theory, not evidence for it.' },
   { key: 'robison-proofs', title: 'Proofs of a Conspiracy against All the Religions and Governments of Europe', author: 'John Robison', publisher: 'Edinburgh', date: '1797', type: 'book', primary: true, url: null, quality: 'Origin of the narrative in the English-speaking world. Not evidence for its claims.' },
   { key: 'barkun', title: 'A Culture of Conspiracy: Apocalyptic Visions in Contemporary America', author: 'Michael Barkun', publisher: 'University of California Press', date: '2003', type: 'book', primary: false, url: null, quality: 'Academic study of modern conspiracy narratives, including Illuminati beliefs.' },
@@ -351,7 +351,7 @@ export const theories = [
       'After the French Revolution, Augustin Barruel and John Robison (both 1797) blamed the revolution on a conspiracy involving the Illuminati. Variants of this narrative have circulated ever since and frequently overlap with antisemitic conspiracy myths.',
     claims: [
       ['The Order of the Illuminati was founded in Ingolstadt, Bavaria, on 1 May 1776 by Adam Weishaupt.', 'historically_documented', ['britannica-illuminati']],
-      ['The order was suppressed by edicts of the Bavarian Elector Karl Theodor in 1784 and 1785.', 'historically_documented', ['britannica-illuminati']],
+      ['The order was banned by the Bavarian government in 1785.', 'historically_documented', ['britannica-illuminati']],
       ['The Illuminati secretly survived and orchestrated the French Revolution.', 'unverified', ['barruel-memoirs', 'robison-proofs'], 'Historians have found no evidence that the order remained active after its suppression. The French Revolution has extensively documented political, social and economic causes.', ['britannica-illuminati', 'barkun']],
       ['The Illuminati control governments, finance or the entertainment industry today.', 'unverified', [], 'No credible evidence supports this claim. The narrative is unfalsifiable by construction and has repeatedly been used to spread antisemitic conspiracy myths.', ['barkun']],
     ],
@@ -365,7 +365,7 @@ export const theories = [
         'Adam Weishaupt, Professor an der Universität Ingolstadt, gründete den Orden, um Ideen der Aufklärung gegen den Einfluss von Kirche und Absolutismus zu fördern. Er warb unter der gebildeten Elite, teils über Freimaurerlogen, bevor Kurfürst Karl Theodor nicht genehmigte Geheimgesellschaften verbot.',
       claims: [
         'Der Illuminatenorden wurde am 1. Mai 1776 in Ingolstadt (Bayern) von Adam Weishaupt gegründet.',
-        'Der Orden wurde durch Edikte des bayerischen Kurfürsten Karl Theodor 1784 und 1785 verboten.',
+        'Der Orden wurde 1785 von der bayerischen Regierung verboten.',
         'Die Illuminaten hätten heimlich überlebt und die Französische Revolution gesteuert.',
         'Die Illuminaten kontrollierten heute Regierungen, Finanzwelt oder Unterhaltungsindustrie.',
       ],

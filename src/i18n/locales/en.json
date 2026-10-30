@@ -311,7 +311,14 @@
     "showCases": "Case files",
     "cases": "Case files",
     "casesHere": "case files: {count}",
-    "casesPlaced": "{placed} of {total} case files have a place"
+    "casesPlaced": "{placed} of {total} case files have a place",
+    "chartTitle": "Situation chart",
+    "chartSub": "Atlas archive · {places} marked places",
+    "pointer": "Move the pointer over the chart",
+    "indexTitle": "Index of places",
+    "dossier": "Place file",
+    "linkedPlaces": "Same case files at",
+    "backToIndex": "Back to the index"
   },
   "investigations": {
     "title": "Investigations",

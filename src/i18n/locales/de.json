@@ -473,7 +473,8 @@
       "reports": "Meldungen",
       "archive": "Archiv",
       "services": "Dienste & Grenzen",
-      "backup": "Sicherung"
+      "backup": "Sicherung",
+      "notes": "Leser-Hinweise"
     },
     "queue": "Warteschlange",
     "statuses": {
@@ -535,6 +536,16 @@
       "isCover": "Titelbild",
       "setCover": "Als Titelbild verwenden",
       "upload": "{count} Bild(er) hochladen"
+    },
+    "notesIntro": "Quellen und Kommentare, die Besucher zu Fallakten ergänzt haben. Freigegebene Hinweise erscheinen auf der Fallseite.",
+    "approve": "Freigeben",
+    "reject": "Ablehnen",
+    "deleteNote": "Löschen",
+    "status": "Status",
+    "noteStatus": {
+      "pending": "Wartet auf Prüfung",
+      "approved": "Freigegeben",
+      "rejected": "Abgelehnt"
     }
   },
   "search": {
@@ -580,5 +591,26 @@
     "share": "Teilen",
     "copied": "Link kopiert",
     "copyPrompt": "Diesen Link kopieren:"
+  },
+  "notes": {
+    "title": "Hinweise von Lesern",
+    "intro": "Zusätzliche Quellen und Kommentare von Besuchern. Sie erscheinen erst, nachdem die Redaktion sie freigegeben hat; eine Freigabe bedeutet nicht, dass der Inhalt geprüft ist.",
+    "empty": "Noch keine Hinweise.",
+    "add": "Quelle oder Kommentar ergänzen",
+    "kind": "Art",
+    "kinds": {
+      "source": "Quelle",
+      "comment": "Kommentar"
+    },
+    "sourceUrl": "Link zur Quelle",
+    "sourceTitle": "Titel der Quelle (optional)",
+    "sourceBody": "Was zeigt diese Quelle?",
+    "body": "Dein Kommentar",
+    "anonymous": "Anonym veröffentlichen",
+    "named": "Mit Anzeigenamen veröffentlichen",
+    "displayName": "Anzeigename",
+    "moderationHint": "Dein Hinweis wird vor der Veröffentlichung von der Redaktion geprüft. Gespeichert wird nur der Anzeigename, keine E-Mail- oder IP-Adresse.",
+    "send": "Zur Prüfung senden",
+    "sent": "Danke! Dein Hinweis erscheint, sobald die Redaktion ihn freigegeben hat."
   }
 }

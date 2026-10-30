@@ -26,6 +26,7 @@ export const BACKUP_TABLES = [
   'board_edges',
   'community_submissions',
   'reports',
+  'case_notes',
   'moderation_actions',
   'translations',
   'settings',

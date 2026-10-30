@@ -271,3 +271,21 @@ export interface ApiErrorBody {
     field?: string;
   };
 }
+
+/** A visitor's note on a case file: a comment or an additional source. Public only after approval. */
+export interface CaseNote {
+  id: number;
+  kind: 'comment' | 'source';
+  body: string;
+  sourceUrl: string | null;
+  sourceTitle: string | null;
+  authorName: string;
+  language: 'en' | 'de';
+  createdAt: string;
+}
+
+export interface AdminCaseNote extends CaseNote {
+  status: 'pending' | 'approved' | 'rejected';
+  moderatorNote: string | null;
+  theory: { id: number; slug: string; title: string };
+}

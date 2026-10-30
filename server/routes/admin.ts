@@ -35,6 +35,8 @@ import { IMPORT_BATCH, LAST_RUN_KEY, lastImportResult, runImport } from '../impo
 import { addEdge, addNode, deleteEdge, deleteNode, savePositions } from '../boards';
 import { BACKUP_TABLES, toCsv } from '../backup';
 import { IMAGE_LIMITS } from '../../shared/images';
+import { mapCaseNote } from './community';
+import type { AdminCaseNote } from '../../shared/types';
 import { IMAGE_PATH_RE, assertImageQuota, imageInsertStatements, imageResponse, imageStorageLimitBytes, imageStorageUsed, mapImage, parseImages } from '../images';
 
 export const adminRoutes = new Hono<AppEnv>();
@@ -140,9 +142,12 @@ adminRoutes.get('/overview', async (c) => {
   const db = Db.from(c.env);
   const rows = await db.all('SELECT status, COUNT(*) AS n FROM community_submissions GROUP BY status');
   const reports = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM reports WHERE status = 'open'");
+  // Until migration 0006 is applied the table is missing; the overview must keep working.
+  const notes = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM case_notes WHERE status = 'pending'").catch(() => null);
   return c.json({
     submissions: Object.fromEntries(rows.map((r) => [r.status, Number(r.n)])),
     openReports: Number(reports?.n ?? 0),
+    pendingNotes: Number(notes?.n ?? 0),
   });
 });
 
@@ -440,6 +445,50 @@ adminRoutes.post('/reports/:id', async (c) => {
   const r = await db.run("UPDATE reports SET status = ?, resolved_at = datetime('now') WHERE id = ?", status, id);
   if (!r.changes) throw notFound('Report');
   await db.run('INSERT INTO moderation_actions (report_id, action, note, actor) VALUES (?, ?, ?, ?)', id, `report_${status}`, note, actor(c));
+  return c.json({ ok: true });
+});
+
+// ---------------------------------------------------------------------------
+// Community notes on case files
+// ---------------------------------------------------------------------------
+
+adminRoutes.get('/notes', async (c) => {
+  const db = Db.from(c.env);
+  const q = c.req.query();
+  const { page, pageSize, offset, limit } = pageParams(q);
+  const status = optOneOf(q.status, 'status', ['pending', 'approved', 'rejected'] as const) ?? 'pending';
+  const rows = await db.all(
+    `SELECT n.*, a.display_name AS author_name, t.slug AS theory_slug, t.title AS theory_title FROM case_notes n
+     JOIN theories t ON t.id = n.theory_id LEFT JOIN authors a ON a.id = n.author_id
+     WHERE n.status = ? ORDER BY n.created_at DESC, n.id DESC LIMIT ? OFFSET ?`,
+    status,
+    limit,
+    offset,
+  );
+  const items: AdminCaseNote[] = rows.map((r) => ({
+    ...mapCaseNote(r),
+    status: r.status as AdminCaseNote['status'],
+    moderatorNote: (r.moderator_note as string) ?? null,
+    theory: { id: Number(r.theory_id), slug: String(r.theory_slug), title: String(r.theory_title) },
+  }));
+  return c.json(paged(items, page, pageSize));
+});
+
+adminRoutes.post('/notes/:id', async (c) => {
+  const db = Db.from(c.env);
+  const id = idParam(c);
+  const body = await readJson(c, 5_000);
+  const status = oneOf(body.status, 'status', ['approved', 'rejected', 'pending'] as const);
+  const note = optStr(body.note, 'note', 2000);
+  const r = await db.run("UPDATE case_notes SET status = ?, moderator_note = ?, reviewed_at = datetime('now') WHERE id = ?", status, note, id);
+  if (!r.changes) throw notFound('Note');
+  await db.run('INSERT INTO moderation_actions (action, note, actor) VALUES (?, ?, ?)', `case_note_${status}:${id}`, note, actor(c));
+  return c.json({ ok: true });
+});
+
+adminRoutes.delete('/notes/:id', async (c) => {
+  const r = await Db.from(c.env).run('DELETE FROM case_notes WHERE id = ?', idParam(c));
+  if (!r.changes) throw notFound('Note');
   return c.json({ ok: true });
 });
 

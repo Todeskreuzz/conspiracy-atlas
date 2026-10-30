@@ -6,7 +6,9 @@ import { requireFeature } from '../features';
 import { rateLimit, verifyTurnstile, assertSameOrigin } from '../security';
 import { validateSubmission } from '../../shared/submission';
 import { ANONYMOUS_NAME, REPORT_REASONS } from '../../shared/constants';
-import { int, oneOf, optStr } from '../../shared/validation';
+import { int, oneOf, optStr, reqStr, url } from '../../shared/validation';
+import type { Row } from '../db';
+import type { CaseNote } from '../../shared/types';
 import { ApiError, notFound } from '../errors';
 import { assertImageQuota, imageInsertStatements, imageResponse, parseImages } from '../images';
 import { IMAGE_LIMITS } from '../../shared/images';
@@ -93,4 +95,65 @@ communityRoutes.post('/reports', async (c) => {
   await rateLimit(db, c.env, c.req.raw, 'report', 10, 3600);
   await db.run('INSERT INTO reports (target_type, target_id, reason, details) VALUES (?, ?, ?, ?)', targetType, targetId, reason, details);
   return c.json({ ok: true }, 201);
+});
+
+export const CASE_NOTE_KINDS = ['comment', 'source'] as const;
+
+export function mapCaseNote(r: Row): CaseNote {
+  return {
+    id: Number(r.id),
+    kind: r.kind as CaseNote['kind'],
+    body: String(r.body),
+    sourceUrl: (r.source_url as string) ?? null,
+    sourceTitle: (r.source_title as string) ?? null,
+    authorName: (r.author_name as string) ?? ANONYMOUS_NAME,
+    language: r.language === 'de' ? 'de' : 'en',
+    createdAt: String(r.created_at),
+  };
+}
+
+/** Approved community notes of a case (newest first). */
+communityRoutes.get('/theories/:slug/notes', async (c) => {
+  const db = Db.from(c.env);
+  const rows = await db.all(
+    `SELECT n.*, a.display_name AS author_name FROM case_notes n
+     JOIN theories t ON t.id = n.theory_id AND t.is_published = 1
+     LEFT JOIN authors a ON a.id = n.author_id
+     WHERE t.slug = ? AND n.status = 'approved' ORDER BY n.created_at DESC, n.id DESC LIMIT 200`,
+    c.req.param('slug'),
+  );
+  c.header('Cache-Control', 'public, max-age=60');
+  return c.json({ items: rows.map(mapCaseNote) });
+});
+
+/** A visitor adds a comment or a source to a case. It is only shown after an editor approves it. */
+communityRoutes.post('/theories/:slug/notes', async (c) => {
+  assertSameOrigin(c.req.raw);
+  requireFeature(c.env, 'community_submissions');
+  const body = await readJson(c, 10_000);
+  const kind = oneOf(body.kind, 'kind', CASE_NOTE_KINDS);
+  const text = reqStr(body.body, 'body', 2000);
+  if (text.trim().length < 10) throw new ApiError(400, 'invalid', 'Please write at least 10 characters', undefined, 'body');
+  const sourceUrl = url(body.sourceUrl, 'sourceUrl', kind === 'comment');
+  const sourceTitle = optStr(body.sourceTitle, 'sourceTitle', 300);
+  const language = body.language === 'de' ? 'de' : 'en';
+  const anonymous = body.displayMode !== 'named';
+  const name = anonymous ? ANONYMOUS_NAME : reqStr(body.displayName, 'displayName', 60);
+  await verifyTurnstile(c.env, typeof body.turnstileToken === 'string' ? body.turnstileToken : null, turnstileFetch.impl);
+  const db = Db.from(c.env);
+  const theory = await db.first<{ id: number }>('SELECT id FROM theories WHERE slug = ? AND is_published = 1', c.req.param('slug'));
+  if (!theory) throw notFound('Theory');
+  await rateLimit(db, c.env, c.req.raw, 'case_note', 5, 3600);
+  const author = await db.first<{ id: number }>('INSERT INTO authors (display_name, is_anonymous) VALUES (?, ?) RETURNING id', name, anonymous ? 1 : 0);
+  const note = await db.first<{ id: number }>(
+    `INSERT INTO case_notes (theory_id, author_id, kind, body, source_url, source_title, language) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+    theory.id,
+    author?.id ?? null,
+    kind,
+    text.trim(),
+    sourceUrl,
+    sourceTitle,
+    language,
+  );
+  return c.json({ id: note?.id, status: 'pending' }, 201);
 });

@@ -3,6 +3,8 @@ name: Archive import
 # Calls the site's import endpoint, which adds a small batch of conspiracy theories from
 # Wikidata/Wikipedia to the archive. No secret is needed: the endpoint only reads from those
 # free public APIs and refuses to run more than once every 20 minutes.
+# Backup for the Cloudflare cron Worker in workers/import-cron/ (same schedule; the second
+# call of a slot just gets a 429).
 # Cost: about 1 GitHub Actions minute per run (8 runs/day ≈ 240 of the 2,000 free minutes/month).
 on:
   schedule:

@@ -66,16 +66,27 @@ Community submissions and reports require Turnstile. Until it is set up they sho
 4. Rebuild and deploy.
 
 ## 7. Automatic archive import (free)
-`FEATURE_AUTOMATIC_IMPORT = "true"` enables `POST /api/import/run`. Each run takes up to 12 Wikidata items
+`FEATURE_AUTOMATIC_IMPORT = "true"` enables `POST /api/import/run`. Each run takes up to 10 Wikidata items
 that are a *conspiracy theory* (Q159535, incl. subclasses up to two levels) with an English Wikipedia article, then the theory
 articles linked from Wikipedia's *List of conspiracy theories* (people, places and other links are
 skipped by their short description), skips everything already in the archive and stores the rest neutrally: the Wikipedia lead text (CC BY-SA 4.0,
 attributed and linked), the article as source, a German title and summary if a German article exists.
 No claims, ratings or connections are derived. The endpoint needs no secret and runs at most every
-20 minutes. It is called every 3 hours by `.github/workflows/import.yml` (GitHub Actions, about
-240 of the 2,000 free minutes per month; it can also be started by hand under *Actions → Archive
-import → Run workflow*) and from the admin API (`POST /api/admin/import/run`). No Cloudflare resource
-is involved; the last result is shown under Admin → *Services*. Set the flag to `"false"` to stop it.
+20 minutes. Each run also adds up to 10 freely licensed Wikipedia lead images from Wikimedia Commons
+(stored in D1, with author and licence shown on the image).
+
+The run is started every 3 hours by the cron Worker in `workers/import-cron/` (Workers Free, Cron
+Trigger, no bindings, no public URL). Deploy it once, after `npx wrangler login`:
+```bash
+npm run deploy:import-cron     # = npx wrangler deploy --config workers/import-cron/wrangler.toml
+```
+It then appears as `conspiracy-atlas-import-cron` under *Workers & Pages*; its runs and log lines are
+listed there under *Logs* / *Cron Events*. `.github/workflows/import.yml` stays as a backup (GitHub
+pauses scheduled workflows after 60 days without repository activity; it can also be started by hand
+under *Actions → Archive import → Run workflow*). Both use the same schedule, and the 20-minute lock
+makes the second call a harmless 429. The admin API can start a run too (`POST /api/admin/import/run`);
+the last result is shown under Admin → *Services*. Set the flag to `"false"` to stop the import, or
+remove the Worker with `npx wrangler delete --config workers/import-cron/wrangler.toml`.
 
 ## 8. Verify
 - `https://conspiracy-atlas.pages.dev/api/health` → `{"ok":true,...}`

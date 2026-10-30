@@ -29,7 +29,9 @@ export const FORBIDDEN_PATTERNS = [
   /cloudflarestream\.com/i, /\/ai\/run\//i, /gateway\.ai\.cloudflare\.com/i,
   /api\.openai\.com/i, /api\.anthropic\.com/i, /maps\.googleapis\.com/i, /api\.mapbox\.com/i,
 ];
-const CODE_DIRS = ['src', 'server', 'functions', 'shared', 'public', 'index.html'];
+const CODE_DIRS = ['src', 'server', 'functions', 'shared', 'public', 'workers', 'index.html'];
+/** Every wrangler config in the repository: the Pages project and the import cron Worker. */
+const WRANGLER_FILES = ['wrangler.toml', 'workers/import-cron/wrangler.toml'];
 const CODE_EXT = /\.(ts|tsx|js|mjs|json|html|css|svg|toml)$|_headers$|_routes\.json$/;
 
 function walk(p, out = []) {
@@ -74,7 +76,7 @@ export function checkSourceText(file, text) {
 }
 
 export function runCostCheck() {
-  const problems = checkWranglerToml(readFileSync(path.join(ROOT, 'wrangler.toml'), 'utf8'));
+  const problems = WRANGLER_FILES.flatMap((f) => checkWranglerToml(readFileSync(path.join(ROOT, f), 'utf8')).map((p) => p.replace('wrangler.toml', f)));
   for (const dir of CODE_DIRS) for (const f of walk(dir)) problems.push(...checkSourceText(f, readFileSync(path.join(ROOT, f), 'utf8')));
   return problems;
 }

@@ -231,7 +231,7 @@
     "showOnWall": "Show on the Investigation Wall",
     "report": "Report this entry",
     "communityNote": "Community contribution. The editors have not yet verified its claims.",
-    "imageCredit": "Image",
+    "imageCredit": "Image credit",
     "primary": "Primary source",
     "secondary": "Secondary source",
     "lastChecked": "Last checked: {date}",
@@ -514,6 +514,13 @@
       "json": "Download JSON backup",
       "csv": "Download CSV for table",
       "restore": "Restore: npm run restore:local -- <file> (or restore:remote)"
+    },
+    "images": {
+      "cover": "Cover image (/media/… or uploaded image)",
+      "hint": "Images are compressed in your browser and published with this case file right away. Only use images you are allowed to publish and name the source under \"Image credit\".",
+      "isCover": "cover",
+      "setCover": "Use as cover",
+      "upload": "Upload {count} image(s)"
     }
   }
 }

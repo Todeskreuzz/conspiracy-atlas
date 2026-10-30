@@ -57,30 +57,35 @@ export async function assertImageQuota(db: Db, env: Env, additionalBytes: number
   }
 }
 
-/** Statements inserting images for the submission created earlier in the same batch. */
-export async function imageInsertStatements(db: Db, images: ParsedImage[]): Promise<D1PreparedStatement[]> {
+/**
+ * Statements inserting images. Without a theory id they belong to the submission created earlier
+ * in the same batch (pending until publication); with one they are editorial images, public at once.
+ */
+export async function imageInsertStatements(db: Db, images: ParsedImage[], theoryId?: number, firstPosition = 0): Promise<D1PreparedStatement[]> {
   const stmts: D1PreparedStatement[] = [];
   for (const [i, img] of images.entries()) {
     const hash = toHex(await crypto.subtle.digest('SHA-256', img.bytes));
+    // D1 stores ArrayBuffer values as BLOB.
+    const data = img.bytes.buffer.slice(img.bytes.byteOffset, img.bytes.byteOffset + img.bytes.byteLength);
     stmts.push(
-      db.stmt(
-        `INSERT INTO images (public_id, submission_id, mime, width, height, size, sha256, alt, position, data)
-         VALUES (?, (SELECT MAX(id) FROM community_submissions), ?, ?, ?, ?, ?, ?, ?, ?)`,
-        randomToken(12),
-        img.mime,
-        img.width,
-        img.height,
-        img.bytes.length,
-        hash,
-        img.alt,
-        i,
-        // D1 stores ArrayBuffer values as BLOB.
-        img.bytes.buffer.slice(img.bytes.byteOffset, img.bytes.byteOffset + img.bytes.byteLength),
-      ),
+      theoryId === undefined
+        ? db.stmt(
+            `INSERT INTO images (public_id, submission_id, mime, width, height, size, sha256, alt, position, data)
+             VALUES (?, (SELECT MAX(id) FROM community_submissions), ?, ?, ?, ?, ?, ?, ?, ?)`,
+            randomToken(12), img.mime, img.width, img.height, img.bytes.length, hash, img.alt, firstPosition + i, data,
+          )
+        : db.stmt(
+            `INSERT INTO images (public_id, theory_id, mime, width, height, size, sha256, alt, position, status, data)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)`,
+            randomToken(12), theoryId, img.mime, img.width, img.height, img.bytes.length, hash, img.alt, firstPosition + i, data,
+          ),
     );
   }
   return stmts;
 }
+
+/** Cover images can be bundled assets (/media/...) or uploaded images (/api/images/<id>). */
+export const IMAGE_PATH_RE = /^(\/media\/[a-zA-Z0-9/_.-]+|\/api\/images\/[0-9a-f]{24})$/;
 
 export function mapImage(r: Row, base: string): PublicImage {
   return {

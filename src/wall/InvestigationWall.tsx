@@ -10,7 +10,9 @@ import {
   CARD_H,
   CARD_W,
   DEFAULT_FILTERS,
+  AUTO_THREAD_COLOR,
   RELATION_STYLE,
+  edgeVisible,
   groupPositions,
   localPositions,
   savedViews,
@@ -102,6 +104,7 @@ function buildStyle(): StylesheetJson {
     },
     ...edgeKinds,
     { selector: 'edge.suggested', style: { opacity: 0.6 } },
+    { selector: 'edge.auto', style: { 'line-color': AUTO_THREAD_COLOR, width: 1.6, 'line-style': 'dashed', 'line-dash-pattern': [2, 5], opacity: 0.55 } },
     {
       selector: 'edge.show-label, edge:selected',
       style: {
@@ -266,7 +269,7 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
         n.toggleClass('hidden', !visible);
       });
       cy.edges().forEach((e) => {
-        e.toggleClass('hidden', !filters.relations.includes(e.data('kind')));
+        e.toggleClass('hidden', !edgeVisible({ kind: e.data('kind'), auto: e.data('auto') }, filters));
       });
     });
   }, [cy, filters]);
@@ -560,6 +563,13 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
               </label>
             ))}
             <label className="checkbox small" style={{ marginTop: 6 }}>
+              <input type="checkbox" checked={filters.auto !== false} onChange={(e) => setFilters({ ...filters, auto: e.target.checked })} />
+              <svg width="34" height="8" aria-hidden="true">
+                <line x1="0" y1="4" x2="34" y2="4" stroke={AUTO_THREAD_COLOR} strokeWidth={1.6} strokeDasharray="2 5" />
+              </svg>
+              {t('wall.autoThreads')}
+            </label>
+            <label className="checkbox small" style={{ marginTop: 6 }}>
               <input type="checkbox" checked={animate} onChange={(e) => setAnimate(e.target.checked)} />
               {t('wall.animate')}
             </label>
@@ -653,7 +663,7 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
               <ul className="list-plain small">
                 {connectionsOf(selected.node.id).map(({ edge, other }) => (
                   <li key={edge.id}>
-                    <span className={`rel-kind rel-kind--${edge.kind}`}>{t(`relations.${edge.kind}`)}</span>
+                    <span className={`rel-kind rel-kind--${edge.kind}`}>{edge.auto ? t('wall.autoThread') : t(`relations.${edge.kind}`)}</span>
                     {edge.verification === 'suggested' && <span className="muted"> · {t('verification.suggested')}</span>}
                     <br />
                     <button className="linklike" onClick={() => selectNode(other!.id)}>
@@ -670,7 +680,27 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
               )}
             </>
           )}
-          {selected.edge && (
+          {selected.edge?.auto && (
+            <>
+              <div className="rel-kind">{t('wall.autoThread')}</div>
+              <p className="small">
+                {nodesById.get(selected.edge.source)?.title} ↔ {nodesById.get(selected.edge.target)?.title}
+              </p>
+              <p className="small">{t('wall.autoThreadExplain')}</p>
+              <ul className="list-plain small">
+                {(selected.edge.shared ?? []).map((r) => {
+                  const path = entityPath(r.type, r.slug);
+                  return (
+                    <li key={`${r.type}:${r.id}`}>
+                      <span className="muted">{t(`kinds.${r.type}`)}:</span> {path ? <Link to={path}>{r.title}</Link> : r.title}
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="small muted">{t('wall.autoThreadNote')}</p>
+            </>
+          )}
+          {selected.edge && !selected.edge.auto && (
             <>
               <div className={`rel-kind rel-kind--${selected.edge.kind}`}>{t(`relations.${selected.edge.kind}`)}</div>
               <p className="small">

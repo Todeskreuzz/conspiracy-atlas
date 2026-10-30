@@ -12,6 +12,8 @@ export interface WallFilters {
   relations: RelationKind[];
   statuses: string[]; // evidence statuses + 'none' for cards without status
   category: string; // '' = all
+  /** Automatic threads between cases that name the same person, organization or place (missing = shown). */
+  auto?: boolean;
 }
 
 export const DEFAULT_FILTERS: WallFilters = {
@@ -19,6 +21,7 @@ export const DEFAULT_FILTERS: WallFilters = {
   relations: [...RELATION_KINDS],
   statuses: [...EVIDENCE_STATUSES, 'none'],
   category: '',
+  auto: true,
 };
 
 export interface Position {
@@ -122,8 +125,8 @@ export function toElements(board: Pick<Board, 'nodes' | 'edges'>, kindLabel: (k:
     if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue;
     els.push({
       group: 'edges',
-      data: { id: `e${e.id}`, edgeId: e.id, source: `n${e.source}`, target: `n${e.target}`, kind: e.kind, verification: e.verification, label: e.label ?? '' },
-      classes: `rel-${e.kind}${e.verification === 'suggested' ? ' suggested' : ''}`,
+      data: { id: `e${e.id}`, edgeId: e.id, source: `n${e.source}`, target: `n${e.target}`, kind: e.kind, verification: e.verification, label: e.label ?? '', auto: !!e.auto },
+      classes: `rel-${e.kind}${e.verification === 'suggested' ? ' suggested' : ''}${e.auto ? ' auto' : ''}`,
     });
   }
   return els;
@@ -136,9 +139,13 @@ export function nodeVisible(n: Pick<BoardNode, 'kind' | 'evidenceStatus' | 'cate
   return true;
 }
 
-export function edgeVisible(e: Pick<BoardEdge, 'kind'>, f: WallFilters): boolean {
+export function edgeVisible(e: Pick<BoardEdge, 'kind' | 'auto'>, f: WallFilters): boolean {
+  if (e.auto && f.auto === false) return false;
   return f.relations.includes(e.kind);
 }
+
+/** Colour of the automatic "same person / organization / place" threads. */
+export const AUTO_THREAD_COLOR = '#c98f5a';
 
 export function groupKey(n: Pick<BoardNode, 'kind' | 'category' | 'evidenceStatus'>, mode: GroupMode): string {
   switch (mode) {

@@ -199,7 +199,11 @@
     "unsaved": "Unsaved changes",
     "stressTest": "Synthetic performance test data ({count} cards) – not saved.",
     "animate": "Animate threads",
-    "selected": "Selected"
+    "selected": "Selected",
+    "autoThreads": "Automatic threads (same person, organization or place)",
+    "autoThread": "Automatic thread",
+    "autoThreadExplain": "Both entries mention:",
+    "autoThreadNote": "Detected automatically from the archive. A shared name alone is not evidence that the cases are connected."
   },
   "archive": {
     "title": "Theory Archive",

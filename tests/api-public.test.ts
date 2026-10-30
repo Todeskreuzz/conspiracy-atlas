@@ -53,6 +53,28 @@ describe('public API', () => {
     expect(r.json.edges.every((e: any) => ids.has(e.source) && ids.has(e.target))).toBe(true);
   });
 
+  it('adds automatic threads between cases that name the same person, organization or place', async () => {
+    const c = client(await makeEnv());
+    const r = await c.get('/api/boards/main');
+    const auto = r.json.edges.filter((e: any) => e.auto);
+    expect(auto.length).toBeGreaterThan(0);
+    const byId = new Map(r.json.nodes.map((n: any) => [n.id, n]));
+    const stored = new Set(r.json.edges.filter((e: any) => !e.auto).map((e: any) => [e.source, e.target].sort().join('-')));
+    for (const e of auto) {
+      expect(e.id).toBeLessThan(0);
+      expect(e.verification).toBe('suggested');
+      expect((byId.get(e.source) as any).entityType).toBe('theory');
+      expect((byId.get(e.target) as any).entityType).toBe('theory');
+      expect(e.shared.length).toBeGreaterThan(0);
+      expect(e.shared.every((s: any) => ['person', 'organization', 'location'].includes(s.type))).toBe(true);
+      expect(stored.has([e.source, e.target].sort().join('-'))).toBe(false);
+    }
+    const titles = auto.map((e: any) => [(byId.get(e.source) as any).title, (byId.get(e.target) as any).title].sort().join(' | '));
+    expect(titles).toContain('Area 51 | MKUltra');
+    // A place named by many cases (Washington, D.C.) is too generic to create threads.
+    expect(auto.some((e: any) => e.shared.some((s: any) => s.title === 'Washington, D.C.'))).toBe(false);
+  });
+
   it('serves events for the timeline and map data', async () => {
     const c = client(await makeEnv());
     const ev = await c.get('/api/events?from=1960&to=1980');

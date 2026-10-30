@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom';
 import { I18nProvider, useT } from './i18n';
 import { StatusProvider } from './api/status';
 import { Layout } from './components/Layout';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { HomePage } from './pages/Home';
 import { ArchivePage } from './pages/Archive';
 import { TheoryPage } from './pages/Theory';
@@ -42,30 +43,33 @@ function Fallback() {
 }
 
 export function AppRoutes() {
+  const { pathname } = useLocation();
   return (
-    <Suspense fallback={<Fallback />}>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/wall" element={<WallPage />} />
-        <Route path="/archive" element={<ArchivePage />} />
-        <Route path="/theory/:slug" element={<TheoryPage />} />
-        <Route path="/organizations" element={<OrganizationsPage />} />
-        <Route path="/organizations/:slug" element={<OrganizationPage />} />
-        <Route path="/people/:slug" element={<PersonPage />} />
-        <Route path="/events" element={<EventsPage />} />
-        <Route path="/events/:slug" element={<EventPage />} />
-        <Route path="/timeline" element={<TimelinePage />} />
-        <Route path="/map" element={<MapPage />} />
-        <Route path="/investigations" element={<InvestigationsPage />} />
-        <Route path="/investigations/:id" element={<InvestigationPage />} />
-        <Route path="/community" element={<CommunityPage />} />
-        <Route path="/submit" element={<SubmitPage />} />
-        <Route path="/knowledge" element={<KnowledgePage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/admin/*" element={<AdminPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
+    <ErrorBoundary key={pathname}>
+      <Suspense fallback={<Fallback />}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/wall" element={<WallPage />} />
+          <Route path="/archive" element={<ArchivePage />} />
+          <Route path="/theory/:slug" element={<TheoryPage />} />
+          <Route path="/organizations" element={<OrganizationsPage />} />
+          <Route path="/organizations/:slug" element={<OrganizationPage />} />
+          <Route path="/people/:slug" element={<PersonPage />} />
+          <Route path="/events" element={<EventsPage />} />
+          <Route path="/events/:slug" element={<EventPage />} />
+          <Route path="/timeline" element={<TimelinePage />} />
+          <Route path="/map" element={<MapPage />} />
+          <Route path="/investigations" element={<InvestigationsPage />} />
+          <Route path="/investigations/:id" element={<InvestigationPage />} />
+          <Route path="/community" element={<CommunityPage />} />
+          <Route path="/submit" element={<SubmitPage />} />
+          <Route path="/knowledge" element={<KnowledgePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/admin/*" element={<AdminPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 

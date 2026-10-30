@@ -28,7 +28,10 @@
     "freeOnly": "Free-only infrastructure: no paid services are used.",
     "readMore": "Read more",
     "sources": "Sources",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "crashTitle": "This page ran into an error",
+    "crashText": "The rest of the atlas still works. Reload the page or go back to the start.",
+    "reload": "Reload page"
   },
   "nav": {
     "home": "Home",

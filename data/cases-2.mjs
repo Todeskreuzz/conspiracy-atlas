@@ -79,6 +79,8 @@ export const theories = [
     category: 'science-technology',
     status: 'historically_documented',
     tags: ['Human experimentation', 'Public health', 'Civil rights', 'Medical ethics'],
+    image: '/media/theories/tuskegee-syphilis-study.jpg',
+    imageCredit: 'Doctor drawing blood from a participant of the Tuskegee syphilis study – National Archives at Atlanta (U.S. government), Public domain, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:Tuskegee-syphilis-study_doctor-injecting-subject.jpg',
     summary:
       'From 1932 to 1972 the U.S. Public Health Service observed the course of untreated syphilis in Black men in Macon County, Alabama. The men were not told their diagnosis and were not treated, even after penicillin became the standard cure. The study ended after it was exposed by the press in 1972.',
     background:
@@ -118,6 +120,8 @@ export const theories = [
     category: 'intelligence-agencies',
     status: 'historically_documented',
     tags: ['FBI', 'Surveillance', 'Civil rights', 'Cold War'],
+    image: '/media/theories/cointelpro.jpg',
+    imageCredit: 'FBI COINTELPRO document on "neutralizing" the actress Jean Seberg – Richard W. Held / FBI, Public domain, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:COINTELPRO_-_Jean_Seberg.jpg',
     summary:
       'From 1956 to 1971 the FBI ran a series of counterintelligence programs, known as COINTELPRO, to surveil, infiltrate, discredit and disrupt political organisations inside the United States. The programs became public after activists stole files from an FBI office in 1971 and were documented in detail by the Church Committee.',
     background:
@@ -157,6 +161,8 @@ export const theories = [
     category: 'politics-power',
     status: 'partially_supported',
     tags: ['Vietnam War', 'NSA', 'Cold War', 'Pretext'],
+    image: '/media/theories/gulf-of-tonkin-incident.jpg',
+    imageCredit: 'The destroyer USS Maddox (DD-731) underway, early 1960s (NH 97900) – U.S. Navy / Naval History and Heritage Command, Public domain, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:USS_Maddox_(DD-731)_underway_at_sea,_circa_the_early_1960s_(NH_97900).jpg',
     summary:
       'In August 1964 the United States reported two attacks by North Vietnamese boats on U.S. destroyers in the Gulf of Tonkin. The first, on 2 August, took place. The second, reported on 4 August, almost certainly did not. Congress nevertheless passed the Tonkin Gulf Resolution, which became the legal basis for the escalation of the Vietnam War.',
     background:
@@ -196,6 +202,8 @@ export const theories = [
     category: 'secret-operations',
     status: 'historically_documented',
     tags: ['Cold War', 'Nazi Germany', 'Rocketry', 'NASA'],
+    image: '/media/theories/operation-paperclip.jpg',
+    imageCredit: 'Operation Paperclip team of German rocket scientists at Fort Bliss, Texas (1946) – U.S. Army / NASA, Public domain, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:Project_Paperclip_Team_at_Fort_Bliss.jpg',
     summary:
       'After the Second World War the United States brought more than 1,600 German scientists, engineers and technicians to America under a program known as Operation Paperclip. Among them were former members of the Nazi Party and the SS. Their pasts were often played down so that they could work and immigrate.',
     background:
@@ -235,6 +243,8 @@ export const theories = [
     category: 'space-ufos',
     status: 'debunked',
     tags: ['UFO', 'U.S. Air Force', 'Project Mogul', 'Cold War'],
+    image: '/media/theories/roswell-incident.jpg',
+    imageCredit: 'Roswell Daily Record front page, 8 July 1947 – Roswell Daily Record, Public domain, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:Roswell_Daily_Record._July_8,_1947._RAAF_Captures_Flying_Saucer_On_Ranch_in_Roswell_Region._Top_of_front_page.jpg',
     summary:
       'In July 1947 the U.S. Army Air Forces at Roswell, New Mexico, announced that they had recovered a "flying disc", and corrected this the next day to a weather balloon. Decades later the event became the best-known alien crash story. Air Force investigations in the 1990s traced the debris to Project Mogul, a secret balloon program.',
     background:
@@ -277,6 +287,8 @@ export const theories = [
     category: 'history',
     status: 'disputed',
     tags: ['Nazi Germany', 'Weimar Republic', 'Berlin', 'False flag'],
+    image: '/media/theories/reichstag-fire.jpg',
+    imageCredit: 'Firemen at the burning Reichstag building, February 1933 (NARA 535790) – U.S. National Archives (NARA), Public domain, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:Firemen_work_on_the_burning_Reichstag_Building_in_February,_1933,_after_fire_broke_out_simultaneously_at_20_places...._-_NARA_-_535790.tif',
     summary:
       'On the night of 27 February 1933 the Reichstag building in Berlin burned. The Dutch council communist Marinus van der Lubbe was arrested at the scene. The new Nazi government used the fire to suspend basic rights the next day. Whether van der Lubbe acted alone or the Nazis were involved is still debated by historians.',
     background:

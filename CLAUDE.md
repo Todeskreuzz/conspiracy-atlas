@@ -13,3 +13,6 @@
   documents or connections. Community and investigation connections are always `suggested`.
 - Before committing: `npm run typecheck && npm test && npm run cost-check && npm run build`.
 - Every UI string goes into both `src/i18n/locales/en.json` and `de.json`.
+- **Working style (owner's standing instruction):** work autonomously. Merge your own PRs into `main` as soon as
+  CI is green, without asking first. Only Cloudflare actions and any cost/plan/billing question still need the
+  owner's explicit approval. Reply to the owner in German.

@@ -75,4 +75,13 @@ describe('public API', () => {
     const ok = await c.get('/api/search?q=water');
     expect(ok.json.theories[0].slug).toBe('watergate');
   });
+
+  it('search matches descriptions and ranks title matches first', async () => {
+    const c = client(await makeEnv());
+    const byDescription = await c.get('/api/search?q=canon%20law');
+    expect(byDescription.json.people.map((p: { slug: string }) => p.slug)).toContain('weishaupt');
+    const r = await c.get('/api/search?q=Watergate');
+    expect(r.json.theories[0].slug).toBe('watergate');
+    expect(r.json.people.map((p: { name: string }) => p.name)).toContain('Richard Nixon');
+  });
 });

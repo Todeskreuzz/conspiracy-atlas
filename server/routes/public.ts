@@ -252,16 +252,33 @@ publicRoutes.get('/boards/:slug', async (c) => {
   return c.json({ id: board.id, slug: board.slug, title: board.title, description: board.description, ...content });
 });
 
+/** Global search: titles and names first, then matches in descriptions. */
 publicRoutes.get('/search', async (c) => {
   const db = Db.from(c.env);
   const q = (c.req.query('q') ?? '').trim().slice(0, 100);
   if (q.length < 2) return c.json({ theories: [], events: [], organizations: [], people: [] });
   const like = likeEscape(q);
   const [theories, events, organizations, people] = await Promise.all([
-    db.all(`${THEORY_SUMMARY_SELECT} WHERE t.is_published = 1 AND t.title LIKE ? ESCAPE '\\' ORDER BY t.title LIMIT 10`, like),
-    db.all("SELECT id, slug, title, start_year FROM events WHERE title LIKE ? ESCAPE '\\' ORDER BY start_year LIMIT 10", like),
-    db.all("SELECT id, slug, name FROM organizations WHERE name LIKE ? ESCAPE '\\' ORDER BY name LIMIT 10", like),
-    db.all("SELECT id, slug, name FROM people WHERE name LIKE ? ESCAPE '\\' ORDER BY name LIMIT 10", like),
+    db.all(
+      `${THEORY_SUMMARY_SELECT} WHERE t.is_published = 1 AND (t.title LIKE ?1 ESCAPE '\\' OR t.subtitle LIKE ?1 ESCAPE '\\' OR t.summary LIKE ?1 ESCAPE '\\')
+       ORDER BY (t.title LIKE ?1 ESCAPE '\\') DESC, t.title LIMIT 8`,
+      like,
+    ),
+    db.all(
+      `SELECT id, slug, title, start_year FROM events WHERE title LIKE ?1 ESCAPE '\\' OR description LIKE ?1 ESCAPE '\\'
+       ORDER BY (title LIKE ?1 ESCAPE '\\') DESC, start_year LIMIT 8`,
+      like,
+    ),
+    db.all(
+      `SELECT id, slug, name, kind FROM organizations WHERE name LIKE ?1 ESCAPE '\\' OR description LIKE ?1 ESCAPE '\\'
+       ORDER BY (name LIKE ?1 ESCAPE '\\') DESC, name LIMIT 8`,
+      like,
+    ),
+    db.all(
+      `SELECT id, slug, name, role FROM people WHERE name LIKE ?1 ESCAPE '\\' OR role LIKE ?1 ESCAPE '\\' OR description LIKE ?1 ESCAPE '\\'
+       ORDER BY (name LIKE ?1 ESCAPE '\\') DESC, name LIMIT 8`,
+      like,
+    ),
   ]);
   publicCache(c, 60);
   return c.json({ theories: theories.map(mapTheorySummary), events, organizations, people });

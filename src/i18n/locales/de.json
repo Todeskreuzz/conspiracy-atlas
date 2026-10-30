@@ -525,5 +525,20 @@
       "setCover": "Als Titelbild verwenden",
       "upload": "{count} Bild(er) hochladen"
     }
+  },
+  "search": {
+    "button": "Suche",
+    "label": "Archiv durchsuchen",
+    "placeholder": "Fallakten, Personen, Organisationen, Ereignisse …",
+    "hint": "Mindestens 2 Zeichen eingeben. Tipp: überall Strg K oder / drücken.",
+    "empty": "Keine Treffer für „{q}“.",
+    "close": "Schließen",
+    "shortcut": "Strg K",
+    "groups": {
+      "theories": "Fallakten",
+      "people": "Personen",
+      "organizations": "Organisationen",
+      "events": "Ereignisse"
+    }
   }
 }

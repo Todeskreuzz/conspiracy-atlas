@@ -3,6 +3,7 @@ import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { LOCALES } from '../../shared/constants';
 import { setApiLocale } from '../api/client';
+import { GlobalSearch } from './GlobalSearch';
 
 export const NAV_ITEMS = [
   ['/', 'nav.home'],
@@ -74,6 +75,7 @@ export function Layout({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="header-tools">
+            <GlobalSearch />
             <LanguageSwitch />
             <button type="button" className="btn btn--ghost btn--small menu-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
               {t('app.menu')}

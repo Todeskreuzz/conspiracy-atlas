@@ -19,6 +19,12 @@ They illustrate the topic only and are not presented as evidence for any claim.
 | `public/media/theories/area-51.jpg` | Groom Lake and Papoose Lake (2010) | Doc Searls | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Groom_Lake_and_Papoose_Lake.jpg |
 | `public/media/theories/chemtrail-claims.jpg` | Contrails, 3 May 2025 | M. Cristian-Ioan | CC0 | https://commons.wikimedia.org/wiki/File:Contrails_3May_2025_(33).jpg |
 | `public/media/theories/jfk-related-conspiracy-narratives.jpg` | President Kennedy in the Dallas motorcade, 22 November 1963 | Walt Cisco, Dallas Morning News | Public domain | https://commons.wikimedia.org/wiki/File:JFK_limousine.png |
+| `public/media/theories/tuskegee-syphilis-study.jpg` | Doctor drawing blood from a participant of the Tuskegee syphilis study | National Archives at Atlanta (U.S. government) | Public domain | https://commons.wikimedia.org/wiki/File:Tuskegee-syphilis-study_doctor-injecting-subject.jpg |
+| `public/media/theories/cointelpro.jpg` | FBI COINTELPRO document on "neutralizing" the actress Jean Seberg | Richard W. Held / FBI | Public domain | https://commons.wikimedia.org/wiki/File:COINTELPRO_-_Jean_Seberg.jpg |
+| `public/media/theories/gulf-of-tonkin-incident.jpg` | The destroyer USS Maddox (DD-731) underway, early 1960s (NH 97900) | U.S. Navy / Naval History and Heritage Command | Public domain | https://commons.wikimedia.org/wiki/File:USS_Maddox_(DD-731)_underway_at_sea,_circa_the_early_1960s_(NH_97900).jpg |
+| `public/media/theories/operation-paperclip.jpg` | Operation Paperclip team of German rocket scientists at Fort Bliss, Texas (1946) | U.S. Army / NASA | Public domain | https://commons.wikimedia.org/wiki/File:Project_Paperclip_Team_at_Fort_Bliss.jpg |
+| `public/media/theories/roswell-incident.jpg` | Roswell Daily Record front page, 8 July 1947 | Roswell Daily Record | Public domain | https://commons.wikimedia.org/wiki/File:Roswell_Daily_Record._July_8,_1947._RAAF_Captures_Flying_Saucer_On_Ranch_in_Roswell_Region._Top_of_front_page.jpg |
+| `public/media/theories/reichstag-fire.jpg` | Firemen at the burning Reichstag building, February 1933 (NARA 535790) | U.S. National Archives (NARA) | Public domain | https://commons.wikimedia.org/wiki/File:Firemen_work_on_the_burning_Reichstag_Building_in_February,_1933,_after_fire_broke_out_simultaneously_at_20_places...._-_NARA_-_535790.tif |
 
 ## Runtime libraries (bundled into the site)
 | Package | Version | License |

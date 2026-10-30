@@ -24,6 +24,7 @@ import { StatusBadge } from '../components/Badges';
 import { SourceItem } from '../components/SourceItem';
 import { Pagination } from '../components/TheoryCard';
 import { ImageGallery } from '../components/ImageGallery';
+import { ImageUploader, toUploads, type PickedImage } from '../components/ImageUploader';
 import type { PublicImage } from '../../shared/images';
 
 type Api = ReturnType<typeof adminApi>;
@@ -393,6 +394,7 @@ function TheoryEditor({ a, slug, onDone }: { a: Api; slug: string | null; onDone
   const [ev, setEv] = useState({ sourceId: '', target: '', relation: 'supports' });
   const [src, setSrc] = useState({ title: '', publisher: '', author: '', publishedDate: '', sourceType: 'book', isPrimary: false, url: '', qualityNote: '' });
   const [message, setMessage] = useState<string | null>(null);
+  const [picked, setPicked] = useState<PickedImage[]>([]);
   const d = detail.data;
   const f: TheoryFormState =
     form ??
@@ -482,8 +484,12 @@ function TheoryEditor({ a, slug, onDone }: { a: Api; slug: string | null; onDone
             </select>
           </div>
           <div className="field">
-            <label>Image (/media/…)</label>
+            <label>{t('admin.images.cover')}</label>
             <input type="text" value={f.imagePath} onChange={(e) => set({ imagePath: e.target.value })} />
+          </div>
+          <div className="field">
+            <label>{t('theory.imageCredit')}</label>
+            <input type="text" maxLength={500} value={f.imageCredit} onChange={(e) => set({ imageCredit: e.target.value })} />
           </div>
           <div className="field">
             <label>{t('submit.tags')}</label>
@@ -506,6 +512,68 @@ function TheoryEditor({ a, slug, onDone }: { a: Api; slug: string | null; onDone
 
       {d && (
         <>
+          <div className="panel" data-testid="theory-images">
+            <h3>{t('theory.images')}</h3>
+            <p className="muted small">{t('admin.images.hint')}</p>
+            {d.images.length > 0 && (
+              <ul className="image-uploader__list">
+                {d.images.map((img) => (
+                  <li key={img.id} className="image-uploader__item">
+                    <img src={img.url} alt={img.alt ?? ''} width={img.width} height={img.height} loading="lazy" />
+                    <span className="mono small muted">
+                      {img.width}×{img.height} · {Math.round(img.size / 1024)} KB{d.imagePath === img.url ? ` · ${t('admin.images.isCover')}` : ''}
+                    </span>
+                    <div className="btn-row">
+                      <button
+                        type="button"
+                        className="btn btn--small"
+                        disabled={d.imagePath === img.url}
+                        onClick={() =>
+                          wrap(async () => {
+                            await a.put(`/theories/${d.id}`, { ...payload(), imagePath: img.url });
+                            setForm(null);
+                          })
+                        }
+                      >
+                        {t('admin.images.setCover')}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--small btn--danger"
+                        onClick={() =>
+                          wrap(async () => {
+                            await a.del(`/images/${img.id}`);
+                            setForm(null);
+                          })
+                        }
+                      >
+                        {t('app.delete')}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <ImageUploader images={picked} onChange={setPicked} />
+            {picked.length > 0 && (
+              <div className="btn-row" style={{ marginTop: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn--primary btn--small"
+                  onClick={() =>
+                    wrap(async () => {
+                      await a.post(`/theories/${d.id}/images`, { images: toUploads(picked) });
+                      picked.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+                      setPicked([]);
+                    })
+                  }
+                >
+                  {t('admin.images.upload', { count: picked.length })}
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="panel">
             <h3>{t('theory.claims')}</h3>
             {d.claims.map((c) => (

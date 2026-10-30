@@ -12,6 +12,7 @@ afterEach(() => {
 });
 
 const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const JPEG_MAGIC = [0xff, 0xd8, 0xff, 0xe0];
 const WEBP_MAGIC = [0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50];
 
 function fakeImage(magic: number[], size: number) {
@@ -135,5 +136,43 @@ describe('community images (stored in D1)', () => {
     const row = r.json.services.find((s: any) => s.service === 'Image storage (D1)');
     expect(row.enabled).toBe(true);
     expect(row.test).toMatch(/MB of 250 MB used/);
+  });
+
+  it('lets the editors add images to a case file, use one as cover and delete it', async () => {
+    const { visitor, admin, raw } = await setup({ FEATURE_COMMUNITY_UPLOADS: 'false' });
+    const th = raw.prepare('SELECT id, slug FROM theories WHERE is_published = 1 ORDER BY id LIMIT 1').get() as { id: number; slug: string };
+    // Only editors may upload, and only real images.
+    expect((await visitor.post(`/api/admin/theories/${th.id}/images`, { images: [upload(fakeImage(WEBP_MAGIC, 2000))] })).status).toBe(401);
+    expect((await admin.post(`/api/admin/theories/${th.id}/images`, { images: [upload(fakeImage([0x3c, 0x73, 0x76, 0x67], 2000))] })).status).toBe(400);
+    expect((await admin.post('/api/admin/theories/999999/images', { images: [upload(fakeImage(WEBP_MAGIC, 2000))] })).status).toBe(404);
+
+    const up = await admin.post(`/api/admin/theories/${th.id}/images`, { images: [upload(fakeImage(WEBP_MAGIC, 5000)), upload(fakeImage(JPEG_MAGIC, 3000), 'image/jpeg')] });
+    expect(up.status).toBe(201);
+    expect(up.json.images).toHaveLength(2);
+    const [cover] = up.json.images;
+    expect(cover.url).toBe(`/api/images/${cover.id}`);
+    // Editorial images are public at once.
+    expect((await visitor.get(cover.url)).status).toBe(200);
+    expect((await visitor.get(`/api/theories/${th.slug}`)).json.images).toHaveLength(2);
+
+    const detail = (await admin.get(`/api/admin/theories/${th.slug}`)).json;
+    const put = await admin.put(`/api/admin/theories/${th.id}`, { ...detail, imagePath: cover.url, imageCredit: 'Photo: example, public domain' });
+    expect(put.status).toBe(200);
+    expect((await visitor.get(`/api/theories/${th.slug}`)).json.imagePath).toBe(cover.url);
+    expect((await admin.put(`/api/admin/theories/${th.id}`, { ...detail, imagePath: 'https://evil.example/x.png' })).status).toBe(400);
+
+    expect((await admin.del(`/api/admin/images/${cover.id}`)).status).toBe(200);
+    expect((await visitor.get(cover.url)).status).toBe(404);
+    const after = (await visitor.get(`/api/theories/${th.slug}`)).json;
+    expect(after.imagePath).toBeNull();
+    expect(after.images).toHaveLength(1);
+  });
+
+  it('applies the storage budget to editorial images too', async () => {
+    const { admin, raw } = await setup({ IMAGE_STORAGE_LIMIT_MB: '0.01' });
+    const th = raw.prepare('SELECT id FROM theories ORDER BY id LIMIT 1').get() as { id: number };
+    const r = await admin.post(`/api/admin/theories/${th.id}/images`, { images: [upload(fakeImage(WEBP_MAGIC, 20_000))] });
+    expect(r.status).toBe(429);
+    expect(raw.prepare('SELECT COUNT(*) AS n FROM images').get().n).toBe(0);
   });
 });

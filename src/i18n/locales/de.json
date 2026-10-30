@@ -231,7 +231,7 @@
     "showOnWall": "Auf der Ermittlungswand zeigen",
     "report": "Eintrag melden",
     "communityNote": "Community-Beitrag. Die Redaktion hat seine Behauptungen noch nicht geprüft.",
-    "imageCredit": "Bild",
+    "imageCredit": "Bildnachweis",
     "primary": "Primärquelle",
     "secondary": "Sekundärquelle",
     "lastChecked": "Zuletzt geprüft: {date}",
@@ -514,6 +514,13 @@
       "json": "JSON-Sicherung herunterladen",
       "csv": "CSV für Tabelle herunterladen",
       "restore": "Wiederherstellen: npm run restore:local -- <Datei> (oder restore:remote)"
+    },
+    "images": {
+      "cover": "Titelbild (/media/… oder hochgeladenes Bild)",
+      "hint": "Bilder werden im Browser komprimiert und sofort mit dieser Fallakte veröffentlicht. Nutze nur Bilder, die du veröffentlichen darfst, und nenne die Quelle unter „Bildnachweis“.",
+      "isCover": "Titelbild",
+      "setCover": "Als Titelbild verwenden",
+      "upload": "{count} Bild(er) hochladen"
     }
   }
 }

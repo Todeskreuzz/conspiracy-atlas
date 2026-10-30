@@ -33,7 +33,8 @@ import { arr, int, isoDateOrYear, oneOf, optOneOf, optStr, reqStr, slugify, url,
 import { THEORY_SUMMARY_SELECT, loadTheoryDetail, mapSource, mapTheorySummary } from '../repo';
 import { addEdge, addNode, deleteEdge, deleteNode, savePositions } from '../boards';
 import { BACKUP_TABLES, toCsv } from '../backup';
-import { imageResponse, imageStorageLimitBytes, imageStorageUsed, mapImage } from '../images';
+import { IMAGE_LIMITS } from '../../shared/images';
+import { IMAGE_PATH_RE, assertImageQuota, imageInsertStatements, imageResponse, imageStorageLimitBytes, imageStorageUsed, mapImage, parseImages } from '../images';
 
 export const adminRoutes = new Hono<AppEnv>();
 type AdminCtx = Ctx & { session?: AdminSession };
@@ -163,12 +164,49 @@ adminRoutes.get('/submissions/:id', async (c) => {
 });
 
 /** Moderators can view images of submissions that are not public yet. */
+const MAX_IMAGE_BODY_BYTES = IMAGE_LIMITS.perSubmission * Math.ceil((IMAGE_LIMITS.maxBytes * 4) / 3 + 1000) + 10_000;
+
 adminRoutes.get('/images/:id', async (c) => {
   const id = c.req.param('id');
   if (!/^[0-9a-f]{24}$/.test(id)) throw notFound('Image');
   const row = await Db.from(c.env).first('SELECT mime, data FROM images WHERE public_id = ?', id);
   if (!row) throw notFound('Image');
   return imageResponse(row, 'private');
+});
+
+/** Editorial images for a case file: compressed in the browser, public at once, counted against the budget. */
+adminRoutes.post('/theories/:id/images', async (c) => {
+  const db = Db.from(c.env);
+  const theoryId = Number(c.req.param('id'));
+  const body = await readJson(c, MAX_IMAGE_BODY_BYTES);
+  const images = parseImages(body.images);
+  if (images.length === 0) throw new ValidationError('images', 'no images');
+  const theory = await db.first<{ id: number }>('SELECT id FROM theories WHERE id = ?', theoryId);
+  if (!theory) throw notFound('Theory');
+  await assertImageQuota(db, c.env, images.reduce((n, i) => n + i.bytes.length, 0));
+  const pos = await db.first<{ next: number }>('SELECT COALESCE(MAX(position) + 1, 0) AS next FROM images WHERE theory_id = ?', theoryId);
+  await db.batch([
+    ...(await imageInsertStatements(db, images, theoryId, Number(pos?.next ?? 0))),
+    db.stmt("UPDATE theories SET updated_at = datetime('now') WHERE id = ?", theoryId),
+  ]);
+  const rows = await db.all("SELECT public_id, mime, width, height, size, alt FROM images WHERE theory_id = ? AND status = 'approved' ORDER BY position, id", theoryId);
+  return c.json({ images: rows.map((r) => mapImage(r, '/api/images')) }, 201);
+});
+
+/** Deletes an image; a cover pointing at it falls back to the default card. */
+adminRoutes.delete('/images/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!/^[0-9a-f]{24}$/.test(id)) throw notFound('Image');
+  const db = Db.from(c.env);
+  const row = await db.first('SELECT id FROM images WHERE public_id = ?', id);
+  if (!row) throw notFound('Image');
+  const path = `/api/images/${id}`;
+  await db.batch([
+    db.stmt('DELETE FROM images WHERE public_id = ?', id),
+    db.stmt('UPDATE theories SET image_path = NULL, image_credit = NULL WHERE image_path = ?', path),
+    db.stmt('UPDATE board_nodes SET image_path = NULL WHERE image_path = ?', path),
+  ]);
+  return c.json({ ok: true });
 });
 
 /** Moderator edits content before publication. */
@@ -432,8 +470,8 @@ adminRoutes.get('/theories/:slug', async (c) => {
 
 function parseTheory(body: Record<string, unknown>) {
   const imagePath = optStr(body.imagePath, 'imagePath', 300);
-  if (imagePath && !/^\/media\/[a-zA-Z0-9/_.-]+$/.test(imagePath)) {
-    throw new ValidationError('imagePath', 'must be a local asset path like /media/...');
+  if (imagePath && !IMAGE_PATH_RE.test(imagePath)) {
+    throw new ValidationError('imagePath', 'must be a local asset path like /media/... or an uploaded image');
   }
   return {
     title: reqStr(body.title, 'title', 200, 2),

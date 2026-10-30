@@ -28,7 +28,10 @@
     "freeOnly": "Kostenlose Infrastruktur: Es werden keine kostenpflichtigen Dienste genutzt.",
     "readMore": "Weiterlesen",
     "sources": "Quellen",
-    "untitled": "Ohne Titel"
+    "untitled": "Ohne Titel",
+    "crashTitle": "Diese Seite hatte einen Fehler",
+    "crashText": "Der Rest des Atlas funktioniert weiter. Lade die Seite neu oder geh zurück zur Startseite.",
+    "reload": "Seite neu laden"
   },
   "nav": {
     "home": "Start",

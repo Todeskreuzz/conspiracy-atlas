@@ -46,7 +46,7 @@ const FEATURE_EXPLANATIONS_EN: Partial<Record<FeatureKey, string>> = {
 
 const FEATURE_EXPLANATIONS_DE: Partial<Record<FeatureKey, string>> = {
   community_uploads:
-    'Datei-Uploads sind bewusst deaktiviert: Ein nutzungsabhängig abrechenbarer Objektspeicher wird in der kostenlosen Konfiguration nicht verwendet.',
+    'Bild-Uploads sind in dieser Konfiguration ausgeschaltet.',
   turnstile: 'Die Anti-Spam-Prüfung (Turnstile) ist nicht eingerichtet.',
   database: 'Die Datenbank ist vorübergehend nicht erreichbar.',
   automatic_import: 'Der automatische Import ist nicht aktiviert.',
@@ -77,6 +77,7 @@ export const GENERIC_UNAVAILABLE_EXPLANATION =
 
 /** English explanation shown after "Currently unavailable!". */
 export function explainEn(feature: FeatureKey | null, state: ServiceState): string {
+  if (feature === 'community_uploads' && state === 'limit_reached') return 'The free storage space for images is used up.';
   if (feature === 'database' && (state === 'backend_unavailable' || state === 'temporary_error')) return FEATURE_EXPLANATIONS_EN.database!;
   if (state === 'limit_reached' || state === 'backend_unavailable' || state === 'temporary_error') {
     return STATE_EXPLANATIONS_EN[state];
@@ -86,6 +87,7 @@ export function explainEn(feature: FeatureKey | null, state: ServiceState): stri
 
 /** Optional additional German explanation. The English status text stays visible. */
 export function explainDe(feature: FeatureKey | null, state: ServiceState): string {
+  if (feature === 'community_uploads' && state === 'limit_reached') return 'Der kostenlose Speicherplatz für Bilder ist aufgebraucht. Neue Bilder können erst wieder hochgeladen werden, wenn Platz frei wird.';
   if (feature === 'database' && (state === 'backend_unavailable' || state === 'temporary_error')) return FEATURE_EXPLANATIONS_DE.database!;
   if (state === 'limit_reached' || state === 'backend_unavailable' || state === 'temporary_error') {
     return STATE_EXPLANATIONS_DE[state];
@@ -106,7 +108,7 @@ export function makeStatus(key: FeatureKey, state: ServiceState): FeatureStatus 
 export function backendUnavailableMap(): FeatureStatusMap {
   const map = {} as FeatureStatusMap;
   for (const key of FEATURE_KEYS) {
-    map[key] = makeStatus(key, key === 'community_uploads' ? 'disabled' : 'backend_unavailable');
+    map[key] = makeStatus(key, 'backend_unavailable');
   }
   return map;
 }

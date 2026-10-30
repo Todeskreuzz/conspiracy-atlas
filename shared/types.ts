@@ -1,3 +1,4 @@
+import type { PublicImage } from './images';
 import type {
   CategorySlug,
   EntityType,
@@ -119,6 +120,8 @@ export interface TheoryDetail extends TheorySummary {
   relationships: Relationship[];
   events: EventSummary[];
   imageCredit: string | null;
+  /** Approved community images. */
+  images: PublicImage[];
 }
 
 export interface Organization {
@@ -233,6 +236,8 @@ export interface Submission extends Omit<SubmissionInput, 'turnstileToken' | 'di
   publishedTheorySlug: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Only in the admin detail view. */
+  images?: PublicImage[];
 }
 
 export interface Investigation {

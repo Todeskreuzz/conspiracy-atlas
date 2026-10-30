@@ -17,7 +17,8 @@ describe('cost safety (free-only)', () => {
     expect(checkWranglerToml('[[durable_objects.bindings]]\nname = "X"')).toHaveLength(1);
     expect(checkWranglerToml('[[queues.producers]]\nqueue = "q"')).toHaveLength(1);
     expect(checkWranglerToml('usage_model = "unbound"')).toHaveLength(1);
-    expect(checkWranglerToml('[vars]\nFEATURE_COMMUNITY_UPLOADS = "true"')).toHaveLength(1);
+    expect(checkWranglerToml('[vars]\nIMAGE_STORAGE_LIMIT_MB = "450"')).toHaveLength(1);
+    expect(checkWranglerToml('[vars]\nIMAGE_STORAGE_LIMIT_MB = "250"')).toEqual([]);
     expect(checkWranglerToml('[[d1_databases]]\nbinding = "DB"')).toEqual([]);
   });
 
@@ -28,11 +29,12 @@ describe('cost safety (free-only)', () => {
     expect(checkSourceText('x.ts', 'fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify")')).toEqual([]);
   });
 
-  it('wrangler.toml binds D1 only and keeps uploads off', () => {
+  it('wrangler.toml binds D1 only and caps image storage', () => {
     const toml = readFileSync('wrangler.toml', 'utf8');
     const sections = [...toml.matchAll(/^\[\[?([a-z0-9_.]+)\]?\]/gm)].map((m) => m[1]);
     expect(sections.sort()).toEqual(['d1_databases', 'vars']);
-    expect(toml).toMatch(/FEATURE_COMMUNITY_UPLOADS = "false"/);
+    // Images go to D1, within the free database size.
+    expect(Number(toml.match(/IMAGE_STORAGE_LIMIT_MB = "(\d+)"/)?.[1])).toBeLessThanOrEqual(400);
     expect(toml).not.toMatch(/^\s*(TURNSTILE_SECRET_KEY|ADMIN_PASSWORD_HASH|SESSION_SECRET|ADMIN_USERNAME)\s*=/m);
   });
 

@@ -1,7 +1,8 @@
 # Cloudflare Pages configuration for The Conspiracy Atlas.
 #
 # FREE-ONLY CONFIGURATION. This project binds exactly one Cloudflare service
-# besides Pages itself: D1 (included in Workers Free). There are intentionally
+# besides Pages itself: D1 (included in Workers Free). Community images are
+# stored in D1 as well, capped by IMAGE_STORAGE_LIMIT_MB. There are intentionally
 # NO bindings for R2, KV, Queues, Durable Objects, Workers AI, Vectorize,
 # Images, Stream, Browser Rendering or Hyperdrive. `npm run cost-check` fails
 # the build if any such binding is added.
@@ -17,7 +18,8 @@ compatibility_date = "2026-10-01"
 
 [vars]
 FEATURE_COMMUNITY_SUBMISSIONS = "true"
-FEATURE_COMMUNITY_UPLOADS = "false"   # hard-wired off: uploads would need R2, which is forbidden
+FEATURE_COMMUNITY_UPLOADS = "true"    # images are compressed and stored in D1 (never R2)
+IMAGE_STORAGE_LIMIT_MB = "250"        # total image budget; the free D1 database holds 500 MB
 FEATURE_MAP_DATA = "true"
 FEATURE_AUTOMATIC_IMPORT = "false"
 FEATURE_TURNSTILE = "false"           # switch to "true" after creating a free Turnstile widget

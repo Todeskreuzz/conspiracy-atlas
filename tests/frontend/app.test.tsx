@@ -39,17 +39,22 @@ describe('frontend', () => {
     expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
   }, 20000);
 
-  it('disables submissions when Turnstile is not configured and never offers uploads', async () => {
+  it('disables submissions and image uploads when Turnstile is not configured', async () => {
     renderApp('/submit', await makeEnv({ FEATURE_TURNSTILE: 'false' }));
     await waitFor(() => expect(screen.getAllByTestId('unavailable').some((n) => /Anti-spam verification has not been configured/.test(n.textContent ?? ''))).toBe(true), { timeout: 5000 });
-    expect(screen.getByTestId('upload-button')).toBeDisabled();
-    expect(screen.getAllByTestId('unavailable').some((n) => /File storage is intentionally disabled/.test(n.textContent ?? ''))).toBe(true);
+    expect(screen.getByTestId('upload-input')).toBeDisabled();
   });
 
-  it('keeps the upload button disabled even when everything else works', async () => {
-    renderApp('/submit', await makeEnv());
-    await screen.findByTestId('upload-button', {}, { timeout: 5000 });
-    expect(screen.getByTestId('upload-button')).toBeDisabled();
+  it('offers the image picker when uploads are available', async () => {
+    renderApp('/submit', await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'true' }));
+    await waitFor(() => expect(screen.getByTestId('upload-input')).toBeEnabled(), { timeout: 5000 });
+    expect(screen.getByTestId('upload-input')).toHaveAttribute('accept', 'image/*');
+  });
+
+  it('shows the exact notice when image uploads are switched off', async () => {
+    renderApp('/submit', await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'false' }));
+    await waitFor(() => expect(screen.getAllByTestId('unavailable').some((n) => /File storage is intentionally disabled/.test(n.textContent ?? ''))).toBe(true), { timeout: 5000 });
+    expect(screen.getByTestId('upload-input')).toBeDisabled();
   });
 
   it('admin login is unavailable without configuration', async () => {

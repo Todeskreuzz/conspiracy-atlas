@@ -124,20 +124,6 @@ describe('community submissions', () => {
   });
 });
 
-describe('uploads (R2 is forbidden)', () => {
-  it('always answers with the disabled message and never stores a file', async () => {
-    const c = client(await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'true' }));
-    for (const path of ['/api/uploads', '/api/uploads/image']) {
-      const r = await c.post(path, { file: 'data' });
-      expect(r.status).toBe(503);
-      expect(r.json.error.message).toBe('Currently unavailable! File storage is intentionally disabled in the free-only configuration.');
-    }
-    const s = await c.get('/api/status');
-    expect(s.json.features.community_uploads.available).toBe(false);
-    expect(s.json.features.community_uploads.state).toBe('disabled');
-  });
-});
-
 describe('database failures', () => {
   it('maps a missing D1 binding to "Currently unavailable!" on every data endpoint', async () => {
     const c = client(await makeEnv({}, null));

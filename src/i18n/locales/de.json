@@ -237,7 +237,8 @@
     "lastChecked": "Zuletzt geprüft: {date}",
     "notChecked": "Link noch nicht geprüft",
     "quality": "Quellenqualität",
-    "permalink": "Dauerhafter Link"
+    "permalink": "Dauerhafter Link",
+    "images": "Bilder"
   },
   "orgs": {
     "title": "Organisationen",
@@ -352,8 +353,8 @@
     "addEvent": "Ereignis hinzufügen",
     "relatedTheories": "Verknüpfte Archiveinträge",
     "relatedHint": "Verbindungen zu bestehenden Einträgen gelten als vorgeschlagen, bis die Redaktion sie prüft.",
-    "uploads": "Bilder und PDF-Dateien",
-    "uploadButton": "Datei hochladen",
+    "uploads": "Bilder",
+    "uploadButton": "Bilder hinzufügen",
     "publication": "Veröffentlichung",
     "named": "Mit Anzeigenamen",
     "anonymous": "Anonym",
@@ -391,6 +392,15 @@
       "link": "Link",
       "linkPrompt": "Link-URL (https://…)",
       "unlink": "Link entfernen"
+    },
+    "images": {
+      "hint": "Bis zu {max} Bilder. Sie werden in deinem Browser komprimiert (max. 1600 px, wenige hundert KB) und erst mit der Veröffentlichung sichtbar. Standortdaten werden entfernt.",
+      "compressing": "Komprimiere …",
+      "alt": "Kurze Beschreibung (Alt-Text)",
+      "remove": "Entfernen",
+      "tooMany": "Höchstens {max} Bilder pro Einreichung.",
+      "notImage": "„{name}“ ist kein Bild.",
+      "failed": "„{name}“ konnte nicht gelesen oder komprimiert werden."
     }
   },
   "report": {
@@ -430,7 +440,7 @@
     "text1": "The Conspiracy Atlas ist ein internationales Archiv, das Verschwörungstheorien, historische Rätsel, dokumentierte Geheimoperationen und ihre Zusammenhänge dokumentiert.",
     "text2": "Es wirbt für keine Theorie. Es zeigt, was belegt, was behauptet und was widerlegt ist, und verknüpft jede Aussage mit ihren Quellen.",
     "costTitle": "Ausschließlich kostenlose Infrastruktur",
-    "costText": "Die Seite läuft ausschließlich auf den kostenlosen Tarifen von Cloudflare Pages, Workers, D1 und Turnstile. Funktionen, die kostenpflichtige oder nutzungsabhängig abgerechnete Dienste bräuchten, etwa Datei-Uploads, sind bewusst deaktiviert und mit „Currently unavailable!“ gekennzeichnet. Ist ein kostenloses Kontingent erreicht, pausiert die betroffene Funktion bis zum Zurücksetzen.",
+    "costText": "Die Seite läuft ausschließlich auf den kostenlosen Tarifen von Cloudflare Pages, Workers, D1 und Turnstile. Bilder werden im Browser komprimiert und mit einer festen Obergrenze in der kostenlosen D1-Datenbank gespeichert; kostenpflichtige Speicherdienste werden nicht genutzt. Funktionen, die kostenpflichtige oder nutzungsabhängig abgerechnete Dienste bräuchten, bleiben deaktiviert und sind mit „Currently unavailable!“ gekennzeichnet. Ist ein kostenloses Kontingent erreicht, pausiert die betroffene Funktion, bis es zurückgesetzt oder Platz frei wird.",
     "privacyTitle": "Datenschutz",
     "privacyText": "Keine Benutzerkonten, kein Tracking, keine Werbung, keine externen Schriften oder Skripte (außer Cloudflare Turnstile auf Einreichungsformularen, wenn aktiviert). Beiträge speichern nur den gewählten Anzeigenamen. IP-Adressen werden nie lesbar gespeichert; Missbrauchszähler nutzen gesalzene Hashes und werden innerhalb eines Tages gelöscht.",
     "licensesTitle": "Lizenzen",

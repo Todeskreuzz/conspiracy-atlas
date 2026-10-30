@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import type { TheorySummary } from '../../shared/types';
 import { CategoryBadge } from './Badges';
 import { useT } from '../i18n';
-import { CaseCover } from './CaseCover';
 
 export function TheoryCard({ theory }: { theory: TheorySummary }) {
   const t = useT();
@@ -10,7 +9,7 @@ export function TheoryCard({ theory }: { theory: TheorySummary }) {
     <Link to={`/theory/${theory.slug}`} className="case-card" data-testid="theory-card" viewTransition>
       <span className="pin" aria-hidden="true" />
       <div className="case-card__img">
-        {theory.imagePath ? <img src={theory.imagePath} alt="" loading="lazy" /> : <CaseCover id={theory.id} title={theory.title} category={theory.category} />}
+        <img src={theory.imagePath ?? '/media/cards/theory.svg'} alt="" loading="lazy" />
       </div>
       <div className="case-card__body">
         <div className="case-card__title">{theory.title}</div>

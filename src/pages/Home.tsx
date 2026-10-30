@@ -10,7 +10,6 @@ import { TallySheet } from '../components/TallySheet';
 import { useCountUp } from '../hooks/useCountUp';
 import { useI18n } from '../i18n';
 import { CategoryBadge } from '../components/Badges';
-import { CaseCover } from '../components/CaseCover';
 
 interface CategoryRow {
   slug: string;
@@ -76,7 +75,7 @@ function CaseOfTheDay() {
       <article className="case-of-day paper">
         <span className="pin" aria-hidden="true" />
         <div className="case-of-day__img">
-          {theory.imagePath ? <img src={theory.imagePath} alt="" loading="lazy" /> : <CaseCover id={theory.id} title={theory.title} category={theory.category} />}
+          <img src={theory.imagePath ?? '/media/cards/theory.svg'} alt="" loading="lazy" />
         </div>
         <div className="case-of-day__body">
           <h3>{theory.title}</h3>

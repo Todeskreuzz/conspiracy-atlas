@@ -44,7 +44,7 @@ describe('cost safety (free-only)', () => {
     expect(fetchers.sort()).toEqual(['importer.ts', 'routes/community.ts', 'security.ts']);
     const importer = readFileSync('server/importer.ts', 'utf8');
     const hosts = new Set([...importer.matchAll(/https:\/\/([a-z0-9.-]+)/g)].map((m) => m[1]));
-    expect([...hosts].sort()).toEqual(['conspiracy-atlas.pages.dev', 'de.wikipedia.org', 'en.wikipedia.org', 'query.wikidata.org', 'thumb.wikimedia.org', 'upload.wikimedia.org']);
+    expect([...hosts].sort()).toEqual(['commons.wikimedia.org', 'conspiracy-atlas.pages.dev', 'de.wikipedia.org', 'en.wikipedia.org', 'query.wikidata.org', 'thumb.wikimedia.org', 'upload.wikimedia.org']);
   });
 
   it('no secrets are committed', () => {

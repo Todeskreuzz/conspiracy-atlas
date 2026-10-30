@@ -77,11 +77,12 @@ the full article text: the whole lead as summary, the origin and background sect
 other sections under *In detail*, and the central claims as the article states them (one claim per
 subsection of a "Claims" section, otherwise the article's sentences saying what proponents claim;
 sections about criticism or rebuttals are never used as claims). Finally it adds up to 10 cover
-images from Wikimedia Commons, only with a free licence, tried in this order: the article's lead image,
-the Wikidata image (P18), other photos in the article (no icons, logos or flags). They are stored in D1
-with author and licence shown on the image. A case without any free image shows a generated case-file
-cover (drawn in the browser, nothing stored). A run stops fetching after 45 requests, below the 50
-subrequests of Workers Free.
+real photos from Wikimedia Commons, only with a free licence, tried in this order: the article's lead
+image, the Wikidata image (P18), the Wikidata images of the people, places, organisations and works the
+theory is about, other photos in the article (no icons, logos or flags) and a Commons search for the
+title (up to 5 per run). They are stored in D1 with author and licence shown on the image. Nothing is
+generated: a case without any free photo keeps the placeholder. A run stops fetching after 45
+requests, below the 50 subrequests of Workers Free.
 
 The run is started every 3 hours by the cron Worker in `workers/import-cron/` (Workers Free, Cron
 Trigger, no bindings, no public URL). Deploy it once, after `npx wrangler login`:

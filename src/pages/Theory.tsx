@@ -7,7 +7,6 @@ import type { Relationship, TheoryDetail } from '../../shared/types';
 import { CategoryBadge } from '../components/Badges';
 import { LoadState } from '../components/Unavailable';
 import { RichText } from '../components/RichText';
-import { CaseCover } from '../components/CaseCover';
 import { SourceItem } from '../components/SourceItem';
 import { ReportForm } from '../components/ReportForm';
 import { ImageGallery } from '../components/ImageGallery';
@@ -97,12 +96,6 @@ export function TheoryPage() {
                 <span className="pin" aria-hidden="true" />
                 <img src={th.imagePath} alt={th.imageCredit ?? ''} />
                 {th.imageCredit && <figcaption className="dossier__credit">{th.imageCredit}</figcaption>}
-              </figure>
-            )}
-            {!th.imagePath && (
-              <figure className="dossier__photo">
-                <span className="pin" aria-hidden="true" />
-                <CaseCover id={th.id} title={th.title} category={th.category} />
               </figure>
             )}
             <h1>{th.title}</h1>

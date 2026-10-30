@@ -386,6 +386,7 @@ interface ApiPage {
   title?: string;
   pageimage?: string;
   extract?: string;
+  index?: number;
   images?: { title?: string }[];
   imageinfo?: { thumburl?: string; thumbwidth?: number; thumbheight?: number; thumbmime?: string; mime?: string; descriptionurl?: string; extmetadata?: Record<string, { value?: string }> }[];
 }
@@ -425,25 +426,68 @@ export function isCoverCandidate(file: string): boolean {
   return PHOTO_FILE.test(file) && !NOT_A_COVER.test(file);
 }
 
-/** Wikidata "image" (P18) of each item, as Commons file titles. */
-async function wikidataImages(qids: string[]): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
+/**
+ * Wikidata statements that point to the people, places, organisations and works a theory is about
+ * (main subject, named after, author, creator, participant, location, facet of, cause, founder, based on, depicts).
+ */
+const RELATED_PROPS = ['P921', 'P138', 'P50', 'P170', 'P61', 'P710', 'P276', 'P1269', 'P828', 'P112', 'P144', 'P180'];
+
+export const wikidataImageQuery = (qids: string[]) => `SELECT ?item ?img ?rank WHERE {
+  VALUES ?item { ${qids.map((q) => `wd:${q}`).join(' ')} }
+  { ?item wdt:P18 ?img . BIND(0 AS ?rank) }
+  UNION { ?item ${RELATED_PROPS.map((p) => `wdt:${p}`).join('|')} ?rel . ?rel wdt:P18 ?img . BIND(1 AS ?rank) }
+}`;
+
+/** Wikidata images (P18) of each item and then of the entities it is about, as Commons file titles. */
+async function wikidataImages(qids: string[]): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
   if (!qids.length) return out;
-  const rows = (await sparql(`SELECT ?item ?img WHERE { VALUES ?item { ${qids.map((q) => `wd:${q}`).join(' ')} } ?item wdt:P18 ?img . }`)) as {
-    results?: { bindings?: Record<string, { value?: string }>[] };
-  };
-  for (const r of rows?.results?.bindings ?? []) {
+  const rows = (await sparql(wikidataImageQuery(qids))) as { results?: { bindings?: Record<string, { value?: string }>[] } };
+  const sorted = [...(rows?.results?.bindings ?? [])].sort((a, b) => Number(a.rank?.value ?? 1) - Number(b.rank?.value ?? 1));
+  for (const r of sorted) {
     const qid = r.item?.value?.split('/').pop() ?? '';
     const name = r.img?.value?.split('/Special:FilePath/')[1];
-    if (/^Q\d+$/.test(qid) && name && !out.has(qid)) out.set(qid, `File:${decodeURIComponent(name).replace(/_/g, ' ')}`);
+    if (!/^Q\d+$/.test(qid) || !name) continue;
+    const list = out.get(qid) ?? [];
+    const file = `File:${decodeURIComponent(name).replace(/_/g, ' ')}`;
+    if (!list.includes(file) && list.length < 4) list.push(file);
+    out.set(qid, list);
   }
   return out;
 }
 
+const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
+/** Commons searches per run, only for entries that found nothing in the other sources. */
+export const COMMONS_SEARCHES = 5;
+
+/** Search words for Commons: the title without "conspiracy theory", "hoax" and similar words. */
+export function commonsQuery(title: string): string {
+  return title
+    .replace(/\(.*?\)/g, ' ')
+    .replace(/\b(the|a|an|conspiracy|conspiracies|theory|theories|hoax|myth|claims?|denial(ism)?|narratives?|controversy|related|affair)\b/gi, ' ')
+    .replace(/[^\p{L}\p{N}' -]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Bitmap files on Commons that match the title, best match first, with their licence data. */
+async function commonsSearch(title: string): Promise<{ file: string; page: ApiPage }[]> {
+  const q = commonsQuery(title);
+  if (q.length < 3) return [];
+  const data = (await getJson(
+    `${COMMONS_API}?action=query&format=json&formatversion=2&generator=search&gsrnamespace=6&gsrlimit=6&gsrsearch=${encodeURIComponent(`${q} filetype:bitmap`)}` +
+      `&prop=imageinfo&iiprop=url%7Cmime%7Cextmetadata&iiurlwidth=${IMAGE_WIDTH}&iiextmetadatafilter=LicenseShortName%7CArtist%7CNonFree`,
+  )) as ApiQuery;
+  return [...(data.query?.pages ?? [])]
+    .sort((a, b) => (a.index ?? 99) - (b.index ?? 99))
+    .filter((p) => !!p.title && isCoverCandidate(p.title))
+    .map((p) => ({ file: p.title!, page: p }));
+}
+
 /**
- * Cover images from free sources, tried in order: the article's lead image, the Wikidata image (P18) and the
- * other photos in the article. Only freely licensed Commons files are used; whatever has none keeps the
- * generated case-file cover of the frontend.
+ * Real photos from free sources, tried in order: the article's lead image, the Wikidata image (P18), the images
+ * of the people, places and organisations the theory is about (Wikidata), the other photos in the article and
+ * finally a Commons search for the title. Only freely licensed Commons files are used; nothing is generated.
  */
 async function addCoverImages(db: Db, imageBudgetBytes: number): Promise<number> {
   const skip = await readIdList(db, NO_IMAGE_KEY);
@@ -465,11 +509,8 @@ async function addCoverImages(db: Db, imageBudgetBytes: number): Promise<number>
     if (name) choices.get(r.id)!.push(`File:${name.replace(/_/g, ' ')}`);
   }
   const qidOf = new Map(todo.map((r) => [r.id, r.notes?.match(/Wikidata item (Q\d+)/)?.[1]]));
-  const p18 = await wikidataImages([...new Set([...qidOf.values()].filter((q): q is string => !!q))]).catch(() => new Map<string, string>());
-  for (const r of todo) {
-    const file = p18.get(qidOf.get(r.id) ?? '');
-    if (file) choices.get(r.id)!.push(file);
-  }
+  const p18 = await wikidataImages([...new Set([...qidOf.values()].filter((q): q is string => !!q))]).catch(() => new Map<string, string[]>());
+  for (const r of todo) choices.get(r.id)!.push(...(p18.get(qidOf.get(r.id) ?? '') ?? []));
   const imgData = (await getJson(wikiApi(`prop=images&imlimit=max&titles=${titlesParam(titles)}`))) as ApiQuery;
   const imgPages = pagesByRequestedTitle(imgData, titles);
   for (const r of todo) {
@@ -487,16 +528,29 @@ async function addCoverImages(db: Db, imageBudgetBytes: number): Promise<number>
     for (const [k, v] of pagesByRequestedTitle(data, part)) info.set(k, v);
   }
 
+  const usable = (ii: NonNullable<ApiPage['imageinfo']>[number] | undefined) => {
+    const meta = ii?.extmetadata ?? {};
+    return !!ii?.thumburl && isCommonsThumb(ii.thumburl) && !/svg/i.test(ii.mime ?? '') && isFreeLicense(meta.LicenseShortName?.value, meta.NonFree?.value);
+  };
+  const pickFor = (id: number) => choices.get(id)!.map((file) => ({ file, ii: info.get(file)?.imageinfo?.[0] })).find(({ ii }) => usable(ii));
+  const searched = new Set<number>();
+  for (const r of todo) {
+    if (pickFor(r.id) || searched.size >= COMMONS_SEARCHES || budgetLeft() < 3) continue;
+    searched.add(r.id);
+    for (const { file, page } of await commonsSearch(titleOf.get(r.id)!)) {
+      info.set(file, page);
+      choices.get(r.id)!.push(file);
+    }
+  }
+
   let used = Number((await db.first<{ n: number }>('SELECT COALESCE(SUM(size), 0) AS n FROM images'))?.n ?? 0);
   let added = 0;
   for (const r of todo) {
     if (budgetLeft() < 1) break; // the next run continues here
-    const pick = choices.get(r.id)!.map((file) => ({ file, ii: info.get(file)?.imageinfo?.[0] })).find(({ ii }) => {
-      const meta = ii?.extmetadata ?? {};
-      return !!ii?.thumburl && isCommonsThumb(ii.thumburl) && isFreeLicense(meta.LicenseShortName?.value, meta.NonFree?.value);
-    });
+    const pick = pickFor(r.id);
     if (!pick?.ii) {
-      skip.add(r.id);
+      // Given up only after the Commons search was tried too; otherwise a later run searches for it.
+      if (searched.has(r.id)) skip.add(r.id);
       continue;
     }
     const { file, ii } = pick;

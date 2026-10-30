@@ -1,0 +1,78 @@
+# Deployment (Cloudflare Free only)
+
+> **Cost rules.** Only Cloudflare **Pages Free**, **Workers Free** (Pages Functions),
+> **D1** (included in Workers Free) and **Turnstile Free** are used. Never activate
+> Workers Paid, R2, Images, Stream, Workers AI, Queues, Durable Objects, Vectorize,
+> Browser Rendering, Cache Reserve, Argo or any other paid or usage-billed product.
+> If a dashboard or wrangler shows "Upgrade required", "Add billing information",
+> "Paid plan required" or similar, **stop** and do not continue.
+>
+> `npm run cost-check` verifies statically that no such binding exists. It cannot see
+> your account plan; check it yourself under *Workers & Pages → Plans* (must say **Free**).
+
+All steps run on your own machine. No secret is ever written into a file of this repository.
+
+## 1. Log in
+```bash
+npx wrangler login          # opens the browser, you confirm the login yourself
+npx wrangler whoami         # check the account
+```
+
+## 2. Create the D1 database (free)
+```bash
+npx wrangler d1 create conspiracy-atlas-db
+```
+Copy the printed `database_id` into `wrangler.toml` (`[[d1_databases]]`). The id is not a secret.
+
+## 3. Apply migrations (schema + seed archive)
+```bash
+npm run db:migrate:remote
+```
+
+## 4. Create the Pages project and deploy
+```bash
+npm ci && npm run build
+npx wrangler pages project create conspiracy-atlas --production-branch main
+npx wrangler pages deploy dist --project-name conspiracy-atlas
+```
+The site is then available at https://conspiracy-atlas.pages.dev.
+Alternatively connect the GitHub repository under *Workers & Pages → Create → Pages →
+Connect to Git* (build command `npm run build`, output `dist`).
+
+## 5. Secrets (you enter the values yourself)
+```bash
+npm run hash-password                                   # prints a PBKDF2 hash, the password is never stored
+npx wrangler pages secret put ADMIN_USERNAME      --project-name conspiracy-atlas
+npx wrangler pages secret put ADMIN_PASSWORD_HASH --project-name conspiracy-atlas
+npx wrangler pages secret put SESSION_SECRET      --project-name conspiracy-atlas   # 32+ random characters
+```
+Without these secrets the admin panel shows "Currently unavailable!".
+
+## 6. Turnstile (optional, free)
+Community submissions and reports require Turnstile. Until it is set up they show
+"Currently unavailable! Anti-spam verification has not been configured."
+1. Dashboard → *Turnstile* → *Add widget* (Free), hostname `conspiracy-atlas.pages.dev`.
+2. Put the **site key** into `wrangler.toml` (`TURNSTILE_SITE_KEY`) and set `FEATURE_TURNSTILE = "true"`.
+3. `npx wrangler pages secret put TURNSTILE_SECRET_KEY --project-name conspiracy-atlas`
+4. Rebuild and deploy.
+
+## 7. Verify
+- `https://conspiracy-atlas.pages.dev/api/health` → `{"ok":true,...}`
+- Admin → *Services* shows each service, its state and a connection test.
+
+## Free limits (as documented by Cloudflare; re-check the current pages)
+- Workers Free: 100,000 requests/day (Pages Functions count against it), 10 ms CPU per request.
+- D1 Free: 5 million rows read/day, 100,000 rows written/day, 5 GB total storage.
+- Pages Free: 500 builds/month; static asset requests are free.
+- Turnstile: free.
+When a daily limit is reached, Cloudflare returns errors instead of billing; the site then
+shows "Currently unavailable!" for the affected features. Exceeding Workers Free limits does
+not upgrade the account automatically. This is not a guarantee of zero cost: always keep the
+account on the Free plan and do not add paid products.
+
+## Backups
+```bash
+npm run backup:remote                         # writes backups/<time>-remote.sql and .json
+npm run restore:remote -- backups/<file>.json # makes a fresh backup first, then restores
+```
+The admin panel also offers JSON/CSV downloads (*Backup*).

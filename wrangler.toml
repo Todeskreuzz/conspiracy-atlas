@@ -1,0 +1,37 @@
+# Cloudflare Pages configuration for The Conspiracy Atlas.
+#
+# FREE-ONLY CONFIGURATION. This project binds exactly one Cloudflare service
+# besides Pages itself: D1 (included in Workers Free). There are intentionally
+# NO bindings for R2, KV, Queues, Durable Objects, Workers AI, Vectorize,
+# Images, Stream, Browser Rendering or Hyperdrive. `npm run cost-check` fails
+# the build if any such binding is added.
+#
+# Secrets (TURNSTILE_SECRET_KEY, ADMIN_USERNAME, ADMIN_PASSWORD_HASH,
+# SESSION_SECRET) are NEVER stored here. Set them interactively with
+#   npx wrangler pages secret put <NAME> --project-name conspiracy-atlas
+# See docs/DEPLOYMENT.md.
+
+name = "conspiracy-atlas"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-10-01"
+
+[vars]
+FEATURE_COMMUNITY_SUBMISSIONS = "true"
+FEATURE_COMMUNITY_UPLOADS = "false"   # hard-wired off: uploads would need R2, which is forbidden
+FEATURE_MAP_DATA = "true"
+FEATURE_AUTOMATIC_IMPORT = "false"
+FEATURE_TURNSTILE = "false"           # switch to "true" after creating a free Turnstile widget
+FEATURE_ADMIN_PANEL = "true"
+FEATURE_INVESTIGATIONS = "true"
+FEATURE_REPORTS = "true"
+# Public Turnstile site key (not a secret). Leave empty until a widget exists.
+TURNSTILE_SITE_KEY = ""
+ENVIRONMENT = "production"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "conspiracy-atlas-db"
+# Replace with the id printed by `npx wrangler d1 create conspiracy-atlas-db`.
+# The placeholder works for local development only.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations/d1"

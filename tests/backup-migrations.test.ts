@@ -12,7 +12,7 @@ const REQUIRED_TABLES = [
 
 describe('migrations', () => {
   it('are numbered and create every required table', () => {
-    expect(migrationFiles()).toEqual(['0001_schema.sql', '0002_seed.sql', '0003_images.sql', '0004_case_images.sql', '0005_more_cases.sql', '0006_case_notes.sql']);
+    expect(migrationFiles()).toEqual(['0001_schema.sql', '0002_seed.sql', '0003_images.sql', '0004_case_images.sql', '0005_more_cases.sql', '0006_case_notes.sql', '0007_case_years.sql']);
     const db = createDb({ seed: false });
     const tables = db.raw.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r: any) => r.name);
     for (const t of REQUIRED_TABLES) expect(tables, t).toContain(t);

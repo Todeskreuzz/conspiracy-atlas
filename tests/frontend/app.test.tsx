@@ -41,6 +41,26 @@ describe('frontend', () => {
     expect(document.querySelectorAll('[data-status]').length).toBeGreaterThan(0);
   });
 
+  it('puts events and case files on the timeline and shows the connections of a selected case', async () => {
+    const g = globalThis as { ResizeObserver?: unknown };
+    g.ResizeObserver ??= class {
+      observe() {}
+      disconnect() {}
+    };
+    window.matchMedia ??= ((q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} })) as never;
+    renderApp('/timeline?case=operation-northwoods', await makeEnv());
+    const detail = await screen.findByTestId('timeline-detail', {}, { timeout: 5000 });
+    await waitFor(() => expect(document.querySelectorAll('.chron-item--case').length).toBeGreaterThan(5));
+    expect(document.querySelectorAll('.chron-item--event').length).toBeGreaterThan(5);
+    expect(within(detail).getByRole('link', { name: 'Operation Northwoods' })).toHaveAttribute('href', '/theory/operation-northwoods');
+    expect(screen.getByText('Northwoods memorandum declassified', { selector: 'button' })).toBeInTheDocument();
+    expect(document.querySelectorAll('.chron-string').length).toBeGreaterThan(0);
+    // The archive stays neutral: no evidence ratings on the timeline.
+    expect(document.querySelector('[data-status]')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Case files/ }));
+    await waitFor(() => expect(document.querySelectorAll('.chron-item--case').length).toBe(0));
+  });
+
   it('saves a case in the browser and lists it on the saved page', async () => {
     renderApp('/theory/cointelpro', await makeEnv());
     await screen.findByTestId('theory-detail', {}, { timeout: 5000 });

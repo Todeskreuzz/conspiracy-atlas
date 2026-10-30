@@ -878,7 +878,6 @@ body::after {
   border-bottom-color: var(--red-bright);
   text-shadow: 0 0 12px rgba(255, 90, 70, 0.6);
 }
-.timeline-wrap,
 .map-wrap {
   box-shadow: var(--shadow-float);
   border-color: rgba(0, 0, 0, 0.5);

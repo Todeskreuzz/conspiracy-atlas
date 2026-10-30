@@ -129,3 +129,7 @@ submissions it replaces. Use the `.sql` file to keep images.
 
 The new image table is created by the migration `0003_images.sql`; run
 `npm run db:migrate:remote` (step 3) before deploying this version.
+
+The timeline places case files by year. Migration `0007_case_years.sql` adds the year columns that the
+automatic import fills from Wikidata; run `npm run db:migrate:remote` once. Until then the timeline still
+works and places cases by the years of their linked events.

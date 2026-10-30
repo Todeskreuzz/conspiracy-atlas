@@ -575,5 +575,10 @@
     "saved": "Saved",
     "wallHint": "Drag cards, select two cards to tie a thread, add your own notes under \"Filters\". Click \"Save layout in this browser\" to keep the arrangement. Dotted threads are found automatically (same person, organization or place).",
     "saveLayout": "Save layout in this browser"
+  },
+  "share": {
+    "share": "Share",
+    "copied": "Link copied",
+    "copyPrompt": "Copy this link:"
   }
 }

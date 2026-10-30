@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { formatDate, useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
@@ -10,6 +11,7 @@ import { SourceItem } from '../components/SourceItem';
 import { ReportForm } from '../components/ReportForm';
 import { ImageGallery } from '../components/ImageGallery';
 import { SaveButton } from '../components/SaveButton';
+import { ShareButton } from '../components/ShareButton';
 
 export function entityPath(type: string, slug: string | null): string | null {
   if (!slug) return null;
@@ -61,6 +63,15 @@ export function TheoryPage() {
   const res = useAsync((signal) => api<TheoryDetail>(`/theories/${encodeURIComponent(slug)}`, { signal }), [slug, locale]);
   const th = res.data;
 
+  useEffect(() => {
+    if (!th) return;
+    const previous = document.title;
+    document.title = `${th.title} – The Conspiracy Atlas`;
+    return () => {
+      document.title = previous;
+    };
+  }, [th]);
+
   if (!th) {
     return (
       <div className="container page">
@@ -89,6 +100,7 @@ export function TheoryPage() {
             {th.subtitle && <p className="muted" style={{ fontSize: '1.1rem', margin: 0 }}>{th.subtitle}</p>}
             <div className="btn-row">
               <SaveButton theory={th} small />
+              <ShareButton title={th.title} text={th.subtitle ?? undefined} />
               <CategoryBadge category={th.category} />
               {th.tags.map((tag) => (
                 <span key={tag} className="tag">

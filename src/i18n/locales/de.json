@@ -311,7 +311,14 @@
     "showCases": "Fallakten",
     "cases": "Fallakten",
     "casesHere": "Fallakten: {count}",
-    "casesPlaced": "{placed} von {total} Fallakten haben einen Ort"
+    "casesPlaced": "{placed} von {total} Fallakten haben einen Ort",
+    "chartTitle": "Lagekarte",
+    "chartSub": "Atlas-Archiv · {places} markierte Orte",
+    "pointer": "Zeiger über die Karte bewegen",
+    "indexTitle": "Ortsregister",
+    "dossier": "Ortsakte",
+    "linkedPlaces": "Dieselben Fallakten in",
+    "backToIndex": "Zurück zum Register"
   },
   "investigations": {
     "title": "Recherchen",

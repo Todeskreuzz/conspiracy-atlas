@@ -152,7 +152,10 @@
     "stamp": "Under review",
     "tallyTitle": "The tally",
     "tallySub": "{count} case files by category",
-    "sticky": "Follow the sources, not the noise."
+    "sticky": "Follow the sources, not the noise.",
+    "caseOfTheDay": "Case of the day",
+    "openCase": "Open case file",
+    "randomCase": "Random case file"
   },
   "wall": {
     "title": "Investigation Wall",

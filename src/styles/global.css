@@ -1310,3 +1310,27 @@ table.data th {
 .image-gallery li:nth-child(odd) img {
   transform: rotate(-1deg);
 }
+
+/* Case of the day (home page) */
+.case-of-day {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.case-of-day__img img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+.case-of-day__body h3 {
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+}
+@media (max-width: 720px) {
+  .case-of-day {
+    grid-template-columns: 1fr;
+  }
+}

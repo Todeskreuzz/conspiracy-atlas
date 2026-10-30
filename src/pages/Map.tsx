@@ -18,7 +18,24 @@ type MapLocation = LocationItem & { events: EventSummary[]; organizations: Array
 
 // Country shapes are bundled with the application (Natural Earth via world-atlas, public domain / ISC).
 // No tile server or external map service is contacted.
-const countries = feature(worldData as unknown as Topology, (worldData as unknown as Topology).objects.countries as GeometryCollection);
+const countries = fixAntimeridian(feature(worldData as unknown as Topology, (worldData as unknown as Topology).objects.countries as GeometryCollection) as GeoJSON.FeatureCollection);
+
+/**
+ * Rings that cross the 180° meridian (Russia, Fiji, Antarctica) would be drawn as stripes across
+ * the whole map. Shift their western longitudes by +360° so each ring stays continuous.
+ */
+function fixAntimeridian(fc: GeoJSON.FeatureCollection): GeoJSON.FeatureCollection {
+  const fixRing = (ring: number[][]) => {
+    const crosses = ring.some((p, i) => i > 0 && Math.abs(p[0] - ring[i - 1][0]) > 180);
+    return crosses ? ring.map(([x, y]) => [x < 0 ? x + 360 : x, y]) : ring;
+  };
+  for (const f of fc.features) {
+    const g = f.geometry;
+    if (g?.type === 'Polygon') g.coordinates = g.coordinates.map(fixRing);
+    else if (g?.type === 'MultiPolygon') g.coordinates = g.coordinates.map((poly) => poly.map(fixRing));
+  }
+  return fc;
+}
 
 export default function MapPage() {
   const { t, locale } = useI18n();
@@ -42,7 +59,7 @@ export default function MapPage() {
     if (!el.current || mapRef.current) return;
     const map = L.map(el.current, { worldCopyJump: true, minZoom: 1, maxZoom: 9, zoomSnap: 0.5, attributionControl: true }).setView([30, -20], 2);
     map.attributionControl.setPrefix(false).addAttribution('Natural Earth (public domain)');
-    regionRef.current = L.geoJSON(countries as GeoJSON.FeatureCollection, {
+    regionRef.current = L.geoJSON(countries, {
       style: () => ({ color: '#4a4038', weight: 0.7, fillColor: '#2a2420', fillOpacity: 1 }),
       interactive: false,
     }).addTo(map);

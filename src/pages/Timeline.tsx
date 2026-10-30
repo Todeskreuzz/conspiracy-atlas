@@ -34,10 +34,12 @@ export interface LaidOutEvent {
   start: number;
   end: number;
   lane: number;
+  /** True when no free lane was left: lane is -1 and the event is drawn on the axis without its label. */
+  compact: boolean;
 }
 
 /** Assigns events to lanes so that labels do not overlap at the current scale. */
-export function layoutLanes(events: EventSummary[], x: (year: number) => number, labelWidth = 150, maxLanes = 8): LaidOutEvent[] {
+export function layoutLanes(events: EventSummary[], x: (year: number) => number, labelWidth = 240, maxLanes = 14): LaidOutEvent[] {
   const laneEnds: number[] = [];
   const out: LaidOutEvent[] = [];
   const sorted = [...events].sort((a, b) => fractionalYear(a.startDate, a.startYear) - fractionalYear(b.startDate, b.startYear));
@@ -45,11 +47,17 @@ export function layoutLanes(events: EventSummary[], x: (year: number) => number,
     const start = fractionalYear(ev.startDate, ev.startYear);
     const end = ev.endDate ? fractionalYear(ev.endDate, ev.endYear ?? ev.startYear) + (ev.endDate.length === 4 ? 1 : 0) : start;
     const left = x(start);
-    const right = Math.max(x(end), left + labelWidth);
+    const textWidth = Math.min(labelWidth, ev.title.length * 6.6 + 22);
     let lane = laneEnds.findIndex((e) => e < left);
-    if (lane === -1) lane = laneEnds.length < maxLanes ? laneEnds.length : laneEnds.indexOf(Math.min(...laneEnds));
-    laneEnds[lane] = right + 8;
-    out.push({ event: ev, start, end, lane });
+    let compact = false;
+    if (lane === -1 && laneEnds.length < maxLanes) lane = laneEnds.length;
+    if (lane === -1) {
+      // All lanes are taken: the event is drawn as a marker on the axis (zoom in to read it).
+      compact = true;
+    } else {
+      laneEnds[lane] = Math.max(x(end), left + textWidth) + 8;
+    }
+    out.push({ event: ev, start, end, lane, compact });
   }
   return out;
 }
@@ -94,7 +102,7 @@ export function TimelinePage() {
 
   const x = (year: number) => AXIS_PAD + ((year - d0) / span) * (width - AXIS_PAD * 2);
   const yearAt = (px: number) => d0 + ((px - AXIS_PAD) / (width - AXIS_PAD * 2)) * span;
-  const laid = useMemo(() => layoutLanes(events, x, span > 150 ? 110 : 160), [events, d0, d1, width]); // eslint-disable-line react-hooks/exhaustive-deps
+  const laid = useMemo(() => layoutLanes(events, x), [events, d0, d1, width]); // eslint-disable-line react-hooks/exhaustive-deps
   const lanes = Math.max(1, ...laid.map((l) => l.lane + 1));
   const height = 80 + lanes * LANE_H + 40;
   const axisY = height - 46;
@@ -248,6 +256,7 @@ export function TimelinePage() {
               const isSel = selected?.id === l.event.id;
               const dim = selected && !isSel && !relatedIds.has(l.event.id);
               const cx = x(l.start);
+              const nearEnd = cx + Math.min(240, l.event.title.length * 6.6 + 22) > width;
               const y = laneY(l.lane);
               const color = STATUS_COLORS[l.event.evidenceStatus];
               if (cx < -200 || cx > width + 200) return null;
@@ -269,9 +278,12 @@ export function TimelinePage() {
                   ) : (
                     <circle className={`event-dot${isSel ? ' selected' : ''}`} cx={cx} cy={y} r={7} fill={color} />
                   )}
-                  <text className="event-label" x={cx + 11} y={y + 4}>
-                    {l.event.title.length > 34 && span > 60 ? `${l.event.title.slice(0, 32)}…` : l.event.title}
-                  </text>
+                  <title>{l.event.title}</title>
+                  {!l.compact && (
+                    <text className="event-label" x={nearEnd ? cx - 11 : cx + 11} y={y + 4} textAnchor={nearEnd ? 'end' : 'start'}>
+                      {l.event.title.length > 34 ? `${l.event.title.slice(0, 32)}…` : l.event.title}
+                    </text>
+                  )}
                 </g>
               );
             })}

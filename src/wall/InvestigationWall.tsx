@@ -79,7 +79,7 @@ function buildStyle(): StylesheetJson {
         'underlay-opacity': 0.32,
         'underlay-padding': 5,
         'underlay-shape': 'rectangle',
-        'min-zoomed-font-size': 7,
+        'min-zoomed-font-size': 5,
         'transition-property': 'opacity',
         'transition-duration': 0.2,
       },
@@ -95,7 +95,6 @@ function buildStyle(): StylesheetJson {
         // Threads are tied to the pins at the top of each card.
         'source-endpoint': '0% -42%',
         'target-endpoint': '0% -42%',
-        'z-compound-depth': 'top',
         opacity: 0.92,
         'transition-property': 'opacity',
         'transition-duration': 0.2,
@@ -131,7 +130,7 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
   const [filters, setFilters] = useState<WallFilters>(DEFAULT_FILTERS);
   const [group, setGroup] = useState<GroupMode>('none');
   const [search, setSearch] = useState('');
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1700);
   const [isFullscreen, setFullscreen] = useState(false);
   const [views, setViews] = useState<SavedView[]>(() => savedViews.load(board.slug));
   const [viewName, setViewName] = useState('');
@@ -170,6 +169,8 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
       pixelRatio: many > 500 ? 1 : 'auto',
     });
     instance.fit(undefined, 60);
+    // Keep the cards readable on first load; the minimap and "Fit to screen" give the overview.
+    if (many <= 300 && instance.zoom() < 0.62) instance.zoom({ level: 0.62, renderedPosition: { x: instance.width() / 2, y: instance.height() / 2 } });
     setCy(instance);
     return () => {
       instance.destroy();

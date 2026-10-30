@@ -2,17 +2,17 @@
   "name": "conspiracy-atlas",
   "private": true,
   "version": "0.1.0",
-  "description": "The Conspiracy Atlas – An Interactive Global Archive of Theories, Mysteries & Connections",
+  "description": "The Conspiracy Atlas \u2013 An Interactive Global Archive of Theories, Mysteries & Connections",
   "type": "module",
   "engines": {
     "node": ">=22.5"
   },
   "scripts": {
     "dev": "vite",
-    "dev:full": "npm run build && wrangler pages dev dist --d1 DB --port 8788",
+    "dev:full": "npm run build && wrangler pages dev --port 8788",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit",
+    "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate:local": "wrangler d1 migrations apply conspiracy-atlas-db --local",
@@ -23,7 +23,9 @@
     "restore:local": "node scripts/restore.mjs --local",
     "restore:remote": "node scripts/restore.mjs --remote",
     "cost-check": "node scripts/cost-check.mjs",
-    "perf:wall": "vitest run tests/perf"
+    "perf:wall": "vitest run tests/perf",
+    "check-sources": "node scripts/check-sources.mjs",
+    "db:migrate:remote": "wrangler d1 migrations apply conspiracy-atlas-db --remote"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",

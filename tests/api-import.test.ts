@@ -30,7 +30,12 @@ function fakeUpstream(bindings: unknown[], pages: Record<string, unknown | null>
   importFetch.impl = (async (input: RequestInfo | URL) => {
     const url = String(input);
     calls.push(url);
-    if (url.startsWith('https://query.wikidata.org/')) return Response.json({ results: { bindings } });
+    if (url.startsWith('https://query.wikidata.org/')) {
+      // The main query lists English articles only; German links come from a second query for the batch.
+      const german = decodeURIComponent(url).includes('VALUES');
+      const rows = (bindings as Record<string, unknown>[]).map(({ de, ...rest }) => (german ? { ...rest, de } : rest)).filter((r) => !german || r.de);
+      return Response.json({ results: { bindings: rows } });
+    }
     const m = url.match(/^https:\/\/(en|de)\.wikipedia\.org\/api\/rest_v1\/page\/summary\/([^?]+)/);
     const key = m ? `${m[1]}:${decodeURIComponent(m[2]).replace(/_/g, ' ')}` : '';
     const page = pages[key];

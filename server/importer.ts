@@ -1,6 +1,6 @@
 // Automatic archive import from Wikidata + Wikipedia (free public APIs, no key, no Cloudflare resource).
 //
-// Every run takes a small batch of Wikidata items that are a "conspiracy theory" (Q17379835, incl. subclasses)
+// Every run takes a small batch of Wikidata items that are a "conspiracy theory" (Q159535, or one of its subclasses up to two levels deep)
 // and have an English Wikipedia article, skips everything already in the archive and stores the rest
 // as neutral entries: the Wikipedia lead text (CC BY-SA 4.0, attributed) plus the article as the source.
 // Nothing is invented: no claims, ratings or connections are derived from the text.
@@ -24,10 +24,21 @@ export const LAST_RESULT_KEY = 'import.last_result';
 /** Wikidata items that have no usable article (disambiguation, deleted, too short); never retried. */
 export const SKIPPED_KEY = 'import.skipped';
 
-export const IMPORT_QUERY = `SELECT ?item ?en ?de WHERE {
-  ?item wdt:P31/wdt:P279* wd:Q17379835 .
+/** Wikidata item "conspiracy theory" (the item of the English Wikipedia article "Conspiracy theory"). */
+export const CONSPIRACY_THEORY_ITEM = 'Q159535';
+
+// Fixed-depth paths instead of wdt:P279*: the transitive form times out on the public endpoint.
+export const IMPORT_QUERY = `SELECT ?item ?en WHERE {
+  { ?item wdt:P31 wd:${CONSPIRACY_THEORY_ITEM} }
+  UNION { ?item wdt:P31/wdt:P279 wd:${CONSPIRACY_THEORY_ITEM} }
+  UNION { ?item wdt:P31/wdt:P279/wdt:P279 wd:${CONSPIRACY_THEORY_ITEM} }
   ?en schema:about ?item ; schema:isPartOf <https://en.wikipedia.org/> .
-  OPTIONAL { ?de schema:about ?item ; schema:isPartOf <https://de.wikipedia.org/> . }
+}`;
+
+/** German articles are looked up only for the items of the current batch, which keeps both queries fast. */
+export const germanQuery = (qids: string[]) => `SELECT ?item ?de WHERE {
+  VALUES ?item { ${qids.map((q) => `wd:${q}`).join(' ')} }
+  ?de schema:about ?item ; schema:isPartOf <https://de.wikipedia.org/> .
 }`;
 
 /** Replaceable in tests. */
@@ -115,8 +126,26 @@ async function getJson(url: string): Promise<unknown> {
   return res.json();
 }
 
+const sparql = async (query: string) => getJson(`${WIKIDATA_SPARQL}?format=json&query=${encodeURIComponent(query)}`);
+
 export async function fetchCandidates(): Promise<Candidate[]> {
-  return parseCandidates(await getJson(`${WIKIDATA_SPARQL}?format=json&query=${encodeURIComponent(IMPORT_QUERY)}`));
+  return parseCandidates(await sparql(IMPORT_QUERY));
+}
+
+/** Fills in the German article of each candidate (if one exists). A failure only means no translation. */
+async function addGermanLinks(batch: Candidate[]): Promise<void> {
+  if (!batch.length) return;
+  try {
+    const rows = (await sparql(germanQuery(batch.map((c) => c.qid)))) as { results?: { bindings?: Record<string, { value?: string }>[] } };
+    const byQid = new Map<string, string>();
+    for (const r of rows?.results?.bindings ?? []) {
+      const qid = r.item?.value?.split('/').pop() ?? '';
+      if (r.de?.value?.startsWith(DE_WIKI)) byQid.set(qid, r.de.value);
+    }
+    for (const c of batch) c.deUrl ??= byQid.get(c.qid) ?? null;
+  } catch {
+    // keep English only
+  }
 }
 
 /** Lead section of an article via the Wikipedia REST API. Null for disambiguation pages and empty articles. */
@@ -263,10 +292,9 @@ export async function runImport(db: Db, batch = IMPORT_BATCH): Promise<ImportRes
     const fresh = candidates.filter(
       (c) => !known.skipped.has(c.qid) && !known.urls.has(decodeURIComponent(c.enUrl).replace(/_/g, ' ').toLowerCase()) && !known.titles.has(matchKey(articleTitle(c.enUrl))),
     );
-    let used = 0;
-    for (const c of fresh) {
-      if (used >= batch) break;
-      used++;
+    const picked = fresh.slice(0, batch);
+    await addGermanLinks(picked);
+    for (const c of picked) {
       const en = await fetchSummary(c.enUrl);
       if (!en || known.titles.has(matchKey(en.title))) {
         result.skipped++;
@@ -278,7 +306,7 @@ export async function runImport(db: Db, batch = IMPORT_BATCH): Promise<ImportRes
       known.titles.add(matchKey(en.title));
       result.imported.push({ slug, title: en.title });
     }
-    result.remaining = Math.max(0, fresh.length - used);
+    result.remaining = fresh.length - picked.length;
   } catch (err) {
     result.error = String((err as Error)?.message ?? err).slice(0, 200);
   }

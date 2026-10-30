@@ -37,6 +37,17 @@ describe('frontend', () => {
     }
   });
 
+  it('global search finds people by description and navigates to the result', async () => {
+    renderApp('/', await makeEnv());
+    fireEvent.click(screen.getByRole('button', { name: /Search/ }));
+    const input = screen.getByRole('combobox', { name: /Search/ });
+    fireEvent.change(input, { target: { value: 'canon law' } });
+    const hit = await screen.findByRole('option', { name: /Adam Weishaupt/ }, { timeout: 5000 });
+    fireEvent.click(hit);
+    expect(await screen.findByRole('heading', { name: 'Adam Weishaupt', level: 1 }, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /Search/ })).not.toBeInTheDocument();
+  });
+
   it('switches the interface language to German and back', async () => {
     renderApp('/', await makeEnv());
     const nav = screen.getByRole('navigation', { name: 'Main' });

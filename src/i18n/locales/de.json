@@ -152,7 +152,10 @@
     "stamp": "In Prüfung",
     "tallyTitle": "Die Strichliste",
     "tallySub": "{count} Akten nach Kategorie",
-    "sticky": "Folge den Quellen, nicht dem Lärm."
+    "sticky": "Folge den Quellen, nicht dem Lärm.",
+    "caseOfTheDay": "Fall des Tages",
+    "openCase": "Akte öffnen",
+    "randomCase": "Zufällige Akte"
   },
   "wall": {
     "title": "Ermittlungswand",

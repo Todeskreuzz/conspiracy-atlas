@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { client, makeEnv } from './helpers/app';
+import { caseOfTheDayIndex } from '../server/routes/public';
 
 describe('public API', () => {
   it('lists seeded theories with pagination', async () => {
@@ -88,6 +89,24 @@ describe('public API', () => {
     const de = await c.get('/api/map?lang=de');
     const moon = de.json.locations.flatMap((l: any) => l.theories).find((t: any) => t.slug === 'moon-landing-conspiracy-theory');
     if (moon) expect(moon.title).toBe('Verschwörungstheorie zur Mondlandung');
+  });
+
+  it('serves the same case of the day for everyone and a random case', async () => {
+    const c = client(await makeEnv());
+    const a = await c.get('/api/case-of-the-day');
+    const b = await c.get('/api/case-of-the-day');
+    expect(a.status).toBe(200);
+    expect(a.json.day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(a.json.theory.slug).toBeTruthy();
+    expect(b.json.theory.slug).toBe(a.json.theory.slug);
+    const r = await c.get('/api/random-case');
+    expect((await c.get(`/api/theories/${r.json.slug}`)).status).toBe(200);
+  });
+
+  it('spreads the case of the day over the archive', () => {
+    const picks = new Set(Array.from({ length: 60 }, (_, i) => caseOfTheDayIndex(new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10), 25)));
+    expect(picks.size).toBeGreaterThan(12);
+    expect([...picks].every((p) => p >= 0 && p < 25)).toBe(true);
   });
 
   it('serves events for the timeline and map data', async () => {

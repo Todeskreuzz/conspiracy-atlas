@@ -97,6 +97,37 @@ publicRoutes.get('/theories', async (c) => {
   return c.json(paged(items, page, pageSize));
 });
 
+/** Stable pick per UTC day (FNV-1a over the date), so every visitor sees the same case all day. */
+export function caseOfTheDayIndex(day: string, count: number): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < day.length; i++) h = Math.imul(h ^ day.charCodeAt(i), 0x01000193);
+  return count > 0 ? (h >>> 0) % count : 0;
+}
+
+/** Case of the day: one published case per UTC day, the same for everyone. */
+publicRoutes.get('/case-of-the-day', async (c) => {
+  const db = Db.from(c.env);
+  const day = new Date().toISOString().slice(0, 10);
+  const count = await db.first<{ n: number }>('SELECT COUNT(*) AS n FROM theories WHERE is_published = 1');
+  const n = Number(count?.n ?? 0);
+  if (!n) return c.json({ day, theory: null });
+  const row = await db.first(`${THEORY_SUMMARY_SELECT} WHERE t.is_published = 1 ORDER BY t.id LIMIT 1 OFFSET ?`, caseOfTheDayIndex(day, n));
+  const [theory] = row ? await translate(db, c.get('locale'), 'theory', [mapTheorySummary(row)], THEORY_FIELDS) : [null];
+  publicCache(c, 300);
+  return c.json({ day, theory });
+});
+
+/** A random published case (for the "random case file" button). Never cached. */
+publicRoutes.get('/random-case', async (c) => {
+  const db = Db.from(c.env);
+  const count = await db.first<{ n: number }>('SELECT COUNT(*) AS n FROM theories WHERE is_published = 1');
+  const n = Number(count?.n ?? 0);
+  if (!n) throw notFound('Theory');
+  const row = await db.first<{ slug: string }>('SELECT slug FROM theories WHERE is_published = 1 ORDER BY id LIMIT 1 OFFSET ?', Math.floor(Math.random() * n));
+  c.header('Cache-Control', 'no-store');
+  return c.json({ slug: row?.slug });
+});
+
 publicRoutes.get('/theories/:slug', async (c) => {
   const db = Db.from(c.env);
   const detail = await loadTheoryDetail(db, c.req.param('slug'), c.get('locale'));

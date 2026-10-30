@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useT } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
 import { api } from '../api/client';
@@ -9,6 +9,7 @@ import { LoadState } from '../components/Unavailable';
 import { TallySheet } from '../components/TallySheet';
 import { useCountUp } from '../hooks/useCountUp';
 import { useI18n } from '../i18n';
+import { CategoryBadge } from '../components/Badges';
 
 interface CategoryRow {
   slug: string;
@@ -46,6 +47,55 @@ function useThread(ready: boolean) {
     };
   }, [ready]);
   return { grid, d };
+}
+
+function CaseOfTheDay() {
+  const { t, locale } = useI18n();
+  const navigate = useNavigate();
+  const res = useAsync((signal) => api<{ day: string; theory: TheorySummary | null }>('/case-of-the-day', { signal }), [locale]);
+  const [busy, setBusy] = useState(false);
+  const theory = res.data?.theory;
+  if (!theory) return null;
+  const random = async () => {
+    setBusy(true);
+    try {
+      const r = await api<{ slug: string }>('/random-case');
+      navigate(`/theory/${r.slug}`);
+    } catch {
+      setBusy(false);
+    }
+  };
+  const day = new Date(`${res.data!.day}T00:00:00Z`).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  return (
+    <section className="section container" data-testid="case-of-the-day">
+      <div className="section-title">
+        <h2>{t('home.caseOfTheDay')}</h2>
+        <span className="mono muted small">{day}</span>
+      </div>
+      <article className="case-of-day paper">
+        <span className="pin" aria-hidden="true" />
+        <div className="case-of-day__img">
+          <img src={theory.imagePath ?? '/media/cards/theory.svg'} alt="" loading="lazy" />
+        </div>
+        <div className="case-of-day__body">
+          <h3>{theory.title}</h3>
+          {theory.subtitle && <p className="muted">{theory.subtitle}</p>}
+          <p>{theory.summary}</p>
+          <div className="btn-row">
+            <CategoryBadge category={theory.category} />
+          </div>
+          <div className="btn-row" style={{ marginTop: 14 }}>
+            <Link to={`/theory/${theory.slug}`} className="btn btn--primary" viewTransition>
+              {t('home.openCase')} →
+            </Link>
+            <button type="button" className="btn" onClick={random} disabled={busy}>
+              🎲 {t('home.randomCase')}
+            </button>
+          </div>
+        </div>
+      </article>
+    </section>
+  );
 }
 
 export function HomePage() {
@@ -107,6 +157,8 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      <CaseOfTheDay />
 
       <section className="section container">
         <div className="section-title">

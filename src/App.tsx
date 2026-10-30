@@ -25,7 +25,10 @@ const AdminPage = lazy(() => import('./pages/Admin'));
 
 function ScrollTop() {
   const { pathname } = useLocation();
-  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  // Block body on purpose: newer Chromium returns a Promise from scrollTo, and React would call it as the cleanup.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return null;
 }
 

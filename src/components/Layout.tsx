@@ -49,7 +49,9 @@ export function Layout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   setApiLocale(locale);
-  useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
   const fullBleed = location.pathname === '/wall';
   return (
     <>

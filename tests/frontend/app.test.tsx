@@ -21,6 +21,22 @@ describe('frontend', () => {
     expect(screen.getByText('Operation Northwoods')).toBeInTheDocument();
   });
 
+  it('keeps working after navigation when window.scrollTo returns a Promise (newer Chromium)', async () => {
+    const original = window.scrollTo;
+    window.scrollTo = (() => Promise.resolve()) as unknown as typeof window.scrollTo;
+    try {
+      renderApp('/', await makeEnv());
+      const nav = screen.getByRole('navigation', { name: 'Main' });
+      fireEvent.click(within(nav).getByText('Theory Archive'));
+      const cards = await screen.findAllByTestId('theory-card', {}, { timeout: 5000 });
+      expect(cards.length).toBeGreaterThan(0);
+      fireEvent.click(within(nav).getByText('About'));
+      expect(await screen.findByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+    } finally {
+      window.scrollTo = original;
+    }
+  });
+
   it('switches the interface language to German and back', async () => {
     renderApp('/', await makeEnv());
     const nav = screen.getByRole('navigation', { name: 'Main' });

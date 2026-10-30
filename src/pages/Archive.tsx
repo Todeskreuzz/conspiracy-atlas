@@ -18,7 +18,9 @@ export function ArchivePage() {
   const q = params.get('q') ?? '';
   const page = Math.max(1, Number(params.get('page') ?? '1') || 1);
   const [query, setQuery] = useState(q);
-  useEffect(() => setQuery(q), [q]);
+  useEffect(() => {
+    setQuery(q);
+  }, [q]);
 
   const set = (key: string, value: string) => {
     const next = new URLSearchParams(params);

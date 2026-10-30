@@ -1,0 +1,479 @@
+/* Every section of the atlas has its own object on the wall: the page header is a different piece of stationery per
+   tab, a rubber stamp names the section and the desk lamp changes colour. <main data-tab> is set by Layout; the stamp
+   text arrives translated as the custom property --stamp. Motion is gated by prefers-reduced-motion. */
+
+/* ------------------------------------------------------------------ rubber stamp */
+main[data-tab] .page-header {
+  position: relative;
+}
+main[data-tab] .page-header::after {
+  content: var(--stamp, none);
+  position: absolute;
+  top: 18px;
+  right: 2%;
+  padding: 4px 14px 2px;
+  border: 4px double #ff5b47;
+  border-radius: 4px;
+  color: #ff6b57;
+  background: rgba(30, 12, 6, 0.35);
+  font: 1.4rem/1.2 var(--font-type);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-shadow: none;
+  rotate: -9deg;
+  pointer-events: none;
+  /* worn ink */
+  mask-image: radial-gradient(circle at 30% 40%, #000 60%, rgba(0, 0, 0, 0.75) 80%, #000 100%);
+}
+@media (max-width: 640px) {
+  main[data-tab] .page-header::after {
+    top: -6px;
+    right: 0;
+    font-size: 0.85rem;
+  }
+}
+
+/* ------------------------------------------------------------------ desk lamp colour per section */
+:root:has(main[data-tab='investigations']) body::after {
+  /* green banker's lamp */
+  background:
+    radial-gradient(circle 560px at var(--lamp-x, 62%) var(--lamp-y, 28%), rgba(160, 230, 170, 0.15), transparent 70%),
+    radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(5, 12, 6, 0.6) 100%);
+}
+:root:has(main[data-tab='knowledge']) body::after {
+  /* amber reading lamp */
+  background:
+    radial-gradient(circle 520px at var(--lamp-x, 62%) var(--lamp-y, 28%), rgba(255, 185, 100, 0.24), transparent 70%),
+    radial-gradient(ellipse at 50% 40%, transparent 45%, rgba(25, 10, 2, 0.55) 100%);
+}
+:root:has(main[data-tab='community']) body::after {
+  /* daylight on the notice board */
+  background:
+    radial-gradient(circle 700px at var(--lamp-x, 62%) var(--lamp-y, 28%), rgba(235, 242, 255, 0.16), transparent 70%),
+    radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(20, 10, 4, 0.4) 100%);
+}
+:root:has(main[data-tab='experts']) body::after,
+:root:has(main[data-tab='about']) body::after {
+  /* cool office light */
+  background:
+    radial-gradient(circle 560px at var(--lamp-x, 62%) var(--lamp-y, 28%), rgba(205, 222, 255, 0.15), transparent 70%),
+    radial-gradient(ellipse at 50% 40%, transparent 45%, rgba(8, 10, 18, 0.5) 100%);
+}
+
+/* ------------------------------------------------------------------ archive: brass drawer label */
+main[data-tab='archive'] .page-header h1 {
+  rotate: none;
+  padding: 10px 30px 6px;
+  background: #f3ead3;
+  background-image: var(--tex-fiber);
+  box-shadow:
+    0 0 0 6px #b48a3c,
+    0 0 0 7px #5e4410,
+    inset 0 2px 4px rgba(0, 0, 0, 0.25),
+    0 10px 22px rgba(0, 0, 0, 0.55);
+}
+main[data-tab='archive'] .page-header h1::before {
+  /* rivets */
+  top: 50%;
+  left: -16px;
+  right: -16px;
+  width: auto;
+  height: 10px;
+  translate: 0 -50%;
+  rotate: none;
+  background:
+    radial-gradient(circle at 5px 5px, #f3d58a, #7a5a1a 4px, transparent 5px) left / 10px 10px no-repeat,
+    radial-gradient(circle at 5px 5px, #f3d58a, #7a5a1a 4px, transparent 5px) right / 10px 10px no-repeat;
+  box-shadow: none;
+}
+
+/* ------------------------------------------------------------------ events: teleprinter tape + ledger */
+main[data-tab='events'] .page-header h1 {
+  rotate: 0.6deg;
+  padding: 16px 26px 10px;
+  font: 2.1rem/1.1 var(--font-type);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background-color: #f4ecd5;
+  background-image:
+    radial-gradient(circle at 7px 5px, #2a1a0e 2.4px, transparent 3px),
+    var(--tex-fiber);
+  background-size: 14px 10px, 200px 200px;
+  background-repeat: repeat-x, repeat;
+}
+main[data-tab='events'] .page-header h1::before {
+  display: none;
+}
+.ledger {
+  position: relative;
+  margin-bottom: 34px;
+  padding: 20px 24px 18px 24px;
+  color: #22180f;
+  background-color: #f6efdc;
+  background-image:
+    linear-gradient(90deg, transparent 214px, rgba(200, 50, 40, 0.55) 214px, rgba(200, 50, 40, 0.55) 215px, transparent 215px, transparent 218px, rgba(200, 50, 40, 0.55) 218px, rgba(200, 50, 40, 0.55) 219px, transparent 219px),
+    repeating-linear-gradient(180deg, transparent 0 33px, rgba(70, 120, 170, 0.22) 33px 34px);
+  background-position: 0 0, 0 58px;
+  box-shadow: var(--shadow-lift);
+  text-shadow: none;
+  --link: #22180f;
+  --link-hover: #b3261e;
+}
+.ledger:nth-of-type(2n) {
+  rotate: 0.3deg;
+}
+.ledger:nth-of-type(2n + 1) {
+  rotate: -0.3deg;
+}
+.ledger__title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 12px;
+  font: 400 1.25rem var(--font-marker);
+  color: #22180f;
+}
+.ledger__title span {
+  padding: 2px 12px;
+  background: var(--yellow);
+  rotate: -1.5deg;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+.ledger__title small {
+  font: 0.8rem var(--font-type);
+  color: #8f1d14;
+}
+.ledger__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ledger__row {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 22px;
+  min-height: 34px;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 2px;
+  transition: background-size 0.35s ease;
+  background: linear-gradient(100deg, rgba(255, 226, 90, 0.65), rgba(255, 226, 90, 0.4)) no-repeat 0 60% / 0 70%;
+}
+.ledger__row:hover,
+.ledger__row:focus-within {
+  background-size: 100% 70%;
+}
+.ledger__date {
+  font: 0.9rem var(--font-type);
+  color: #8f1d14;
+}
+.ledger__row a {
+  font-weight: 500;
+  text-decoration: none;
+}
+.ledger__row a:hover {
+  text-decoration: underline;
+}
+.ledger__place {
+  font-size: 0.85rem;
+  color: #6b5a45;
+}
+@media (max-width: 640px) {
+  .ledger {
+    padding: 16px 14px;
+    background-image: repeating-linear-gradient(180deg, transparent 0 33px, rgba(70, 120, 170, 0.22) 33px 34px);
+  }
+  .ledger__row {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 6px;
+  }
+}
+
+/* ------------------------------------------------------------------ organizations: embossed label tape + ID badges */
+main[data-tab='organizations'] .page-header h1 {
+  rotate: -1.5deg;
+  padding: 8px 22px 6px;
+  border-radius: 3px;
+  color: #f7f7f7;
+  font: 700 2rem/1.15 var(--font-mono);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: #121212;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 45%, rgba(0, 0, 0, 0.35));
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.9), 0 1px 0 rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), inset 0 -3px 4px rgba(0, 0, 0, 0.6), 0 6px 14px rgba(0, 0, 0, 0.55);
+}
+main[data-tab='organizations'] .page-header h1::before {
+  display: none;
+}
+.org-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px 14px !important;
+  overflow: hidden;
+  border-radius: 10px !important;
+  background: #f7f2e6 !important;
+  background-image: var(--tex-fiber) !important;
+  text-decoration: none;
+  color: inherit;
+  transform-origin: 50% -30px;
+  transition: translate 0.25s, box-shadow 0.25s;
+}
+.org-badge::before {
+  display: none;
+}
+/* punched slot for the lanyard clip */
+.org-badge::after {
+  top: 8px !important;
+  left: 50% !important;
+  width: 46px !important;
+  height: 9px !important;
+  rotate: none !important;
+  border-radius: 5px;
+  clip-path: none !important;
+  background: #3a2616 !important;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.8) !important;
+  z-index: 2;
+}
+.org-badge p {
+  margin: 0;
+  flex: 1;
+}
+.org-badge__kind {
+  display: block;
+  margin: 0 -16px;
+  padding: 24px 16px 6px;
+  font: 0.72rem var(--font-type);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(180deg, #8f1d14, #6d150f);
+}
+.org-badge__id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.org-badge__id h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+.org-badge__seal {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 3px double #2f5d8a;
+  color: #2f5d8a;
+  font: 700 0.85rem var(--font-mono);
+  letter-spacing: 0.04em;
+  background: radial-gradient(circle at 35% 30%, #fff, #e3e8ee);
+}
+.org-badge__meta {
+  padding-top: 8px;
+  border-top: 1px dashed rgba(70, 50, 30, 0.35);
+  color: #6b5a45;
+}
+.org-badge:hover,
+.org-badge:focus-visible {
+  translate: 0 -4px;
+  box-shadow: var(--shadow-float);
+}
+
+/* ------------------------------------------------------------------ saved: manila folder tab */
+main[data-tab='saved'] .page-header h1 {
+  rotate: none;
+  padding: 12px 34px 8px;
+  border-radius: 12px 16px 0 0;
+  background: #d9bb84;
+  background-image: var(--tex-fiber), linear-gradient(180deg, #e3c893, #cfae72);
+}
+main[data-tab='saved'] .page-header h1::before {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ investigations: kraft folder, confidential */
+main[data-tab='investigations'] .page-header h1 {
+  rotate: -0.5deg;
+  color: #f4ead8;
+  background: #6b4a2b;
+  background-image: var(--tex-fiber), linear-gradient(180deg, #7a5532, #5b3d22);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+main[data-tab='investigations'] .page-header::after {
+  font-size: 1.6rem;
+  rotate: -14deg;
+  border-width: 4px;
+}
+
+/* ------------------------------------------------------------------ community: flyer with tear-off strips */
+main[data-tab='community'] .page-header h1 {
+  rotate: 1.8deg;
+  padding: 18px 28px 12px;
+  color: #b3261e;
+  font: 400 2.4rem/1.1 var(--font-marker);
+  background: #fdfbf4;
+  margin-bottom: 30px;
+}
+main[data-tab='community'] .page-header h1::before {
+  /* push pin */
+  top: -9px;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  rotate: none;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #8fd0ff, #2f6ea8 60%, #123a5e);
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.45);
+}
+main[data-tab='community'] .page-header h1::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -26px;
+  height: 26px;
+  border-top: 1px dashed rgba(60, 40, 20, 0.45);
+  background: repeating-linear-gradient(90deg, #fdfbf4 0 20px, transparent 20px 24px);
+}
+
+/* ------------------------------------------------------------------ knowledge: library catalogue card */
+main[data-tab='knowledge'] .page-header h1 {
+  rotate: -0.8deg;
+  padding: 26px 34px 26px;
+  font: 2rem/1.15 var(--font-type);
+  background-color: #fbf8ef;
+  background-image:
+    linear-gradient(180deg, transparent 16px, rgba(200, 50, 40, 0.6) 16px, rgba(200, 50, 40, 0.6) 18px, transparent 18px),
+    repeating-linear-gradient(180deg, transparent 0 21px, rgba(70, 120, 170, 0.25) 21px 22px);
+}
+main[data-tab='knowledge'] .page-header h1::before {
+  /* punched rod hole */
+  top: auto;
+  bottom: 6px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  rotate: none;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: #4a2f19;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* ------------------------------------------------------------------ experts: letterhead with an embossed seal */
+main[data-tab='experts'] .page-header h1 {
+  rotate: none;
+  padding: 14px 30px 12px 86px;
+  background: #fdfcf7;
+  border-bottom: 4px double #2f3a4a;
+}
+main[data-tab='experts'] .page-header h1::before {
+  top: 50%;
+  left: 18px;
+  width: 52px;
+  height: 52px;
+  rotate: none;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #f6dc8c 0 38%, #c99b32 40% 52%, #f3d06d 54% 60%, transparent 61%),
+    repeating-conic-gradient(#b8892a 0 6deg, #e8c25a 6deg 12deg);
+  mask-image: radial-gradient(circle, #000 66%, transparent 70%);
+  box-shadow: none;
+}
+
+/* ------------------------------------------------------------------ about: typed memorandum */
+main[data-tab='about'] .page-header h1 {
+  rotate: -0.4deg;
+  padding: 12px 26px 10px;
+  font: 2rem/1.15 var(--font-type);
+  letter-spacing: 0.04em;
+  background: #fbf9f2;
+  border-top: 6px solid #22180f;
+}
+main[data-tab='about'] .page-header h1::before {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ submit: carbon-copy form */
+main[data-tab='submit'] .page-header h1 {
+  rotate: 0.4deg;
+  padding: 14px 28px 10px;
+  background: #e5eedf;
+  background-image:
+    linear-gradient(rgba(60, 110, 70, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(60, 110, 70, 0.14) 1px, transparent 1px);
+  background-size: 14px 14px;
+  border-left: 8px solid #3e6b48;
+}
+
+/* ------------------------------------------------------------------ motion */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-ready main[data-tab] .page-header::after {
+    animation: tab-stamp 0.45s 0.35s cubic-bezier(0.3, 1.6, 0.6, 1) both;
+  }
+  .reveal-ready main[data-tab] .page-header h1 {
+    animation: tab-header-in 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  }
+  .org-badge:hover {
+    animation: tab-badge-swing 0.9s ease-out;
+  }
+  @supports (animation-timeline: view()) {
+    .reveal-ready .ledger {
+      animation: pin-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+@keyframes tab-stamp {
+  from {
+    opacity: 0;
+    scale: 2.4;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes tab-header-in {
+  from {
+    opacity: 0;
+    translate: 0 -24px;
+  }
+}
+@keyframes tab-badge-swing {
+  0% {
+    rotate: 0deg;
+  }
+  30% {
+    rotate: 2.2deg;
+  }
+  60% {
+    rotate: -1.4deg;
+  }
+  100% {
+    rotate: 0deg;
+  }
+}
+
+@media (max-width: 640px) {
+  main[data-tab='organizations'] .page-header h1,
+  main[data-tab='events'] .page-header h1,
+  main[data-tab='knowledge'] .page-header h1,
+  main[data-tab='about'] .page-header h1 {
+    max-width: 100%;
+    font-size: 1.45rem;
+    letter-spacing: 0.1em;
+  }
+  .ledger:nth-of-type(n) {
+    rotate: none;
+  }
+}

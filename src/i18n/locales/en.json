@@ -655,5 +655,17 @@
     "knowledge": "How to read the archive: evidence ratings, source types and how to check a claim yourself.",
     "experts": "What scientists, historians and investigators say about the best-known conspiracy theories.",
     "about": "About The Conspiracy Atlas: what the archive is, how cases are rated and where the sources come from."
+  },
+  "tabStamp": {
+    "archive": "Registry",
+    "events": "Chronology",
+    "organizations": "Directory",
+    "saved": "Private",
+    "investigations": "Confidential",
+    "community": "Notice board",
+    "knowledge": "Reference",
+    "experts": "Assessment",
+    "about": "Memorandum",
+    "submit": "Form CA-7"
   }
 }

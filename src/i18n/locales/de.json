@@ -655,5 +655,17 @@
     "knowledge": "So liest du das Archiv: Bewertungen der Beweislage, Quellenarten und wie du eine Behauptung selbst prüfst.",
     "experts": "Was Wissenschaftler, Historiker und Ermittler zu den bekanntesten Verschwörungstheorien sagen.",
     "about": "Über The Conspiracy Atlas: was das Archiv ist, wie Fälle bewertet werden und woher die Quellen stammen."
+  },
+  "tabStamp": {
+    "archive": "Registratur",
+    "events": "Chronologie",
+    "organizations": "Verzeichnis",
+    "saved": "Privat",
+    "investigations": "Vertraulich",
+    "community": "Aushang",
+    "knowledge": "Nachschlagen",
+    "experts": "Gutachten",
+    "about": "Memorandum",
+    "submit": "Formular CA-7"
   }
 }

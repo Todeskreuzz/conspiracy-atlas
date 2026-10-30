@@ -575,5 +575,10 @@
     "saved": "Gemerkt",
     "wallHint": "Karten verschieben, zwei Karten auswählen und einen Faden spannen, eigene Notizen unter „Filter“ hinzufügen. Mit „Anordnung im Browser speichern“ bleibt die Anordnung erhalten. Gepunktete Fäden werden automatisch erkannt (gleiche Person, Organisation oder gleicher Ort).",
     "saveLayout": "Anordnung im Browser speichern"
+  },
+  "share": {
+    "share": "Teilen",
+    "copied": "Link kopiert",
+    "copyPrompt": "Diesen Link kopieren:"
   }
 }

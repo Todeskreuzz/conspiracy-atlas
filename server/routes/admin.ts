@@ -415,8 +415,8 @@ adminRoutes.get('/theories/:slug', async (c) => {
 
 function parseTheory(body: Record<string, unknown>) {
   const imagePath = optStr(body.imagePath, 'imagePath', 300);
-  if (imagePath && !/^\/assets\/[a-zA-Z0-9/_.-]+$/.test(imagePath)) {
-    throw new ValidationError('imagePath', 'must be a local asset path like /assets/...');
+  if (imagePath && !/^\/media\/[a-zA-Z0-9/_.-]+$/.test(imagePath)) {
+    throw new ValidationError('imagePath', 'must be a local asset path like /media/...');
   }
   return {
     title: reqStr(body.title, 'title', 200, 2),

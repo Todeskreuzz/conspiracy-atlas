@@ -187,15 +187,15 @@ function nodeFor(type, key) {
     case 'theory':
       return { type, key, kind: 'theory', title: item.title, summary: item.summary, category: item.category, status: item.status, image: item.image, tags: item.tags, group: item.category };
     case 'event':
-      return { type, key, kind: 'event', title: item.title, summary: `${item.start}${item.end ? ` – ${item.end}` : ''}: ${item.description}`, category: item.category, status: item.status, image: '/assets/cards/event.svg', tags: [String(item.year)], group: 'event' };
+      return { type, key, kind: 'event', title: item.title, summary: `${item.start}${item.end ? ` – ${item.end}` : ''}: ${item.description}`, category: item.category, status: item.status, image: '/media/cards/event.svg', tags: [String(item.year)], group: 'event' };
     case 'organization':
-      return { type, key, kind: ['agency', 'commission', 'institution'].includes(item.kind) ? 'institution' : 'organization', title: item.name, summary: item.description, category: null, status: null, image: '/assets/cards/organization.svg', tags: [item.country], group: 'organization' };
+      return { type, key, kind: ['agency', 'commission', 'institution'].includes(item.kind) ? 'institution' : 'organization', title: item.name, summary: item.description, category: null, status: null, image: '/media/cards/organization.svg', tags: [item.country], group: 'organization' };
     case 'person':
-      return { type, key, kind: 'person', title: item.name, summary: `${item.role}. ${item.description}`, category: null, status: null, image: '/assets/cards/person.svg', tags: [], group: 'person' };
+      return { type, key, kind: 'person', title: item.name, summary: `${item.role}. ${item.description}`, category: null, status: null, image: '/media/cards/person.svg', tags: [], group: 'person' };
     case 'document':
-      return { type, key, kind: 'document', title: item.title, summary: `${item.type} · ${item.archive}`, category: null, status: null, image: '/assets/cards/document.svg', tags: [], group: 'document' };
+      return { type, key, kind: 'document', title: item.title, summary: `${item.type} · ${item.archive}`, category: null, status: null, image: '/media/cards/document.svg', tags: [], group: 'document' };
     case 'location':
-      return { type, key, kind: 'location', title: item.name, summary: item.description, category: null, status: null, image: '/assets/cards/location.svg', tags: [item.country], group: 'location' };
+      return { type, key, kind: 'location', title: item.name, summary: item.description, category: null, status: null, image: '/media/cards/location.svg', tags: [item.country], group: 'location' };
     default:
       throw new Error(type);
   }

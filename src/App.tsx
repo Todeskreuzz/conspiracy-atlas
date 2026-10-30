@@ -24,6 +24,7 @@ const SubmitPage = lazy(() => import('./pages/Submit'));
 const InvestigationsPage = lazy(() => import('./pages/Investigations'));
 const InvestigationPage = lazy(() => import('./pages/Investigation'));
 const AdminPage = lazy(() => import('./pages/Admin'));
+const SavedPage = lazy(() => import('./pages/Saved'));
 
 function ScrollTop() {
   const { pathname } = useLocation();
@@ -67,6 +68,7 @@ export function AppRoutes() {
           <Route path="/knowledge" element={<KnowledgePage />} />
           <Route path="/experts" element={<ExpertsPage />} />
           <Route path="/experts/:slug" element={<ExpertCasePage />} />
+          <Route path="/saved" element={<SavedPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/admin/*" element={<AdminPage />} />
           <Route path="*" element={<NotFoundPage />} />

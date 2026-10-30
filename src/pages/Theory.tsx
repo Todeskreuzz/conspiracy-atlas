@@ -9,6 +9,7 @@ import { RichText } from '../components/RichText';
 import { SourceItem } from '../components/SourceItem';
 import { ReportForm } from '../components/ReportForm';
 import { ImageGallery } from '../components/ImageGallery';
+import { SaveButton } from '../components/SaveButton';
 
 export function entityPath(type: string, slug: string | null): string | null {
   if (!slug) return null;
@@ -87,6 +88,7 @@ export function TheoryPage() {
             <h1>{th.title}</h1>
             {th.subtitle && <p className="muted" style={{ fontSize: '1.1rem', margin: 0 }}>{th.subtitle}</p>}
             <div className="btn-row">
+              <SaveButton theory={th} small />
               <CategoryBadge category={th.category} />
               {th.tags.map((tag) => (
                 <span key={tag} className="tag">

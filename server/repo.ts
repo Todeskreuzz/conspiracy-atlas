@@ -436,7 +436,11 @@ const SHARED_TYPES: EntityType[] = ['person', 'organization', 'location'];
  * (directly, or via the place of a linked event). They are computed on every read, never stored,
  * always `suggested`, and only say "both entries mention X", not that the cases are connected.
  */
-export async function deriveSharedThreads(db: Db, nodes: BoardNode[], edges: BoardEdge[]): Promise<BoardEdge[]> {
+export async function deriveSharedThreads(
+  db: Db,
+  nodes: Array<Pick<BoardNode, 'id' | 'entityType' | 'entityId'>>,
+  edges: Array<Pick<BoardEdge, 'source' | 'target'>>,
+): Promise<BoardEdge[]> {
   const nodeByTheory = new Map<number, number>();
   for (const n of nodes) if (n.entityType === 'theory' && n.entityId !== null && !nodeByTheory.has(n.entityId)) nodeByTheory.set(n.entityId, n.id);
   if (nodeByTheory.size < 2) return [];

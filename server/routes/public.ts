@@ -10,6 +10,7 @@ import {
   EVENT_SELECT,
   THEORY_FIELDS,
   THEORY_SUMMARY_SELECT,
+  deriveSharedThreads,
   loadBoardContent,
   loadRelationships,
   loadTheoryDetail,
@@ -303,6 +304,15 @@ publicRoutes.get('/boards/:slug', async (c) => {
   const content = await loadBoardContent(db, Number(board.id), c.get('locale'));
   publicCache(c, 60);
   return c.json({ id: board.id, slug: board.slug, title: board.title, description: board.description, ...content });
+});
+
+/** Automatic threads between saved cases for the personal wall in the browser (ids = case ids, max. 200). */
+publicRoutes.get('/shared-threads', async (c) => {
+  const ids = [...new Set((c.req.query('ids') ?? '').split(',').map((s) => parseInt(s, 10)).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 200);
+  const db = Db.from(c.env);
+  const edges = await deriveSharedThreads(db, ids.map((id) => ({ id, entityType: 'theory', entityId: id })), []);
+  publicCache(c, 300);
+  return c.json({ edges });
 });
 
 /** Global search: titles and names first, then matches in descriptions. */

@@ -459,6 +459,8 @@ async function wikidataImages(qids: string[]): Promise<Map<string, string[]>> {
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
 /** Commons searches per run, only for entries that found nothing in the other sources. */
 export const COMMONS_SEARCHES = 5;
+/** D1 allows 100 bound parameters per statement. */
+const MAX_PARAMS = 90;
 
 /** Search words for Commons: the title without "conspiracy theory", "hoax" and similar words. */
 export function commonsQuery(title: string): string {
@@ -595,6 +597,102 @@ async function addCoverImages(db: Db, imageBudgetBytes: number): Promise<number>
     NO_IMAGE_KEY,
     JSON.stringify([...skip]),
   );
+  return added + (await addSymbolImages(db, skip, imageBudgetBytes - used));
+}
+
+// ---------------------------------------------------------------------------
+// Symbol images: cases without any free photo of their own get one real, freely licensed archive photo
+// for their category, labelled as a symbol image. Each photo is stored once and shared by all its cases.
+// ---------------------------------------------------------------------------
+
+/** Commons files (real photographs, free licences) used as the symbol image of each category. */
+export const SYMBOL_IMAGES: Record<CategorySlug, string> = {
+  'politics-power': 'File:Reichstag building in the Album-von-Berlin 0041.jpg', // public domain
+  'secret-organizations': 'File:Freemasons Hall. London. Temple Doors. Inner face. In Situ. 1933.jpg', // CC BY 3.0
+  'intelligence-agencies': 'File:Aarhus Søfartsmuseum - Skibsprovianteringshandler 13.jpg', // CC BY-SA 4.0
+  'space-ufos': 'File:The Southern Milky Way Above ALMA.jpg', // CC BY 4.0
+  'science-technology': 'File:Student in University of Washington chemistry laboratory , ca 1925 (MOHAI 6219).jpg', // public domain
+  history: 'File:Documents on shelves in the archive store (History Centre) at the Herbert.jpg', // CC BY-SA 3.0
+  'economy-finance': 'File:NY stock exchange interior LC-USZ62-94123.jpg', // public domain
+  'media-society': 'File:The New York Times newsroom 1942.jpg', // public domain
+  'internet-modern-myths': 'File:Virginia Tech - data center.jpg', // CC BY-SA 2.0
+  'secret-operations': 'File:AEC Top Secret Cover Sheet (6520387149).jpg', // CC BY 2.0
+};
+/** Prefix of the image credit of a symbol image; the frontend shows it as "Symbolbild" / "Symbol image". */
+export const SYMBOL_CREDIT = 'Symbol image';
+const symbolKey = (category: string) => `import.symbol.${category}`;
+
+async function symbolFor(db: Db, category: CategorySlug, budgetBytes: number): Promise<{ path: string; credit: string; sourceId: number } | null> {
+  const row = await db.first<{ value: string }>('SELECT value FROM settings WHERE key = ?', symbolKey(category));
+  if (row) {
+    try {
+      return JSON.parse(row.value) as { path: string; credit: string; sourceId: number };
+    } catch {
+      // stored again below
+    }
+  }
+  const file = SYMBOL_IMAGES[category];
+  if (!file || budgetLeft() < 2) return null;
+  const ii = pagesByRequestedTitle(
+    (await getJson(
+      wikiApi(`prop=imageinfo&iiprop=url%7Cmime%7Cextmetadata&iiurlwidth=${IMAGE_WIDTH}&iiextmetadatafilter=LicenseShortName%7CArtist%7CNonFree&titles=${titlesParam([file])}`),
+    )) as ApiQuery,
+    [file],
+  ).get(file)?.imageinfo?.[0];
+  const meta = ii?.extmetadata ?? {};
+  const license = meta.LicenseShortName?.value;
+  if (!ii?.thumburl || !isCommonsThumb(ii.thumburl) || !isFreeLicense(license, meta.NonFree?.value)) return null;
+  const res = await upstream(ii.thumburl);
+  if (!res.ok) throw new Error(`HTTP ${res.status} from Wikimedia Commons`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const mime = sniffImageMime(bytes);
+  const width = Number(ii.thumbwidth) || 0;
+  const height = Number(ii.thumbheight) || 0;
+  if (!mime || !bytes.length || bytes.length > IMAGE_LIMITS.maxBytes || bytes.length > budgetBytes || width < 1 || height < 1) return null;
+  const credit = `${SYMBOL_CREDIT} · ${stripHtml(meta.Artist?.value ?? '').slice(0, 150) || 'Unknown author'} · ${stripHtml(license!)} · Wikimedia Commons`.slice(0, 300);
+  const publicId = randomToken(12);
+  const hash = toHex(await crypto.subtle.digest('SHA-256', bytes));
+  await db.run(
+    `INSERT INTO images (public_id, mime, width, height, size, sha256, alt, position, status, data) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'approved', ?)`,
+    publicId, mime, width, height, bytes.length, hash, credit, bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+  );
+  const src = await db.first<{ id: number }>(
+    `INSERT INTO sources (title, publisher, source_type, is_primary, url, last_checked, quality_note, notes)
+     VALUES (?, 'Wikimedia Commons', 'archive_collection', 0, ?, date('now'), 'Symbol image; shows the category, not this case.', ?) RETURNING id`,
+    `${file} – Wikimedia Commons`, ii.descriptionurl?.startsWith('https://') ? ii.descriptionurl : null, `Symbol image imported automatically. Licence: ${stripHtml(license!)}.`,
+  );
+  const symbol = { path: `/api/images/${publicId}`, credit, sourceId: src!.id };
+  await db.run(
+    "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')",
+    symbolKey(category),
+    JSON.stringify(symbol),
+  );
+  return symbol;
+}
+
+/** Gives every case for which no free photo was found the symbol image of its category. */
+async function addSymbolImages(db: Db, noPhoto: Set<number>, budgetBytes: number): Promise<number> {
+  const ids = [...noPhoto].slice(0, MAX_PARAMS);
+  if (!ids.length) return 0;
+  const rows = await db.all<{ id: number; category: CategorySlug }>(
+    `SELECT t.id, c.slug AS category FROM theories t JOIN categories c ON c.id = t.category_id
+     WHERE t.image_path IS NULL AND t.id IN (${ids.map(() => '?').join(', ')})`,
+    ...ids,
+  );
+  let added = 0;
+  const byCategory = new Map<CategorySlug, number[]>();
+  for (const r of rows) byCategory.set(r.category, [...(byCategory.get(r.category) ?? []), r.id]);
+  for (const [category, theoryIds] of byCategory) {
+    const symbol = await symbolFor(db, category, budgetBytes);
+    if (!symbol) continue;
+    const stmts: D1PreparedStatement[] = [];
+    for (const id of theoryIds) {
+      stmts.push(db.stmt('UPDATE theories SET image_path = ?, image_credit = ?, updated_at = updated_at WHERE id = ? AND image_path IS NULL', symbol.path, symbol.credit, id));
+      stmts.push(db.stmt("INSERT INTO evidence (source_id, theory_id, relation, note) VALUES (?, ?, 'context', 'Symbol image (automatic import)')", symbol.sourceId, id));
+    }
+    await db.batch(stmts);
+    added += theoryIds.length;
+  }
   return added;
 }
 

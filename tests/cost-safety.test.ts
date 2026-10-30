@@ -37,7 +37,7 @@ describe('cost safety (free-only)', () => {
   });
 
   it('the server only ever contacts Turnstile', () => {
-    const files = readdirSync('server', { recursive: true }).map(String).filter((f) => f.endsWith('.ts'));
+    const files = readdirSync('server', { recursive: true }).map((f) => String(f).replace(/\\/g, '/')).filter((f) => f.endsWith('.ts'));
     const fetchers = files.filter((f) => /\bfetch\w*\(/.test(readFileSync(join('server', f), 'utf8')));
     expect(fetchers.sort()).toEqual(['routes/community.ts', 'security.ts']);
   });

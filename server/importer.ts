@@ -1,7 +1,7 @@
 // Automatic archive import from Wikidata + Wikipedia (free public APIs, no key, no Cloudflare resource).
 //
 // Every run takes a small batch of Wikidata items that are a "conspiracy theory" (Q159535, or one of its subclasses up to two levels deep)
-// and have an English Wikipedia article, skips everything already in the archive and stores the rest
+// and have an English Wikipedia article, plus the theory articles linked from Wikipedia's "List of conspiracy theories", skips everything already in the archive and stores the rest
 // as neutral entries: the Wikipedia lead text (CC BY-SA 4.0, attributed) plus the article as the source.
 // Nothing is invented: no claims, ratings or connections are derived from the text.
 import type { Db } from './db';
@@ -128,8 +128,59 @@ async function getJson(url: string): Promise<unknown> {
 
 const sparql = async (query: string) => getJson(`${WIKIDATA_SPARQL}?format=json&query=${encodeURIComponent(query)}`);
 
+export const LIST_PAGE = 'List_of_conspiracy_theories';
+const LIST_API = `https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&redirects=1&generator=links&titles=${LIST_PAGE}&gplnamespace=0&gpllimit=max&prop=description%7Cpageprops&ppprop=wikibase_item%7Cdisambiguation`;
+/** The list has about 1,500 links (4 API pages); the cap only guards against a runaway continuation. */
+const LIST_MAX_REQUESTS = 6;
+
+// The list also links people, places, media and concepts. Only articles whose Wikipedia short description
+// (or, without one, whose title) names a conspiracy theory, hoax, denial or similar narrative are taken.
+const THEORY_DESCRIPTION = /conspiracy theor(y|ies)|\bhoax(es)?\b|urban legend|\bmyths?\b|blood libel|\bdenial\b/i;
+const THEORY_TITLE = /conspirac(y|ies)(?! theorist)|\bhoax\b/i;
+
+export function isTheoryPage(title: string, description: string | undefined): boolean {
+  if (/theorists?\b|\(born\b/i.test(description ?? '')) return false;
+  return description ? THEORY_DESCRIPTION.test(description) : THEORY_TITLE.test(title);
+}
+
+export function parseListPages(data: unknown): Candidate[] {
+  const pages = (data as { query?: { pages?: Record<string, unknown>[] } })?.query?.pages ?? [];
+  const out: Candidate[] = [];
+  for (const p of pages) {
+    const title = typeof p.title === 'string' ? p.title : '';
+    const props = (p.pageprops ?? {}) as { wikibase_item?: string; disambiguation?: string };
+    const description = typeof p.description === 'string' ? p.description : undefined;
+    if (!title || p.missing || props.disambiguation !== undefined || !/^Q\d+$/.test(props.wikibase_item ?? '')) continue;
+    if (!isTheoryPage(title, description)) continue;
+    out.push({ qid: props.wikibase_item!, enUrl: EN_WIKI + encodeURIComponent(title.replace(/ /g, '_')), deUrl: null });
+  }
+  return out;
+}
+
+/** Theory articles linked from Wikipedia's "List of conspiracy theories". */
+export async function fetchListCandidates(): Promise<Candidate[]> {
+  const out: Candidate[] = [];
+  let cont = '';
+  for (let i = 0; i < LIST_MAX_REQUESTS; i++) {
+    const data = (await getJson(LIST_API + cont)) as { continue?: Record<string, string> };
+    out.push(...parseListPages(data));
+    if (!data.continue) break;
+    cont = Object.entries(data.continue).map(([k, v]) => `&${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('');
+  }
+  return out.sort((a, b) => a.enUrl.localeCompare(b.enUrl));
+}
+
+/** Wikidata items first (oldest first), then list articles that Wikidata does not have. */
 export async function fetchCandidates(): Promise<Candidate[]> {
-  return parseCandidates(await sparql(IMPORT_QUERY));
+  const fromWikidata = parseCandidates(await sparql(IMPORT_QUERY));
+  let fromList: Candidate[] = [];
+  try {
+    fromList = await fetchListCandidates();
+  } catch {
+    // the list is a second source; Wikidata alone still works
+  }
+  const seen = new Set(fromWikidata.map((c) => c.qid));
+  return [...fromWikidata, ...fromList.filter((c) => !seen.has(c.qid) && !!seen.add(c.qid))];
 }
 
 /** Fills in the German article of each candidate (if one exists). A failure only means no translation. */

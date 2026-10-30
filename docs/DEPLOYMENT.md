@@ -67,8 +67,9 @@ Community submissions and reports require Turnstile. Until it is set up they sho
 
 ## 7. Automatic archive import (free)
 `FEATURE_AUTOMATIC_IMPORT = "true"` enables `POST /api/import/run`. Each run takes up to 12 Wikidata items
-that are a *conspiracy theory* (Q159535, incl. subclasses up to two levels) with an English Wikipedia article, skips
-everything already in the archive and stores the rest neutrally: the Wikipedia lead text (CC BY-SA 4.0,
+that are a *conspiracy theory* (Q159535, incl. subclasses up to two levels) with an English Wikipedia article, then the theory
+articles linked from Wikipedia's *List of conspiracy theories* (people, places and other links are
+skipped by their short description), skips everything already in the archive and stores the rest neutrally: the Wikipedia lead text (CC BY-SA 4.0,
 attributed and linked), the article as source, a German title and summary if a German article exists.
 No claims, ratings or connections are derived. The endpoint needs no secret and runs at most every
 20 minutes. It is called every 3 hours by `.github/workflows/import.yml` (GitHub Actions, about

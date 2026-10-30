@@ -138,7 +138,8 @@ export const theories = [
     category: 'secret-operations',
     status: 'historically_documented',
     tags: ['Cold War', 'Cuba', 'Pentagon', 'False flag'],
-    image: '/media/cards/document.svg',
+    image: '/media/theories/operation-northwoods.jpg',
+    imageCredit: 'Northwoods memorandum, first page (13 March 1962) – U.S. Joint Chiefs of Staff, Public domain, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:NorthwoodsMemorandum.jpg',
     summary:
       'In March 1962 the U.S. Joint Chiefs of Staff proposed staging or simulating attacks that could be blamed on Cuba in order to justify a military intervention. The proposal is documented in a declassified memorandum. It was not approved by the civilian leadership and was never carried out.',
     background:
@@ -179,7 +180,8 @@ export const theories = [
     category: 'intelligence-agencies',
     status: 'historically_documented',
     tags: ['CIA', 'LSD', 'Human experimentation', 'Cold War'],
-    image: '/media/cards/agency.svg',
+    image: '/media/theories/mkultra.jpg',
+    imageCredit: 'Declassified MKUltra document – Central Intelligence Agency, Public domain, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:DeclassifiedMKULTRA.jpg',
     summary:
       'MKUltra was a CIA research program, approved in 1953, that investigated drugs and other methods to influence human behavior, including experiments on people who had not given their consent. Its existence was confirmed by official investigations in the 1970s. Most of its records were destroyed in 1973.',
     background:
@@ -219,7 +221,8 @@ export const theories = [
     category: 'politics-power',
     status: 'historically_documented',
     tags: ['Nixon', 'Cover-up', 'White House tapes', 'Journalism'],
-    image: '/media/cards/document.svg',
+    image: '/media/theories/watergate.jpg',
+    imageCredit: 'The Watergate complex from the air (2006) – Indutiomarus (English Wikipedia), Public domain, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:WatergateFromAir.JPG',
     summary:
       "The 1972 break-in at the Democratic National Committee offices in the Watergate complex and the subsequent cover-up led to President Richard Nixon's resignation in August 1974. Watergate is a political conspiracy established by courts, Congress and the recorded White House tapes.",
     background:
@@ -263,7 +266,8 @@ export const theories = [
     category: 'space-ufos',
     status: 'unverified',
     tags: ['UFO', 'Nevada', 'U-2', 'OXCART', 'Aliens'],
-    image: '/media/cards/location.svg',
+    image: '/media/theories/area-51.jpg',
+    imageCredit: 'Groom Lake and Papoose Lake (2010) – Doc Searls, CC BY 2.0, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:Groom_Lake_and_Papoose_Lake.jpg',
     summary:
       'Area 51 at Groom Lake, Nevada, is a real and long-secret test facility used to develop reconnaissance aircraft such as the U-2 and the A-12 OXCART; its existence was officially acknowledged in 2013. Claims that it holds or studies extraterrestrial spacecraft remain unverified.',
     background:
@@ -303,7 +307,8 @@ export const theories = [
     category: 'space-ufos',
     status: 'debunked',
     tags: ['Apollo', 'NASA', 'Space race', 'Hoax claim'],
-    image: '/media/cards/technology.svg',
+    image: '/media/theories/moon-landing-conspiracy-theory.jpg',
+    imageCredit: 'Buzz Aldrin on the Moon, Apollo 11 (AS11-40-5903) – Neil A. Armstrong / NASA, Public domain, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:Aldrin_Apollo_11.jpg',
     summary:
       'The claim that NASA staged the Apollo Moon landings (1969–1972) appeared in the 1970s. It is contradicted by extensive independent evidence, including returned lunar samples, retroreflectors still used for laser ranging, independent tracking of the missions and orbital images of the landing sites.',
     background:
@@ -342,7 +347,8 @@ export const theories = [
     category: 'secret-organizations',
     status: 'unverified',
     tags: ['Secret society', 'Bavaria', 'Enlightenment', 'Freemasonry'],
-    image: '/media/cards/organization.svg',
+    image: '/media/theories/illuminati-narratives.jpg',
+    imageCredit: 'Portrait of Adam Weishaupt (RP-P-1914-2087) – Rijksmuseum, CC0, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:Portret_van_Adam_Weishaupt,_RP-P-1914-2087.jpg',
     summary:
       'The Order of the Illuminati was a real Enlightenment-era secret society founded in Bavaria in 1776 and suppressed by 1785. Claims that it survived and secretly controls world events are not supported by evidence.',
     background:
@@ -383,7 +389,8 @@ export const theories = [
     category: 'science-technology',
     status: 'debunked',
     tags: ['Contrails', 'Aviation', 'Geoengineering', 'Atmosphere'],
-    image: '/media/cards/technology.svg',
+    image: '/media/theories/chemtrail-claims.jpg',
+    imageCredit: 'Contrails, 3 May 2025 – M. Cristian-Ioan, CC0, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:Contrails_3May_2025_(33).jpg',
     summary:
       'Chemtrail claims assert that long-lasting trails behind aircraft are chemical or biological agents sprayed deliberately. Atmospheric science explains persistent trails as condensation trails (contrails). A 2016 survey of 77 experts found no evidence of a secret large-scale spraying program.',
     background:
@@ -422,7 +429,8 @@ export const theories = [
     category: 'politics-power',
     status: 'disputed',
     tags: ['Kennedy', 'Dallas', 'Warren Commission', 'HSCA'],
-    image: '/media/cards/person.svg',
+    image: '/media/theories/jfk-related-conspiracy-narratives.jpg',
+    imageCredit: 'President Kennedy in the Dallas motorcade, 22 November 1963 – Walt Cisco, Dallas Morning News, Public domain, via Wikimedia Commons https://commons.wikimedia.org/wiki/File:JFK_limousine.png',
     summary:
       "President John F. Kennedy was assassinated in Dallas on 22 November 1963. The Warren Commission (1964) concluded that Lee Harvey Oswald acted alone. The House Select Committee on Assassinations (1979) concluded that Kennedy was probably assassinated as a result of a conspiracy, a finding based largely on acoustic evidence that the National Academy of Sciences disputed in 1982.",
     background:

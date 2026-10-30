@@ -78,6 +78,12 @@ export function TheoryPage() {
         <article className="paper" data-testid="theory-detail">
           <span className="pin" aria-hidden="true" />
           <header className="dossier__head">
+            {th.imagePath && !th.imagePath.endsWith('.svg') && (
+              <figure className="dossier__photo">
+                <span className="pin" aria-hidden="true" />
+                <img src={th.imagePath} alt={th.imageCredit ?? ''} />
+              </figure>
+            )}
             <span className="stamp" style={{ color: STATUS_COLORS[th.evidenceStatus] }}>
               {t(`status.${th.evidenceStatus}`)}
             </span>

@@ -680,6 +680,11 @@ body::after {
   overflow: hidden;
   position: relative;
 }
+/* photos fill the polaroid frame; the line-art placeholders stay fully visible */
+.case-card__img img:not([src$='.svg']) {
+  object-fit: cover;
+  object-position: center 30%;
+}
 .case-card__img img {
   filter: sepia(0.35) contrast(1.05) brightness(0.95);
   transition: transform 0.6s ease, filter 0.4s;
@@ -1015,5 +1020,41 @@ body::after {
     opacity: 0;
     transform: translateY(18px) scale(1.01);
     filter: blur(3px);
+  }
+}
+
+/* ------------------------------------------------------------------ cover photo on the case file page */
+.dossier__photo {
+  float: right;
+  position: relative;
+  width: min(42%, 300px);
+  margin: 0 0 16px 22px;
+  padding: 10px 10px 34px;
+  background: #fbf8ef;
+  box-shadow: var(--shadow-lift);
+  rotate: 2.5deg;
+  transition: rotate 0.3s, transform 0.3s;
+}
+.dossier__photo:hover {
+  rotate: 0deg;
+  transform: scale(1.03);
+}
+.dossier__photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  object-position: center 30%;
+  filter: sepia(0.2) contrast(1.05);
+}
+.dossier__photo .pin {
+  top: -8px;
+}
+@media (max-width: 600px) {
+  .dossier__photo {
+    float: none;
+    width: 100%;
+    margin: 6px 0 12px;
+    rotate: 1deg;
   }
 }

@@ -84,7 +84,7 @@ for (const [i, t] of seed.theories.entries()) {
     content: [t.background, t.origin].filter(Boolean).map((p) => ({ type: 'paragraph', content: [{ type: 'text', text: p }] })),
   };
   emit(
-    `INSERT INTO theories (id, slug, title, subtitle, summary, background, origin_story, body_json, category_id, evidence_status, image_path, image_credit, origin, is_published, created_at, updated_at) VALUES (${id}, ${q(t.slug)}, ${q(t.title)}, ${q(t.subtitle)}, ${q(t.summary)}, ${q(t.background)}, ${q(t.origin)}, ${q(JSON.stringify(body))}, ${catId(t.category)}, ${q(t.status)}, ${q(t.image)}, ${q('Original illustration, The Conspiracy Atlas (see LICENSES.md)')}, 'editorial', 1, '2026-10-30 00:00:00', '2026-10-30 00:00:0${i}');`,
+    `INSERT INTO theories (id, slug, title, subtitle, summary, background, origin_story, body_json, category_id, evidence_status, image_path, image_credit, origin, is_published, created_at, updated_at) VALUES (${id}, ${q(t.slug)}, ${q(t.title)}, ${q(t.subtitle)}, ${q(t.summary)}, ${q(t.background)}, ${q(t.origin)}, ${q(JSON.stringify(body))}, ${catId(t.category)}, ${q(t.status)}, ${q(t.image)}, ${q(t.imageCredit ?? 'Original illustration, The Conspiracy Atlas (see LICENSES.md)')}, 'editorial', 1, '2026-10-30 00:00:00', '2026-10-30 00:00:0${i}');`,
   );
   for (const tag of t.tags) {
     const slug = slugify(tag);

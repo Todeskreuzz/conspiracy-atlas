@@ -13,6 +13,7 @@ import '@fontsource/permanent-marker/400.css';
 import './styles/global.css';
 import './styles/wall.css';
 import './styles/board.css';
+import './styles/tabs.css';
 import { App } from './App';
 import { armScrollReveal, installEffects, reloadOnStaleChunks } from './effects';
 

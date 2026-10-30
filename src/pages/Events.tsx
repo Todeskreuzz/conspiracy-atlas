@@ -37,17 +37,18 @@ export function EventsPage() {
       </header>
       <LoadState loading={res.loading} error={res.error} onRetry={res.reload} />
       {byCentury.map(([century, events]) => (
-        <section key={century} style={{ marginBottom: 28 }}>
-          <h2 className="typewriter" style={{ fontSize: '1.1rem', color: 'var(--yellow)' }}>
-            {locale === 'de' ? `${century}. Jahrhundert` : `${century}th century`}
+        <section key={century} className="ledger">
+          <h2 className="ledger__title">
+            <span>{locale === 'de' ? `${century}. Jahrhundert` : `${century}th century`}</span>
+            <small>{events.length}</small>
           </h2>
-          <ul className="list-plain">
+          <ul className="ledger__rows">
             {events.map((e) => (
-              <li key={e.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, 200px) 1fr', gap: 12 }}>
-                <span className="mono small muted">{eventDate(e, locale)}</span>
+              <li key={e.id} className="ledger__row">
+                <span className="ledger__date">{eventDate(e, locale)}</span>
                 <span>
                   <Link to={`/events/${e.slug}`}>{e.title}</Link>
-                  {e.location && <span className="muted small"> · {e.location.name}</span>}
+                  {e.location && <span className="ledger__place"> · {e.location.name}</span>}
                 </span>
               </li>
             ))}

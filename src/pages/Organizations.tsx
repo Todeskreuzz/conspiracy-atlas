@@ -9,6 +9,14 @@ import { LoadState } from '../components/Unavailable';
 import { Pagination } from '../components/TheoryCard';
 import { RelationshipList } from './Theory';
 
+/** Initials for the badge: the acronym in brackets if the name has one, otherwise the first letters. */
+export function monogram(name: string): string {
+  const acronym = name.match(/\(([A-Z]{2,6})\)/)?.[1];
+  if (acronym) return acronym;
+  const words = name.replace(/\(.*?\)/g, '').split(/[\s-]+/).filter((w) => /^[A-ZÄÖÜ]/.test(w));
+  return (words.length ? words : name.split(/\s+/)).slice(0, 3).map((w) => w[0]).join('').toUpperCase();
+}
+
 export function OrganizationsPage() {
   const { t, locale } = useI18n();
   const [page, setPage] = useState(1);
@@ -25,15 +33,16 @@ export function OrganizationsPage() {
         <>
           <div className="grid grid--3">
             {list.data.items.map((o) => (
-              <Link key={o.id} to={`/organizations/${o.slug}`} className="panel" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <div className="typewriter small" style={{ color: 'var(--yellow)' }}>
-                  {o.kind}
+              <Link key={o.id} to={`/organizations/${o.slug}`} className="panel org-badge">
+                <span className="org-badge__kind">{o.kind}</span>
+                <div className="org-badge__id">
+                  <span className="org-badge__seal" aria-hidden="true">
+                    {monogram(o.name)}
+                  </span>
+                  <h3>{o.name}</h3>
                 </div>
-                <h3 style={{ marginTop: 4 }}>{o.name}</h3>
-                <p className="muted small" style={{ margin: 0 }}>
-                  {o.description}
-                </p>
-                <div className="small muted" style={{ marginTop: 8 }}>
+                <p className="muted small">{o.description}</p>
+                <div className="org-badge__meta mono small">
                   {o.founded && `${t('orgs.founded')}: ${o.founded}`} {o.country && `· ${o.country}`}
                 </div>
               </Link>

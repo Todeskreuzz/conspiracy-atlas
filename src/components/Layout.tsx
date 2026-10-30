@@ -22,6 +22,9 @@ export const NAV_ITEMS = [
   ['/about', 'nav.about'],
 ] as const;
 
+/** Sections whose page header carries a stamp (text in i18n under tabStamp). */
+export const TAB_STAMPS = ['archive', 'events', 'organizations', 'saved', 'investigations', 'community', 'knowledge', 'experts', 'about', 'submit'] as const;
+
 export function BrandMark() {
   return (
     <svg className="brand__mark" viewBox="0 0 64 64" aria-hidden="true">
@@ -56,6 +59,9 @@ export function Layout({ children }: { children: ReactNode }) {
     setOpen(false);
   }, [location.pathname]);
   const fullBleed = location.pathname === '/wall';
+  // Each section has its own character (src/styles/tabs.css): a header treatment, a stamp and a lamp colour.
+  const tab = location.pathname.split('/')[1] || 'home';
+  const stamp = (TAB_STAMPS as readonly string[]).includes(tab) ? t(`tabStamp.${tab}`) : '';
   return (
     <>
       <a href="#main" className="skip-link">
@@ -85,7 +91,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <main id="main" tabIndex={-1}>
+      <main id="main" tabIndex={-1} data-tab={tab} style={stamp ? ({ '--stamp': JSON.stringify(stamp) } as React.CSSProperties) : undefined}>
         {children}
       </main>
       {!fullBleed && (

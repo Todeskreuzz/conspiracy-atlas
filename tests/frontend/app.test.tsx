@@ -41,16 +41,6 @@ describe('frontend', () => {
     expect(document.querySelectorAll('[data-status]').length).toBeGreaterThan(0);
   });
 
-  it('shows a generated case-file cover for cases without a photo', async () => {
-    const env = await makeEnv();
-    (env.DB as any).raw.prepare("UPDATE theories SET image_path = NULL WHERE slug = 'cointelpro'").run();
-    renderApp('/theory/cointelpro', env);
-    await screen.findByTestId('theory-detail', {}, { timeout: 5000 });
-    const cover = screen.getByTestId('case-cover');
-    expect(cover).toHaveAttribute('aria-label', 'COINTELPRO');
-    expect(cover.textContent).toContain('ARCHIVE');
-  });
-
   it('saves a case in the browser and lists it on the saved page', async () => {
     renderApp('/theory/cointelpro', await makeEnv());
     await screen.findByTestId('theory-detail', {}, { timeout: 5000 });

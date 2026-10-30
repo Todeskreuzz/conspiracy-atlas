@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import { client, makeEnv } from './helpers/app';
-import { importFetch, guessCategory, isFreeLicense, isTheoryPage, isCoverCandidate, matchKey, parseCandidates, articleDetails, IMPORT_BATCH, MAX_SUBREQUESTS } from '../server/importer';
+import { importFetch, guessCategory, isFreeLicense, isTheoryPage, isCoverCandidate, commonsQuery, matchKey, parseCandidates, articleDetails, IMPORT_BATCH, MAX_SUBREQUESTS } from '../server/importer';
 import { runCostCheck } from '../scripts/cost-check.mjs';
 
 const original = importFetch.impl;
@@ -60,7 +60,14 @@ function fakeUpstream(
   pages: Record<string, unknown | null>,
   listPages: unknown[][] = [],
   images: Record<string, FakeImage> = {},
-  extra: { articles?: Record<string, string | null>; p18?: Record<string, string>; pageFiles?: Record<string, string[]>; licenses?: Record<string, string> } = {},
+  extra: {
+    articles?: Record<string, string | null>;
+    p18?: Record<string, string>;
+    related?: Record<string, string>;
+    pageFiles?: Record<string, string[]>;
+    licenses?: Record<string, string>;
+    commons?: Record<string, { file: string; license: string }[]>;
+  } = {},
 ) {
   const calls: string[] = [];
   /** Licences of files that are not a lead image (Wikidata image, other photos in the article). */
@@ -70,6 +77,27 @@ function fakeUpstream(
     calls.push(url);
     if (url.startsWith('https://thumb.wikimedia.org/')) return new Response(JPEG);
     const titles = () => decodeURIComponent(new URL(url).searchParams.get('titles') ?? '').split('|');
+    if (url.startsWith('https://commons.wikimedia.org/')) {
+      const q = decodeURIComponent(new URL(url).searchParams.get('gsrsearch') ?? '').replace(' filetype:bitmap', '');
+      const hits = extra.commons?.[q] ?? [];
+      return Response.json({
+        query: {
+          pages: hits.map((h, i) => ({
+            title: h.file,
+            index: i + 1,
+            imageinfo: [{
+              thumburl: `https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/x/640px-x.jpg`,
+              thumbwidth: 640,
+              thumbheight: 427,
+              mime: 'image/jpeg',
+              descriptionurl: `https://commons.wikimedia.org/wiki/${encodeURIComponent(h.file)}`,
+              extmetadata: { LicenseShortName: { value: h.license }, Artist: { value: 'Archive photographer' } },
+            }],
+          })),
+        },
+      });
+    }
+    if (url.startsWith('https://upload.wikimedia.org/')) return new Response(JPEG);
     if (url.includes('prop=extracts')) {
       return Response.json({ query: { pages: titles().map((t) => (extra.articles?.[t] === null ? { title: t, missing: true } : { title: t, extract: extra.articles?.[t] ?? article(t) })) } });
     }
@@ -77,10 +105,16 @@ function fakeUpstream(
       return Response.json({ query: { pages: titles().map((t) => ({ title: t, images: (extra.pageFiles?.[t] ?? []).map((f) => ({ title: f })) })) } });
     }
     if (url.startsWith('https://query.wikidata.org/') && decodeURIComponent(url).includes('P18')) {
-      const rows = Object.entries(extra.p18 ?? {}).map(([qid, file]) => ({
+      const row = (qid: string, file: string, rank: number) => ({
         item: { value: `http://www.wikidata.org/entity/${qid}` },
         img: { value: `http://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file.replace(/ /g, '_'))}` },
-      }));
+        rank: { value: String(rank) },
+      });
+      // Related entities come first in the response to check that the item's own image still wins.
+      const rows = [
+        ...Object.entries(extra.related ?? {}).map(([qid, file]) => row(qid, file, 1)),
+        ...Object.entries(extra.p18 ?? {}).map(([qid, file]) => row(qid, file, 0)),
+      ];
       return Response.json({ results: { bindings: rows } });
     }
     if (url.includes('prop=pageimages')) {
@@ -274,8 +308,38 @@ describe('cover images', () => {
     expect(r.json.images).toBe(2);
     const files = raw.prepare("SELECT title FROM sources WHERE publisher = 'Wikimedia Commons' ORDER BY id").all().map((x: any) => x.title);
     expect(files).toEqual(['File:Globe photo.jpg – Wikimedia Commons', 'File:Hollow earth drawing.jpg – Wikimedia Commons']);
-    // No free image anywhere: the frontend shows the generated case-file cover.
+    // No free image anywhere: the case keeps the placeholder, nothing is generated.
     expect((await visitor.get('/api/theories/lizard-people')).json.imagePath).toBeNull();
+  });
+
+  it('uses the image of a person or place the theory is about, then a Commons search for the title', async () => {
+    const { visitor, raw } = await setup();
+    fakeUpstream(
+      [binding('Q50', 'George_Soros_conspiracy_theories'), binding('Q60', 'Popish_Plot'), binding('Q70', 'Deep_state')],
+      { 'en:George Soros conspiracy theories': summary('George Soros conspiracy theories'), 'en:Popish Plot': summary('Popish Plot'), 'en:Deep state': summary('Deep state') },
+      [],
+      {},
+      {
+        p18: { Q60: 'Popish plot playing cards.jpg' },
+        related: { Q50: 'George Soros portrait.jpg', Q60: 'Titus Oates.jpg' },
+        licenses: { 'File:George Soros portrait.jpg': 'CC BY 2.0', 'File:Popish plot playing cards.jpg': 'Public domain', 'File:Titus Oates.jpg': 'Public domain' },
+        commons: { 'Deep state': [{ file: 'File:Logo deep.png', license: 'CC0' }, { file: 'File:Deep state protest sign.jpg', license: 'CC BY-SA 4.0' }] },
+      },
+    );
+    const r = await visitor.post('/api/import/run');
+    expect(r.json.images).toBe(3);
+    const files = raw.prepare("SELECT title FROM sources WHERE publisher = 'Wikimedia Commons' ORDER BY id").all().map((x: any) => x.title);
+    expect(files).toEqual([
+      'File:George Soros portrait.jpg – Wikimedia Commons',
+      'File:Popish plot playing cards.jpg – Wikimedia Commons',
+      'File:Deep state protest sign.jpg – Wikimedia Commons',
+    ]);
+  });
+
+  it('searches Commons without "conspiracy theory" and similar words', () => {
+    expect(commonsQuery('George Soros conspiracy theories')).toBe('George Soros');
+    expect(commonsQuery('New chronology (Fomenko)')).toBe('New chronology');
+    expect(commonsQuery('HIV/AIDS denialism')).toBe('HIV AIDS');
   });
 
   it('recognises photos and rejects icons, logos and flags', () => {

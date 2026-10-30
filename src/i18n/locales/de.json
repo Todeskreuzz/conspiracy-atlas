@@ -613,9 +613,5 @@
     "moderationHint": "Dein Hinweis wird vor der Veröffentlichung von der Redaktion geprüft. Gespeichert wird nur der Anzeigename, keine E-Mail- oder IP-Adresse.",
     "send": "Zur Prüfung senden",
     "sent": "Danke! Dein Hinweis erscheint, sobald die Redaktion ihn freigegeben hat."
-  },
-  "cover": {
-    "file": "AKTE Nr. {n}",
-    "stamp": "ARCHIV"
   }
 }

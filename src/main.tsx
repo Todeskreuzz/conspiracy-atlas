@@ -14,10 +14,11 @@ import './styles/global.css';
 import './styles/wall.css';
 import './styles/board.css';
 import { App } from './App';
-import { armScrollReveal, installEffects } from './effects';
+import { armScrollReveal, installEffects, reloadOnStaleChunks } from './effects';
 
 installEffects();
 armScrollReveal();
+reloadOnStaleChunks();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

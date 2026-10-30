@@ -18,7 +18,11 @@ export const FORBIDDEN_BINDINGS = [
 /** Keys that change billing behaviour. */
 export const FORBIDDEN_SETTINGS = ['usage_model', 'limits', 'placement'];
 /** The only external hosts the code may contact or load. */
-export const ALLOWED_HOSTS = ['challenges.cloudflare.com', 'www.w3.org', 'localhost', '127.0.0.1'];
+export const ALLOWED_HOSTS = [
+  'challenges.cloudflare.com', 'www.w3.org', 'localhost', '127.0.0.1',
+  // Free public APIs (no key, no account) used by the automatic archive import.
+  'query.wikidata.org', 'en.wikipedia.org', 'de.wikipedia.org', 'conspiracy-atlas.pages.dev',
+];
 /** Hosts of paid / usage-billed products that must never appear in code. */
 export const FORBIDDEN_PATTERNS = [
   /r2\.cloudflarestorage\.com/i, /r2\.dev/i, /imagedelivery\.net/i, /videodelivery\.net/i,

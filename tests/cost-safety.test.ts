@@ -38,10 +38,13 @@ describe('cost safety (free-only)', () => {
     expect(toml).not.toMatch(/^\s*(TURNSTILE_SECRET_KEY|ADMIN_PASSWORD_HASH|SESSION_SECRET|ADMIN_USERNAME)\s*=/m);
   });
 
-  it('the server only ever contacts Turnstile', () => {
+  it('the server only contacts Turnstile and the free Wikidata/Wikipedia APIs (import)', () => {
     const files = readdirSync('server', { recursive: true }).map((f) => String(f).replace(/\\/g, '/')).filter((f) => f.endsWith('.ts'));
     const fetchers = files.filter((f) => /\bfetch\w*\(/.test(readFileSync(join('server', f), 'utf8')));
-    expect(fetchers.sort()).toEqual(['routes/community.ts', 'security.ts']);
+    expect(fetchers.sort()).toEqual(['importer.ts', 'routes/community.ts', 'security.ts']);
+    const importer = readFileSync('server/importer.ts', 'utf8');
+    const hosts = new Set([...importer.matchAll(/https:\/\/([a-z0-9.-]+)/g)].map((m) => m[1]));
+    expect([...hosts].sort()).toEqual(['conspiracy-atlas.pages.dev', 'de.wikipedia.org', 'en.wikipedia.org', 'query.wikidata.org']);
   });
 
   it('no secrets are committed', () => {

@@ -37,7 +37,7 @@ export function computeFeatures(env: Env, dbState: ServiceState = 'available'): 
     reports: !flag(env.FEATURE_REPORTS, true) ? 'disabled' : !turnstileConfigured(env) ? 'not_configured' : needsDb('available'),
     admin_panel: !flag(env.FEATURE_ADMIN_PANEL, true) ? 'disabled' : !adminConfigured(env) ? 'not_configured' : needsDb('available'),
     map_data: !flag(env.FEATURE_MAP_DATA, true) ? 'disabled' : 'available',
-    automatic_import: flag(env.FEATURE_AUTOMATIC_IMPORT) ? 'not_activated' : 'disabled',
+    automatic_import: flag(env.FEATURE_AUTOMATIC_IMPORT) ? needsDb('available') : 'disabled',
     investigations: !flag(env.FEATURE_INVESTIGATIONS, true) ? 'disabled' : needsDb('available'),
   };
 

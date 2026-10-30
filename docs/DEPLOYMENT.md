@@ -65,7 +65,18 @@ Community submissions and reports require Turnstile. Until it is set up they sho
 3. `npx wrangler pages secret put TURNSTILE_SECRET_KEY --project-name conspiracy-atlas`
 4. Rebuild and deploy.
 
-## 7. Verify
+## 7. Automatic archive import (free)
+`FEATURE_AUTOMATIC_IMPORT = "true"` enables `POST /api/import/run`. Each run takes up to 12 Wikidata items
+that are a *conspiracy theory* (Q17379835, incl. subclasses) with an English Wikipedia article, skips
+everything already in the archive and stores the rest neutrally: the Wikipedia lead text (CC BY-SA 4.0,
+attributed and linked), the article as source, a German title and summary if a German article exists.
+No claims, ratings or connections are derived. The endpoint needs no secret and runs at most every
+20 minutes. It is called every 3 hours by `.github/workflows/import.yml` (GitHub Actions, about
+240 of the 2,000 free minutes per month; it can also be started by hand under *Actions → Archive
+import → Run workflow*) and from the admin API (`POST /api/admin/import/run`). No Cloudflare resource
+is involved; the last result is shown under Admin → *Services*. Set the flag to `"false"` to stop it.
+
+## 8. Verify
 - `https://conspiracy-atlas.pages.dev/api/health` → `{"ok":true,...}`
 - Admin → *Services* shows each service, its state and a connection test.
 

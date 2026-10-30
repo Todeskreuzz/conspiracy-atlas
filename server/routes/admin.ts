@@ -31,6 +31,7 @@ import { sanitizeRichDoc, textToDoc } from '../../shared/richtext';
 import { validateSubmission } from '../../shared/submission';
 import { arr, int, isoDateOrYear, oneOf, optOneOf, optStr, reqStr, slugify, url, ValidationError } from '../../shared/validation';
 import { THEORY_SUMMARY_SELECT, loadTheoryDetail, mapSource, mapTheorySummary } from '../repo';
+import { IMPORT_BATCH, LAST_RUN_KEY, lastImportResult, runImport } from '../importer';
 import { addEdge, addNode, deleteEdge, deleteNode, savePositions } from '../boards';
 import { BACKUP_TABLES, toCsv } from '../backup';
 import { IMAGE_LIMITS } from '../../shared/images';
@@ -830,6 +831,7 @@ adminRoutes.get('/services', async (c) => {
   let lastOk: string | null = null;
   let tableCounts: Record<string, number> | null = null;
   let imageUsage: { used: number; limit: number } | null = null;
+  let lastImport: Awaited<ReturnType<typeof lastImportResult>> = null;
   if (c.env.DB) {
     const started = Date.now();
     try {
@@ -842,6 +844,7 @@ adminRoutes.get('/services', async (c) => {
         lastOk,
       );
       imageUsage = { used: await imageStorageUsed(db), limit: imageStorageLimitBytes(c.env) };
+      lastImport = await lastImportResult(db);
       if (c.req.query('counts') === '1') {
         tableCounts = {};
         for (const table of ['theories', 'sources', 'events', 'board_nodes', 'board_edges', 'community_submissions', 'investigations', 'images']) {
@@ -877,10 +880,35 @@ adminRoutes.get('/services', async (c) => {
         freeLimit: FREE_LIMITS.images,
         usage: imageUsage ? `${Math.round((imageUsage.used / imageUsage.limit) * 100)} %` : 'Currently unavailable!',
       },
+      {
+        service: 'Automatic import (Wikidata / Wikipedia)',
+        enabled: features.automatic_import.available,
+        state: features.automatic_import.state,
+        test: lastImport
+          ? lastImport.error
+            ? `Last run failed: ${lastImport.error}`
+            : `${lastImport.imported.length} imported, ${lastImport.remaining} still to import`
+          : 'No run yet',
+        lastOk: lastImport && !lastImport.error ? lastImport.ranAt : null,
+        freeLimit: `Free public APIs, max. ${IMPORT_BATCH} entries per run`,
+        usage: 'Not applicable',
+      },
       { service: 'Cloudflare R2', enabled: false, state: 'disabled', test: 'No binding exists', lastOk: null, freeLimit: FREE_LIMITS.r2, usage: 'Not applicable' },
     ],
     features,
   });
+});
+
+/** Runs the import immediately, without waiting for the schedule. */
+adminRoutes.post('/import/run', async (c) => {
+  requireFeature(c.env, 'automatic_import');
+  const db = Db.from(c.env);
+  await db.run(
+    "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')",
+    LAST_RUN_KEY,
+    new Date().toISOString(),
+  );
+  return c.json(await runImport(db));
 });
 
 // ---------------------------------------------------------------------------

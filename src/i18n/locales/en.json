@@ -525,5 +525,20 @@
       "setCover": "Use as cover",
       "upload": "Upload {count} image(s)"
     }
+  },
+  "search": {
+    "button": "Search",
+    "label": "Search the archive",
+    "placeholder": "Case files, people, organizations, events …",
+    "hint": "Type at least 2 characters. Tip: press Ctrl K or / anywhere.",
+    "empty": "No results for “{q}”.",
+    "close": "Close",
+    "shortcut": "Ctrl K",
+    "groups": {
+      "theories": "Case files",
+      "people": "People",
+      "organizations": "Organizations",
+      "events": "Events"
+    }
   }
 }

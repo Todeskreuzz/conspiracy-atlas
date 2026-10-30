@@ -32,6 +32,8 @@ export interface WallEditor {
   deleteEdge: (id: number) => Promise<void>;
   addNode?: (n: { kind: NodeKind; title: string; summary: string | null; x: number; y: number }) => Promise<BoardNode>;
   deleteNode?: (id: number) => Promise<void>;
+  /** Label of the save button when the layout is not stored in the database. */
+  saveLabel?: string;
 }
 
 interface Props {
@@ -173,6 +175,11 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
     });
     instance.fit(undefined, 60);
     // Keep the cards readable on first load; the minimap and "Fit to screen" give the overview.
+    // Small boards (e.g. a personal wall with a few cards) should not be blown up beyond natural size.
+    if (instance.zoom() > 1) {
+      instance.zoom(1);
+      instance.center();
+    }
     if (many <= 300 && instance.zoom() < 0.62) instance.zoom({ level: 0.62, renderedPosition: { x: instance.width() / 2, y: instance.height() / 2 } });
     setCy(instance);
     return () => {
@@ -490,7 +497,7 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
             <section className="wall__section wall__section--edit">
               <h4>{t('wall.editMode')}</h4>
               <button className="btn btn--primary btn--small" disabled={!dirty.size} onClick={saveLayout}>
-                {t('wall.saveLayout')} {dirty.size ? `(${dirty.size})` : ''}
+                {editor.saveLabel ?? t('wall.saveLayout')} {dirty.size ? `(${dirty.size})` : ''}
               </button>
               <p className="small muted">{t('wall.connectHint')}</p>
               {multi.length === 2 && (

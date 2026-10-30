@@ -47,7 +47,8 @@
     "knowledge": "Wissensarchiv",
     "experts": "Experten-Meinungen",
     "about": "Über",
-    "admin": "Verwaltung"
+    "admin": "Verwaltung",
+    "saved": "Merkliste"
   },
   "unavailable": {
     "germanNote": "Hinweis:",
@@ -563,5 +564,16 @@
     "backToCase": "Zurück zum Archiveintrag",
     "allRatings": "Alle Einstufungen",
     "forCase": "Experten-Meinungen zu diesem Fall"
+  },
+  "saved": {
+    "title": "Merkliste & meine Pinnwand",
+    "intro": "Merke dir Fallakten und ordne sie auf deiner eigenen Pinnwand an. Alles bleibt nur in diesem Browser gespeichert, ganz ohne Konto; nichts wird an den Server geschickt.",
+    "list": "Gemerkte Fälle",
+    "wall": "Meine Pinnwand",
+    "empty": "Du hast dir noch keine Fallakten gemerkt. Öffne eine Akte und klicke auf „Merken“.",
+    "save": "Merken",
+    "saved": "Gemerkt",
+    "wallHint": "Karten verschieben, zwei Karten auswählen und einen Faden spannen, eigene Notizen unter „Filter“ hinzufügen. Mit „Anordnung im Browser speichern“ bleibt die Anordnung erhalten. Gepunktete Fäden werden automatisch erkannt (gleiche Person, Organisation oder gleicher Ort).",
+    "saveLayout": "Anordnung im Browser speichern"
   }
 }

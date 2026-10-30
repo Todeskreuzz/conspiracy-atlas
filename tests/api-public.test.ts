@@ -109,6 +109,16 @@ describe('public API', () => {
     expect([...picks].every((p) => p >= 0 && p < 25)).toBe(true);
   });
 
+  it('derives threads between saved cases for the personal wall', async () => {
+    const c = client(await makeEnv());
+    const ids = await Promise.all(['mkultra', 'area-51', 'cointelpro'].map(async (s) => (await c.get(`/api/theories/${s}`)).json.id));
+    const r = await c.get(`/api/shared-threads?ids=${ids.join(',')},abc,-1`);
+    expect(r.status).toBe(200);
+    expect(r.json.edges.length).toBeGreaterThan(0);
+    expect(r.json.edges.every((e: any) => ids.includes(e.source) && ids.includes(e.target) && e.auto)).toBe(true);
+    expect((await c.get('/api/shared-threads')).json.edges).toEqual([]);
+  });
+
   it('serves events for the timeline and map data', async () => {
     const c = client(await makeEnv());
     const ev = await c.get('/api/events?from=1960&to=1980');

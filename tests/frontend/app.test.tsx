@@ -41,6 +41,21 @@ describe('frontend', () => {
     expect(document.querySelectorAll('[data-status]').length).toBeGreaterThan(0);
   });
 
+  it('saves a case in the browser and lists it on the saved page', async () => {
+    renderApp('/theory/cointelpro', await makeEnv());
+    await screen.findByTestId('theory-detail', {}, { timeout: 5000 });
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    expect(screen.getByRole('button', { name: /Saved/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(JSON.parse(localStorage.getItem('ca.saved') ?? '[]')[0].slug).toBe('cointelpro');
+    cleanup();
+
+    renderApp('/saved', await makeEnv());
+    const list = await screen.findByTestId('saved-list', {}, { timeout: 5000 });
+    expect(within(list).getByText('COINTELPRO')).toBeInTheDocument();
+    fireEvent.click(within(list).getByRole('button', { name: /Saved/ }));
+    await waitFor(() => expect(screen.queryByTestId('saved-list')).toBeNull());
+  });
+
   it('lists the ratings of all cases under Expert opinions', async () => {
     renderApp('/experts', await makeEnv());
     const list = await screen.findByTestId('expert-list', {}, { timeout: 5000 });

@@ -13,6 +13,7 @@ export const NAV_ITEMS = [
   ['/events', 'nav.events'],
   ['/timeline', 'nav.timeline'],
   ['/map', 'nav.map'],
+  ['/saved', 'nav.saved'],
   ['/investigations', 'nav.investigations'],
   ['/community', 'nav.community'],
   ['/submit', 'nav.submit'],

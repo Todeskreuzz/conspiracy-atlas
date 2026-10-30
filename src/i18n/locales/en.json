@@ -47,7 +47,8 @@
     "knowledge": "Knowledge Archive",
     "experts": "Expert opinions",
     "about": "About",
-    "admin": "Admin"
+    "admin": "Admin",
+    "saved": "Saved cases"
   },
   "unavailable": {
     "germanNote": "Note (German):",
@@ -563,5 +564,16 @@
     "backToCase": "Back to the archive entry",
     "allRatings": "All ratings",
     "forCase": "Expert opinions on this case"
+  },
+  "saved": {
+    "title": "Saved cases & my wall",
+    "intro": "Bookmark case files and arrange them on your own wall. Everything is stored only in this browser, without an account; nothing is sent to the server.",
+    "list": "Saved cases",
+    "wall": "My wall",
+    "empty": "You have not saved any case files yet. Open a case file and click \"Save\".",
+    "save": "Save",
+    "saved": "Saved",
+    "wallHint": "Drag cards, select two cards to tie a thread, add your own notes under \"Filters\". Click \"Save layout in this browser\" to keep the arrangement. Dotted threads are found automatically (same person, organization or place).",
+    "saveLayout": "Save layout in this browser"
   }
 }

@@ -1334,3 +1334,14 @@ table.data th {
     grid-template-columns: 1fr;
   }
 }
+
+/* Saved cases */
+.saved-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.saved-item > .case-card {
+  width: 100%;
+}

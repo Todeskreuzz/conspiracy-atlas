@@ -886,25 +886,25 @@ body::after {
 
 /* ------------------------------------------------------------------ entrance & scroll reveal */
 @media (prefers-reduced-motion: no-preference) {
-  .hero__file {
+  .reveal-ready .hero__file {
     animation: drop-in 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
   }
-  .tally {
+  .reveal-ready .tally {
     animation: drop-in 0.8s 0.15s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
   }
-  .hero__side .sticky {
+  .reveal-ready .hero__side .sticky {
     animation: drop-in 0.7s 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
   }
-  .hero__stamp {
+  .reveal-ready .hero__stamp {
     animation: slam 0.45s 0.9s cubic-bezier(0.3, 1.6, 0.6, 1) both;
   }
-  .hero__thread path {
+  .reveal-ready .hero__thread path {
     animation: draw 1.4s ease-out both;
   }
-  .hero__thread circle {
+  .reveal-ready .hero__thread circle {
     animation: pop 0.3s 0.6s ease-out both;
   }
-  .tally__marks line {
+  .reveal-ready .tally__marks line {
     animation: draw-mark 0.25s ease-out both;
     animation-delay: calc(0.6s + var(--d, 0) * 45ms);
   }
@@ -912,7 +912,7 @@ body::after {
     animation: flicker 6s infinite;
   }
 
-  /* Gated by .reveal-ready (src/effects.ts) so background tabs never keep content hidden. */
+  /* Entrance and reveal animations are gated by .reveal-ready (src/effects.ts), so background tabs never keep content hidden. */
   @supports (animation-timeline: view()) {
     .reveal-ready .case-card,
     .reveal-ready .category-tile,

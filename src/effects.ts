@@ -64,3 +64,22 @@ export function armScrollReveal() {
   };
   document.addEventListener('visibilitychange', onVisible);
 }
+
+/**
+ * After a redeploy an open tab may request route chunks that no longer exist; Vite then fires
+ * vite:preloadError. Reload once to pick up the new build (guarded so it can never loop).
+ */
+export function reloadOnStaleChunks() {
+  if (typeof window === 'undefined') return;
+  window.addEventListener('vite:preloadError', (e) => {
+    try {
+      const last = Number(window.sessionStorage.getItem('ca.chunkReload') || 0);
+      if (Date.now() - last < 30_000) return;
+      window.sessionStorage.setItem('ca.chunkReload', String(Date.now()));
+    } catch {
+      return;
+    }
+    e.preventDefault();
+    window.location.reload();
+  });
+}

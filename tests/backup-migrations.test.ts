@@ -12,7 +12,7 @@ const REQUIRED_TABLES = [
 
 describe('migrations', () => {
   it('are numbered and create every required table', () => {
-    expect(migrationFiles()).toEqual(['0001_schema.sql', '0002_seed.sql', '0003_images.sql', '0004_case_images.sql']);
+    expect(migrationFiles()).toEqual(['0001_schema.sql', '0002_seed.sql', '0003_images.sql', '0004_case_images.sql', '0005_more_cases.sql']);
     const db = createDb({ seed: false });
     const tables = db.raw.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r: any) => r.name);
     for (const t of REQUIRED_TABLES) expect(tables, t).toContain(t);
@@ -24,17 +24,18 @@ describe('migrations', () => {
     expect(() => db.raw.exec("UPDATE theories SET evidence_status = 'proven' WHERE id = 1")).toThrow(/CHECK/);
   });
 
-  it('seed contains the eight initial case files with sources and both languages', () => {
+  it('seed contains the case files with sources and both languages', () => {
     const db = createDb();
     const slugs = db.raw.prepare('SELECT slug FROM theories ORDER BY slug').all().map((r: any) => r.slug);
     expect(slugs).toEqual([
-      'area-51', 'chemtrail-claims', 'illuminati-narratives', 'jfk-related-conspiracy-narratives',
-      'mkultra', 'moon-landing-conspiracy-theory', 'operation-northwoods', 'watergate',
+      'area-51', 'chemtrail-claims', 'cointelpro', 'gulf-of-tonkin-incident', 'illuminati-narratives',
+      'jfk-related-conspiracy-narratives', 'mkultra', 'moon-landing-conspiracy-theory', 'operation-northwoods',
+      'operation-paperclip', 'reichstag-fire', 'roswell-incident', 'tuskegee-syphilis-study', 'watergate',
     ]);
     const unsourced = db.raw.prepare('SELECT t.slug FROM theories t WHERE NOT EXISTS (SELECT 1 FROM evidence e WHERE e.theory_id = t.id)').all();
     expect(unsourced).toEqual([]);
     const de = db.raw.prepare("SELECT COUNT(*) AS n FROM translations WHERE locale = 'de' AND entity_type = 'theory' AND field = 'title'").get() as any;
-    expect(de.n).toBe(8);
+    expect(de.n).toBe(14);
     // Every claim carries its own evidence status.
     expect((db.raw.prepare('SELECT COUNT(*) AS n FROM claims WHERE evidence_status IS NULL').get() as any).n).toBe(0);
   });

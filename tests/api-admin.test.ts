@@ -154,7 +154,7 @@ describe('services and backups', () => {
     expect(d1.state).toBe('available');
     expect(d1.lastOk).toBeTruthy();
     expect(d1.usage).toBe('Currently unavailable!');
-    expect(d1.tableCounts.theories).toBe(8);
+    expect(d1.tableCounts.theories).toBe(14);
     const r2 = r.json.services.find((s: any) => s.service.startsWith('Cloudflare R2'));
     expect(r2.enabled).toBe(false);
   });
@@ -164,7 +164,7 @@ describe('services and backups', () => {
     const r = await admin.get('/api/admin/export');
     expect(r.headers.get('Content-Disposition')).toContain('attachment');
     expect(Object.keys(r.json.tables)).toEqual([...BACKUP_TABLES]);
-    expect(r.json.tables.theories).toHaveLength(8);
+    expect(r.json.tables.theories).toHaveLength(14);
     expect(r.json.tables.admin_sessions).toBeUndefined();
     expect(r.json.tables.rate_limits).toBeUndefined();
     const csv = await admin.get('/api/admin/export?format=csv&table=sources');

@@ -4,7 +4,10 @@
 // with normal internet access, then review failing URLs by hand.
 // Usage: npm run check-sources [-- --json report.json]
 import { writeFileSync } from 'node:fs';
-import { sources } from '../data/seed.mjs';
+import { sources as baseSources } from '../data/seed.mjs';
+import { sources as batch2 } from '../data/cases-2.mjs';
+
+const sources = [...baseSources, ...batch2];
 
 const TIMEOUT = Number(process.env.CHECK_SOURCES_TIMEOUT_MS || 15000);
 

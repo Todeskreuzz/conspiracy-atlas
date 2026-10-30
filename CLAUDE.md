@@ -6,7 +6,8 @@
 - **No secrets** in files, logs or commits. Secrets are set with `wrangler pages secret put`.
 - Unavailable features must show `Currently unavailable!` (shared/availability.ts), never a fake success.
 - Layout: `src/` frontend, `server/` API (Hono), `functions/api/[[path]].ts` entry, `shared/` code used by
-  both, `migrations/d1/` schema + generated seed (`node scripts/generate-seed.mjs` from `data/seed.mjs`).
+  both, `migrations/d1/` schema + generated seed (`node scripts/generate-seed.mjs` from `data/seed.mjs`; later case batches
+  are additive migrations from `data/cases-*.mjs` via `scripts/generate-addition.mjs`).
 - SQL is always parametrised; D1 allows max 100 bound parameters per statement (chunk at 90).
 - Rich text is TipTap JSON validated by `shared/richtext.ts`; never render HTML from users.
 - Archive content: facts and claims stay separate; cite only real, verifiable sources; never invent

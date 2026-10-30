@@ -8,9 +8,12 @@ describe('public API', () => {
     expect(r.status).toBe(200);
     expect(r.json.items).toHaveLength(5);
     expect(r.json.hasMore).toBe(true);
+    const p3 = await c.get('/api/theories?pageSize=5&page=3');
+    expect(p3.json.items).toHaveLength(4);
+    expect(p3.json.hasMore).toBe(false);
     const p2 = await c.get('/api/theories?pageSize=5&page=2');
-    expect(p2.json.items).toHaveLength(3);
-    expect(p2.json.hasMore).toBe(false);
+    expect(p2.json.items).toHaveLength(5);
+    expect(p2.json.hasMore).toBe(true);
   });
 
   it('returns a theory detail with claims, evidence and counter-arguments', async () => {
@@ -35,7 +38,7 @@ describe('public API', () => {
   it('filters by category and status', async () => {
     const c = client(await makeEnv());
     const r = await c.get('/api/theories?category=space-ufos');
-    expect(r.json.items.map((t: any) => t.slug).sort()).toEqual(['area-51', 'moon-landing-conspiracy-theory']);
+    expect(r.json.items.map((t: any) => t.slug).sort()).toEqual(['area-51', 'moon-landing-conspiracy-theory', 'roswell-incident']);
     const d = await c.get('/api/theories?status=debunked');
     expect(d.json.items.every((t: any) => t.evidenceStatus === 'debunked')).toBe(true);
   });

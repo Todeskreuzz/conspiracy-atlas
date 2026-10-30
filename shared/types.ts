@@ -110,6 +110,20 @@ export interface EventSummary {
   theoryIds: number[];
 }
 
+/** A case file placed on the timeline: by its Wikidata dates, or by the years of its linked events. */
+export interface TimelineCase {
+  id: number;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  category: CategorySlug;
+  evidenceStatus: EvidenceStatus;
+  imagePath: string | null;
+  startYear: number;
+  endYear: number | null;
+  yearSource: 'wikidata' | 'events';
+}
+
 export interface TheoryDetail extends TheorySummary {
   background: string | null;
   originStory: string | null;

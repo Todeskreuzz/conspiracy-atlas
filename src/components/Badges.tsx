@@ -11,6 +11,20 @@ export const STATUS_COLORS: Record<EvidenceStatus, string> = {
   under_investigation: '#3f6a94',
 };
 
+/** Ink colours of the categories (folder edges on the timeline, map threads, filter chips). */
+export const CATEGORY_COLORS: Record<CategorySlug, string> = {
+  'politics-power': '#b3261e',
+  'secret-organizations': '#6b4c9a',
+  'intelligence-agencies': '#2f5d8a',
+  'space-ufos': '#23786a',
+  'science-technology': '#4d7d32',
+  history: '#8a5a2b',
+  'economy-finance': '#a8800f',
+  'media-society': '#c0581f',
+  'internet-modern-myths': '#9a3a74',
+  'secret-operations': '#3d4a52',
+};
+
 export function StatusBadge({ status, dark }: { status: EvidenceStatus | null | undefined; dark?: boolean }) {
   const t = useT();
   if (!status) return null;

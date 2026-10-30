@@ -5,6 +5,7 @@ import { Db, pageParams, paged } from '../db';
 import { computeFeatures, turnstileConfigured } from '../features';
 import { notFound, classifyDbError } from '../errors';
 import { EVIDENCE_STATUSES, CATEGORY_SLUGS } from '../../shared/constants';
+import type { TimelineCase } from '../../shared/types';
 import {
   EVENT_FIELDS,
   EVENT_SELECT,
@@ -211,6 +212,44 @@ publicRoutes.get('/events', async (c) => {
   const items = await translate(db, c.get('locale'), 'event', rows.map(mapEvent), EVENT_FIELDS);
   publicCache(c, 300);
   return c.json({ items });
+});
+
+/** Case files with a year for the timeline: stored Wikidata years first, otherwise the span of their linked events. */
+publicRoutes.get('/timeline/cases', async (c) => {
+  const db = Db.from(c.env);
+  // Until migration 0007 is applied (migrations run by hand), the stored years are missing and only events place cases.
+  const query = (stored: boolean) =>
+    db.all(
+      `SELECT t.id, t.slug, t.title, t.subtitle, c.slug AS category, t.evidence_status, t.image_path,
+              COALESCE(${stored ? 't.year_start' : 'NULL'}, ev.y0) AS start_year,
+              CASE WHEN ${stored ? 't.year_start' : 'NULL'} IS NOT NULL THEN ${stored ? 't.year_end' : 'NULL'} ELSE ev.y1 END AS end_year,
+              CASE WHEN ${stored ? 't.year_start' : 'NULL'} IS NOT NULL THEN 'wikidata' ELSE 'events' END AS year_source
+       FROM theories t
+       JOIN categories c ON c.id = t.category_id
+       LEFT JOIN (
+         SELECT x.theory_id, MIN(e.start_year) AS y0, MAX(COALESCE(e.end_year, e.start_year)) AS y1 FROM (
+           SELECT from_id AS theory_id, to_id AS event_id FROM relationships WHERE from_type = 'theory' AND to_type = 'event'
+           UNION SELECT to_id, from_id FROM relationships WHERE to_type = 'theory' AND from_type = 'event'
+         ) x JOIN events e ON e.id = x.event_id GROUP BY x.theory_id
+       ) ev ON ev.theory_id = t.id
+       WHERE t.is_published = 1 AND COALESCE(${stored ? 't.year_start' : 'NULL'}, ev.y0) IS NOT NULL
+       ORDER BY start_year, t.title LIMIT 3000`,
+    );
+  const rows = await query(true).catch(() => query(false));
+  const items: TimelineCase[] = rows.map((r) => ({
+    id: Number(r.id),
+    slug: String(r.slug),
+    title: String(r.title),
+    subtitle: (r.subtitle as string) ?? null,
+    category: r.category as TimelineCase['category'],
+    evidenceStatus: r.evidence_status as TimelineCase['evidenceStatus'],
+    imagePath: (r.image_path as string) ?? null,
+    startYear: Number(r.start_year),
+    endYear: r.end_year === null || r.end_year === undefined || Number(r.end_year) <= Number(r.start_year) ? null : Number(r.end_year),
+    yearSource: r.year_source as TimelineCase['yearSource'],
+  }));
+  publicCache(c, 300);
+  return c.json({ items: await translate(db, c.get('locale'), 'theory', items, { title: 'title', subtitle: 'subtitle' }) });
 });
 
 publicRoutes.get('/events/:slug', async (c) => {

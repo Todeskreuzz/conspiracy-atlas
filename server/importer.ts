@@ -6,6 +6,7 @@
 // A second step fills each entry from the full article: lead, origin, background, the article's sections and
 // the central claims as the article states them. Nothing is invented: no ratings or connections are derived.
 import type { Db } from './db';
+import { addCaseYears } from './caseYears';
 import { slugify } from '../shared/validation';
 import type { CategorySlug } from '../shared/constants';
 import type { RichNode } from '../shared/richtext';
@@ -82,6 +83,8 @@ export interface ImportResult {
   detailError?: string;
   /** Entries given the German article's full text in this run. */
   detailedDe?: number;
+  /** Imported cases that got their year (for the timeline) in this run. */
+  years?: number;
   error: string | null;
 }
 
@@ -982,6 +985,7 @@ export async function runImport(db: Db, batch = IMPORT_BATCH, imageBudgetBytes =
       result.imageError = String((err as Error)?.message ?? err).slice(0, 200);
       return 0;
     });
+    if (budgetLeft() > 0) result.years = await addCaseYears(db, sparql).catch(() => 0);
   } catch (err) {
     result.error = String((err as Error)?.message ?? err).slice(0, 200);
   }

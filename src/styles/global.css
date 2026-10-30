@@ -1122,63 +1122,6 @@ table.data th {
   margin: 0;
 }
 
-/* ------------------------------------------------------------------ timeline */
-.timeline-wrap {
-  position: relative;
-  border: 1px solid var(--ink-700);
-  border-radius: var(--radius);
-  background: linear-gradient(180deg, var(--ink-850), var(--ink-900));
-  overflow: hidden;
-  user-select: none;
-  touch-action: pan-y;
-}
-.timeline-svg {
-  display: block;
-  width: 100%;
-  cursor: grab;
-}
-.timeline-svg:active {
-  cursor: grabbing;
-}
-.timeline-svg .axis-line {
-  stroke: var(--ink-500);
-}
-.timeline-svg .tick line {
-  stroke: var(--ink-600);
-}
-.timeline-svg .tick text {
-  fill: var(--ink-300);
-  font-family: var(--font-mono);
-  font-size: 11px;
-}
-.timeline-svg .tick.major text {
-  fill: var(--ink-100);
-}
-.timeline-svg .event-dot {
-  cursor: pointer;
-  stroke: #0d0c0b;
-  stroke-width: 2;
-}
-.timeline-svg .event-period {
-  cursor: pointer;
-  opacity: 0.8;
-}
-.timeline-svg .event-label {
-  fill: var(--ink-200);
-  font-size: 11px;
-  pointer-events: none;
-}
-.timeline-svg .selected {
-  stroke: var(--yellow);
-  stroke-width: 3;
-}
-.timeline-svg .link-line {
-  stroke: var(--red);
-  stroke-width: 1.5;
-  fill: none;
-  opacity: 0.7;
-}
-
 /* ------------------------------------------------------------------ map */
 .case-pin {
   background: none;

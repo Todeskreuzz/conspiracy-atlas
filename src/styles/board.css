@@ -912,11 +912,12 @@ body::after {
     animation: flicker 6s infinite;
   }
 
+  /* Gated by .reveal-ready (src/effects.ts) so background tabs never keep content hidden. */
   @supports (animation-timeline: view()) {
-    .case-card,
-    .category-tile,
-    .panel,
-    .paper {
+    .reveal-ready .case-card,
+    .reveal-ready .category-tile,
+    .reveal-ready .panel,
+    .reveal-ready .paper {
       animation: pin-up linear both;
       animation-timeline: view();
       animation-range: entry 0% entry 55%;

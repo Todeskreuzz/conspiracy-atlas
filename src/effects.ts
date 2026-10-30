@@ -43,3 +43,24 @@ function resetCard(el: HTMLElement) {
   el.style.removeProperty('--rx');
   el.style.removeProperty('--ry');
 }
+
+/**
+ * Scroll reveals (CSS animation-timeline: view()) only start once the tab is visible. A tab opened
+ * in the background otherwise keeps a stale view timeline and its cards and panels stay invisible
+ * until the page is reloaded.
+ */
+export function armScrollReveal() {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  const arm = () => requestAnimationFrame(() => root.classList.add('reveal-ready'));
+  if (document.visibilityState === 'visible') {
+    arm();
+    return;
+  }
+  const onVisible = () => {
+    if (document.visibilityState !== 'visible') return;
+    document.removeEventListener('visibilitychange', onVisible);
+    arm();
+  };
+  document.addEventListener('visibilitychange', onVisible);
+}

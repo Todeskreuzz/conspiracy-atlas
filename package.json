@@ -2,7 +2,7 @@
   "name": "conspiracy-atlas",
   "private": true,
   "version": "0.1.0",
-  "description": "The Conspiracy Atlas \u2013 An Interactive Global Archive of Theories, Mysteries & Connections",
+  "description": "The Conspiracy Atlas – An Interactive Global Archive of Theories, Mysteries & Connections",
   "type": "module",
   "engines": {
     "node": ">=22.5"
@@ -28,8 +28,10 @@
     "db:migrate:remote": "wrangler d1 migrations apply conspiracy-atlas-db --remote"
   },
   "dependencies": {
+    "@fontsource/caveat": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@fontsource/permanent-marker": "^5.3.0",
     "@fontsource/playfair-display": "^5.3.0",
     "@fontsource/special-elite": "^5.3.0",
     "@tiptap/pm": "^3.32.1",

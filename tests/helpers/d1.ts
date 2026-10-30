@@ -1,14 +1,20 @@
 // A small D1-compatible adapter over Node's built-in SQLite, used for integration tests.
 // It mirrors the subset of the D1 API the application uses (prepare/bind/first/all/run/batch/exec).
-import { DatabaseSync } from 'node:sqlite';
+import { createRequire } from 'node:module';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+
+// Loaded via require so that jsdom-based frontend tests can use the same in-memory database.
+const { DatabaseSync } = createRequire(import.meta.url)('node:sqlite') as typeof import('node:sqlite');
 
 type Params = unknown[];
 
 class Stmt {
   constructor(private db: FakeD1, public sql: string, public params: Params = []) {}
   bind(...params: Params) {
+    // Mirror Cloudflare D1: at most 100 bound parameters per statement.
+    this.db.maxParams = Math.max(this.db.maxParams, params.length);
+    if (params.length > 100) throw new Error('D1_ERROR: too many SQL variables');
     return new Stmt(this.db, this.sql, params);
   }
   private conv() {
@@ -40,6 +46,8 @@ export class FakeD1 {
   /** Optional failure injection: throw this error on the next statement(s). */
   failWith: Error | null = null;
   queries: string[] = [];
+  /** Largest number of bound parameters seen in one statement. */
+  maxParams = 0;
   constructor() {
     this.raw = new DatabaseSync(':memory:');
     this.raw.exec('PRAGMA foreign_keys = ON');

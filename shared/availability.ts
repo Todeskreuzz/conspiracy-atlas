@@ -77,6 +77,7 @@ export const GENERIC_UNAVAILABLE_EXPLANATION =
 
 /** English explanation shown after "Currently unavailable!". */
 export function explainEn(feature: FeatureKey | null, state: ServiceState): string {
+  if (feature === 'database' && (state === 'backend_unavailable' || state === 'temporary_error')) return FEATURE_EXPLANATIONS_EN.database!;
   if (state === 'limit_reached' || state === 'backend_unavailable' || state === 'temporary_error') {
     return STATE_EXPLANATIONS_EN[state];
   }
@@ -85,6 +86,7 @@ export function explainEn(feature: FeatureKey | null, state: ServiceState): stri
 
 /** Optional additional German explanation. The English status text stays visible. */
 export function explainDe(feature: FeatureKey | null, state: ServiceState): string {
+  if (feature === 'database' && (state === 'backend_unavailable' || state === 'temporary_error')) return FEATURE_EXPLANATIONS_DE.database!;
   if (state === 'limit_reached' || state === 'backend_unavailable' || state === 'temporary_error') {
     return STATE_EXPLANATIONS_DE[state];
   }

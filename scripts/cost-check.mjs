@@ -45,7 +45,7 @@ export function checkWranglerToml(text) {
   const problems = [];
   const lines = text.split(/\r?\n/).map((l) => l.replace(/#.*$/, '').trim()).filter(Boolean);
   for (const line of lines) {
-    const section = line.match(/^\[\[?\s*([a-z_.]+)\s*\]?\]$/i)?.[1];
+    const section = line.match(/^\[\[?\s*([a-z0-9_.]+)\s*\]?\]$/i)?.[1];
     if (section) {
       const root = section.split('.')[0];
       if (FORBIDDEN_BINDINGS.includes(root)) problems.push(`wrangler.toml: forbidden binding section [${section}]`);

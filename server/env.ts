@@ -26,7 +26,7 @@ export interface Env {
   /** Random secret used to salt rate-limit hashes. */
   SESSION_SECRET?: string;
 
-  /** "development" allows non-secure cookies on http://localhost only. */
+  /** "development" or "production"; informational only (cookies are always Secure, browsers accept them on localhost). */
   ENVIRONMENT?: string;
 }
 

@@ -17,8 +17,8 @@ describe('frontend', () => {
   it('renders the archive from the API', async () => {
     renderApp('/archive', await makeEnv());
     const cards = await screen.findAllByTestId('theory-card', {}, { timeout: 5000 });
-    expect(cards).toHaveLength(8);
-    expect(screen.getByText('Operation Northwoods')).toBeInTheDocument();
+    expect(cards).toHaveLength(12);
+    expect(screen.getByText('COINTELPRO')).toBeInTheDocument();
   });
 
   it('keeps working after navigation when window.scrollTo returns a Promise (newer Chromium)', async () => {

@@ -90,7 +90,8 @@ export function migrationFiles(): string[] {
 export function createDb({ seed = true }: { seed?: boolean } = {}): FakeD1 {
   const db = new FakeD1();
   for (const f of migrationFiles()) {
-    if (!seed && f.includes('seed')) continue;
+    // Content migrations (seed and later case batches) need the seeded categories.
+    if (!seed && /seed|_more_cases/.test(f)) continue;
     db.raw.exec(readFileSync(join(MIGRATIONS_DIR, f), 'utf8'));
   }
   return db;

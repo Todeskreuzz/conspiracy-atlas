@@ -199,7 +199,11 @@
     "unsaved": "Ungespeicherte Änderungen",
     "stressTest": "Synthetische Leistungstestdaten ({count} Karten) – werden nicht gespeichert.",
     "animate": "Fäden animieren",
-    "selected": "Ausgewählt"
+    "selected": "Ausgewählt",
+    "autoThreads": "Automatische Fäden (gleiche Person, Organisation oder gleicher Ort)",
+    "autoThread": "Automatischer Faden",
+    "autoThreadExplain": "Beide Einträge nennen:",
+    "autoThreadNote": "Automatisch aus dem Archiv erkannt. Ein gemeinsamer Name allein ist kein Beleg dafür, dass die Fälle zusammenhängen."
   },
   "archive": {
     "title": "Theoriearchiv",

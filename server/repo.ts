@@ -423,5 +423,70 @@ export async function loadBoardContent(db: Db, boardId: number, locale: Locale) 
       });
     }
   }
-  return { nodes, edges: edgeRows.map(mapBoardEdge) };
+  const edges = edgeRows.map(mapBoardEdge);
+  return { nodes, edges: [...edges, ...(await deriveSharedThreads(db, nodes, edges))] };
+}
+
+/** An entity named by more cases than this is too generic to say anything (e.g. "Washington, D.C."). */
+export const SHARED_ENTITY_MAX_CASES = 6;
+const SHARED_TYPES: EntityType[] = ['person', 'organization', 'location'];
+
+/**
+ * Automatic red threads between case cards that name the same person, organization or place
+ * (directly, or via the place of a linked event). They are computed on every read, never stored,
+ * always `suggested`, and only say "both entries mention X", not that the cases are connected.
+ */
+export async function deriveSharedThreads(db: Db, nodes: BoardNode[], edges: BoardEdge[]): Promise<BoardEdge[]> {
+  const nodeByTheory = new Map<number, number>();
+  for (const n of nodes) if (n.entityType === 'theory' && n.entityId !== null && !nodeByTheory.has(n.entityId)) nodeByTheory.set(n.entityId, n.id);
+  if (nodeByTheory.size < 2) return [];
+  const rows = await db.all(
+    `SELECT r.from_id AS theory_id, r.to_type AS type, r.to_id AS id FROM relationships r
+       WHERE r.from_type = 'theory' AND r.to_type IN ('person', 'organization', 'location')
+     UNION SELECT r.to_id, r.from_type, r.from_id FROM relationships r
+       WHERE r.to_type = 'theory' AND r.from_type IN ('person', 'organization', 'location')
+     UNION SELECT r.from_id, 'location', e.location_id FROM relationships r JOIN events e ON e.id = r.to_id
+       WHERE r.from_type = 'theory' AND r.to_type = 'event' AND e.location_id IS NOT NULL
+     UNION SELECT r.to_id, 'location', e.location_id FROM relationships r JOIN events e ON e.id = r.from_id
+       WHERE r.to_type = 'theory' AND r.from_type = 'event' AND e.location_id IS NOT NULL
+     LIMIT 20000`,
+  );
+  const casesByEntity = new Map<string, number[]>();
+  for (const r of rows) {
+    const nodeId = nodeByTheory.get(Number(r.theory_id));
+    if (nodeId === undefined || !SHARED_TYPES.includes(r.type as EntityType)) continue;
+    const key = `${r.type}:${r.id}`;
+    const list = casesByEntity.get(key) ?? [];
+    if (!list.includes(nodeId)) list.push(nodeId);
+    casesByEntity.set(key, list);
+  }
+  const connected = new Set(edges.map((e) => (e.source < e.target ? `${e.source}-${e.target}` : `${e.target}-${e.source}`)));
+  const pairs = new Map<string, string[]>();
+  for (const [key, cases] of casesByEntity) {
+    if (cases.length < 2 || cases.length > SHARED_ENTITY_MAX_CASES) continue;
+    const sorted = [...cases].sort((a, b) => a - b);
+    for (let i = 0; i < sorted.length; i++)
+      for (let j = i + 1; j < sorted.length; j++) {
+        const pair = `${sorted[i]}-${sorted[j]}`;
+        if (connected.has(pair)) continue;
+        pairs.set(pair, [...(pairs.get(pair) ?? []), key]);
+      }
+  }
+  if (!pairs.size) return [];
+  const refs = await resolveRefs(
+    db,
+    [...new Set([...pairs.values()].flat())].map((k) => {
+      const [type, id] = k.split(':');
+      return { type: type as EntityType, id: Number(id) };
+    }),
+  );
+  const out: BoardEdge[] = [];
+  for (const [pair, keys] of [...pairs].sort(([a], [b]) => a.localeCompare(b))) {
+    const shared = keys.map((k) => refs.get(k)).filter((r): r is EntityRef => !!r);
+    if (!shared.length) continue;
+    const [source, target] = pair.split('-').map(Number);
+    // Negative ids never collide with stored threads and cannot be edited or deleted.
+    out.push({ id: -(out.length + 1), source, target, kind: 'thematic', verification: 'suggested', label: shared.map((r) => r.title).join(', '), auto: true, shared });
+  }
+  return out;
 }

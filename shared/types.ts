@@ -192,6 +192,9 @@ export interface BoardEdge {
   kind: RelationKind;
   verification: RelationVerification;
   label: string | null;
+  /** Derived at read time: both cases name the same person, organization or place. Never stored. */
+  auto?: boolean;
+  shared?: EntityRef[];
 }
 
 export interface Board {

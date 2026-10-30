@@ -1,13 +1,12 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { formatDate, useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
 import { api } from '../api/client';
 import type { DocumentItem, Paged, Source } from '../../shared/types';
-import { EVIDENCE_STATUSES } from '../../shared/constants';
 import { LoadState } from '../components/Unavailable';
 import { SourceItem } from '../components/SourceItem';
 import { Pagination } from '../components/TheoryCard';
-import { StatusBadge } from '../components/Badges';
 
 export function KnowledgePage() {
   const { t, locale } = useI18n();
@@ -42,17 +41,9 @@ export function KnowledgePage() {
             <p className="muted small">{t('knowledge.linkingText')}</p>
           </div>
         </div>
-        <h3 style={{ marginTop: 24 }}>{t('knowledge.statuses')}</h3>
-        <dl className="kv" style={{ gap: '10px 18px' }}>
-          {EVIDENCE_STATUSES.map((s) => (
-            <div key={s} style={{ display: 'contents' }}>
-              <dt>
-                <StatusBadge status={s} dark />
-              </dt>
-              <dd className="small">{t(`statusHelp.${s}`)}</dd>
-            </div>
-          ))}
-        </dl>
+        <p className="small" style={{ marginTop: 16 }}>
+          <Link to="/experts">{t('knowledge.expertsLink')} →</Link>
+        </p>
       </section>
 
       <section className="section">

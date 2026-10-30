@@ -3,7 +3,7 @@ import { formatDate, useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
 import { api } from '../api/client';
 import type { Relationship, TheoryDetail } from '../../shared/types';
-import { CategoryBadge, StatusBadge, STATUS_COLORS } from '../components/Badges';
+import { CategoryBadge } from '../components/Badges';
 import { LoadState } from '../components/Unavailable';
 import { RichText } from '../components/RichText';
 import { SourceItem } from '../components/SourceItem';
@@ -84,9 +84,6 @@ export function TheoryPage() {
                 <img src={th.imagePath} alt={th.imageCredit ?? ''} />
               </figure>
             )}
-            <span className="stamp" style={{ color: STATUS_COLORS[th.evidenceStatus] }}>
-              {t(`status.${th.evidenceStatus}`)}
-            </span>
             <h1>{th.title}</h1>
             {th.subtitle && <p className="muted" style={{ fontSize: '1.1rem', margin: 0 }}>{th.subtitle}</p>}
             <div className="btn-row">
@@ -139,12 +136,11 @@ export function TheoryPage() {
             <h2>{t('theory.claims')}</h2>
             <p className="muted small">{t('theory.claimHint')}</p>
             {th.claims.map((c, i) => (
-              <div key={c.id} className="claim" style={{ borderLeftColor: STATUS_COLORS[c.evidenceStatus] }} data-testid="claim">
+              <div key={c.id} className="claim" data-testid="claim">
                 <div className="claim__text">
                   <span className="mono muted">#{i + 1} </span>
                   {c.text}
                 </div>
-                <StatusBadge status={c.evidenceStatus} />
                 {c.evidence.length ? (
                   <ul className="claim__evidence">
                     {c.evidence.map((e) => (
@@ -201,12 +197,6 @@ export function TheoryPage() {
                       {ev.endDate ? ` – ${formatDate(ev.endDate, locale)}` : ''}
                     </div>
                     <Link to={`/events/${ev.slug}`}>{ev.title}</Link>
-                    {ev.evidenceStatus !== 'historically_documented' && (
-                      <>
-                        {' '}
-                        <StatusBadge status={ev.evidenceStatus} />
-                      </>
-                    )}
                   </li>
                 ))}
               </ol>
@@ -227,6 +217,9 @@ export function TheoryPage() {
           <div className="panel">
             <Link className="btn btn--primary" style={{ width: '100%' }} to={`/wall?focus=theory:${th.id}`}>
               {t('theory.showOnWall')}
+            </Link>
+            <Link className="btn btn--small" style={{ width: '100%', marginTop: 8 }} to={`/experts/${th.slug}`} data-testid="expert-link">
+              {t('experts.forCase')}
             </Link>
           </div>
           <div className="panel">

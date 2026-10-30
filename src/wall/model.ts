@@ -5,7 +5,7 @@ import { EVIDENCE_STATUSES, NODE_KINDS, RELATION_KINDS, type NodeKind, type Rela
 export const CARD_W = 190;
 export const CARD_H = 124;
 
-export type GroupMode = 'none' | 'category' | 'kind' | 'status';
+export type GroupMode = 'none' | 'category' | 'kind';
 
 export interface WallFilters {
   kinds: NodeKind[];
@@ -39,16 +39,8 @@ export const KIND_COLORS: Record<NodeKind, string> = {
   source: '#33302b',
 };
 
-export const STATUS_STRIPE: Record<string, string> = {
-  historically_documented: '#4f7a45',
-  supported_by_evidence: '#6b8a3a',
-  partially_supported: '#c49a1a',
-  disputed: '#c46a24',
-  unverified: '#8b8178',
-  debunked: '#b3261e',
-  under_investigation: '#3f6a94',
-  none: '#b9a983',
-};
+/** Neutral edge stripe: the board shows no editorial ratings (those live under Expert opinions). */
+const CARD_STRIPE = '#b9a983';
 
 export const RELATION_STYLE: Record<RelationKind, { color: string; width: number; dash: number[] | null }> = {
   documented: { color: '#c9372c', width: 2.6, dash: null },
@@ -74,20 +66,19 @@ const EMBLEMS: Record<NodeKind, string> = {
 
 const imageCache = new Map<string, string>();
 
-/** Card face as an SVG data URI (paper, coloured header band, status stripe, emblem, pin). */
-export function cardImage(kind: NodeKind, status: string | null, label: string): string {
-  const key = `${kind}|${status ?? 'none'}|${label}`;
+/** Card face as an SVG data URI (paper, coloured header band, stripe, emblem, pin). */
+export function cardImage(kind: NodeKind, label: string): string {
+  const key = `${kind}|${label}`;
   const hit = imageCache.get(key);
   if (hit) return hit;
   const band = KIND_COLORS[kind] ?? '#333';
-  const stripe = STATUS_STRIPE[status ?? 'none'] ?? STATUS_STRIPE.none;
   const safeLabel = label.replace(/[<>&"]/g, '');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_W}" height="${CARD_H}" viewBox="0 0 ${CARD_W} ${CARD_H}">
 <defs><linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1e6cd"/><stop offset="1" stop-color="#dcc9a2"/></linearGradient>
 <radialGradient id="g" cx="0.35" cy="0.35" r="0.7"><stop offset="0" stop-color="#f5958b"/><stop offset="0.55" stop-color="#b3261e"/><stop offset="1" stop-color="#5a0f0a"/></radialGradient></defs>
 <rect width="${CARD_W}" height="${CARD_H}" fill="url(#p)"/>
 <rect width="${CARD_W}" height="30" fill="${band}"/>
-<rect x="0" y="30" width="6" height="${CARD_H - 30}" fill="${stripe}"/>
+<rect x="0" y="30" width="6" height="${CARD_H - 30}" fill="${CARD_STRIPE}"/>
 <g transform="translate(18 16)" fill="none" stroke="#e9dcc0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${EMBLEMS[kind] ?? ''}</g>
 <text x="34" y="20" font-family="Courier New, monospace" font-size="10.5" letter-spacing="1.2" fill="#e9dcc0">${safeLabel.toUpperCase()}</text>
 <path d="M14 ${CARD_H - 12}h${CARD_W - 28}" stroke="#3b2d20" stroke-opacity="0.15"/>
@@ -121,7 +112,7 @@ export function toElements(board: Pick<Board, 'nodes' | 'edges'>, kindLabel: (k:
       kind: n.kind,
       status: n.evidenceStatus ?? 'none',
       category: n.category ?? '',
-      img: cardImage(n.kind, n.evidenceStatus, kindLabel(n.kind)),
+      img: cardImage(n.kind, kindLabel(n.kind)),
       entityType: n.entityType,
       entityId: n.entityId,
     },
@@ -155,8 +146,6 @@ export function groupKey(n: Pick<BoardNode, 'kind' | 'category' | 'evidenceStatu
       return n.category ?? `~${n.kind}`;
     case 'kind':
       return n.kind;
-    case 'status':
-      return n.evidenceStatus ?? '~none';
     default:
       return '';
   }

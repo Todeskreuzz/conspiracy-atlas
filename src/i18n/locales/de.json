@@ -45,6 +45,7 @@
     "community": "Community",
     "submit": "Theorie einreichen",
     "knowledge": "Wissensarchiv",
+    "experts": "Experten-Meinungen",
     "about": "Über",
     "admin": "Verwaltung"
   },
@@ -133,14 +134,14 @@
   },
   "home": {
     "kicker": "Akten · Verbindungen · Quellen",
-    "lead": "Erkunde Theorien, Geheimnisse und dokumentierte Geheimoperationen auf einer riesigen Ermittlungswand. Jede Behauptung trägt ihren Belegstatus und ist mit ihren Quellen verknüpft.",
+    "lead": "Erkunde Theorien, Geheimnisse und dokumentierte Geheimoperationen auf einer riesigen Ermittlungswand. Jede Behauptung ist mit ihren Quellen verknüpft.",
     "openWall": "Ermittlungswand öffnen",
     "browseArchive": "Archiv durchsuchen",
     "latest": "Neueste Akten",
     "categories": "Kategorien",
     "principles": "So funktioniert das Archiv",
     "p1Title": "Fakten und Behauptungen sind getrennt",
-    "p1Text": "Jeder Eintrag listet seine zentralen Behauptungen einzeln auf, jede mit eigenem Belegstatus.",
+    "p1Text": "Jeder Eintrag listet seine zentralen Behauptungen einzeln auf, jede mit eigenen Quellen. Redaktionelle Einstufungen stehen getrennt unter Experten-Meinungen.",
     "p2Title": "Quellen für jede Behauptung",
     "p2Text": "Quellen sind der konkreten Behauptung zugeordnet, die sie stützen oder widerlegen – nie pauschal dem ganzen Artikel.",
     "p3Title": "Moderierte Community",
@@ -159,13 +160,11 @@
     "filters": "Filter",
     "kinds": "Kartentypen",
     "relations": "Fäden",
-    "statuses": "Belegstatus",
     "category": "Kategorie",
     "group": "Anordnen",
     "groupNone": "Gespeicherte Anordnung",
     "groupCategory": "Nach Kategorie gruppieren",
     "groupKind": "Nach Kartentyp gruppieren",
-    "groupStatus": "Nach Belegstatus gruppieren",
     "fit": "An Bildschirm anpassen",
     "fullscreen": "Vollbild",
     "exitFullscreen": "Vollbild beenden",
@@ -221,7 +220,7 @@
     "origin": "Entstehungsgeschichte",
     "body": "Akte",
     "claims": "Zentrale Behauptungen",
-    "claimHint": "Jede Behauptung hat einen eigenen Belegstatus. Eine Quelle zählt nur für die Behauptung, der sie zugeordnet ist.",
+    "claimHint": "Die zentralen Behauptungen dieses Eintrags, jeweils mit den zugeordneten Quellen. Eine Quelle zählt nur für die Behauptung, der sie zugeordnet ist.",
     "noEvidence": "Dieser Behauptung ist keine Quelle zugeordnet.",
     "counterArguments": "Gegenargumente",
     "relatesTo": "Bezieht sich auf Behauptung",
@@ -427,7 +426,6 @@
     "documents": "Dokumente",
     "sources": "Quellenverzeichnis",
     "method": "Methodik",
-    "statuses": "Belegstatus",
     "primaryVsSecondary": "Primär- und Sekundärquellen",
     "primaryText": "Primärquellen sind Originalzeugnisse aus der Zeit oder von den Beteiligten: Memoranden, Gerichtsakten, Anhörungsprotokolle, amtliche Berichte, Daten. Sekundärquellen analysieren oder berichten darüber: Bücher, Artikel, Nachschlagewerke.",
     "qualityTitle": "Quellenqualität bewerten",
@@ -436,12 +434,13 @@
     "linkingText": "Eine Quelle wird genau der Behauptung oder dem Gegenargument zugeordnet, das sie stützt oder widerlegt. Eine Quelle gilt nie als Beweis für alle Behauptungen eines Eintrags.",
     "filterPrimary": "Nur Primärquellen",
     "filterSecondary": "Nur Sekundärquellen",
-    "license": "Lizenz"
+    "license": "Lizenz",
+    "expertsLink": "Die Einstufungen der Beleglage und ihre Skala findest du unter Experten-Meinungen"
   },
   "about": {
     "title": "Über das Projekt",
     "text1": "The Conspiracy Atlas ist ein internationales Archiv, das Verschwörungstheorien, historische Rätsel, dokumentierte Geheimoperationen und ihre Zusammenhänge dokumentiert.",
-    "text2": "Es wirbt für keine Theorie. Es zeigt, was belegt, was behauptet und was widerlegt ist, und verknüpft jede Aussage mit ihren Quellen.",
+    "text2": "Es wirbt für keine Theorie. Das Archiv gibt die Inhalte neutral wieder und verknüpft jede Aussage mit ihren Quellen. Redaktionelle Einschätzungen der Beleglage stehen getrennt unter Experten-Meinungen.",
     "costTitle": "Ausschließlich kostenlose Infrastruktur",
     "costText": "Die Seite läuft ausschließlich auf den kostenlosen Tarifen von Cloudflare Pages, Workers, D1 und Turnstile. Bilder werden im Browser komprimiert und mit einer festen Obergrenze in der kostenlosen D1-Datenbank gespeichert; kostenpflichtige Speicherdienste werden nicht genutzt. Funktionen, die kostenpflichtige oder nutzungsabhängig abgerechnete Dienste bräuchten, bleiben deaktiviert und sind mit „Currently unavailable!“ gekennzeichnet. Ist ein kostenloses Kontingent erreicht, pausiert die betroffene Funktion, bis es zurückgesetzt oder Platz frei wird.",
     "privacyTitle": "Datenschutz",
@@ -540,5 +539,18 @@
       "organizations": "Organisationen",
       "events": "Ereignisse"
     }
+  },
+  "experts": {
+    "title": "Experten-Meinungen",
+    "intro": "Das Archiv selbst ist neutral und gibt nur die Inhalte wieder. Hier sind die Einschätzungen der Redaktion gesammelt, wie gut jeder Fall und jede Behauptung durch Belege gestützt ist.",
+    "scale": "Bewertungsskala",
+    "cases": "Einstufungen nach Fall",
+    "filter": "Nach Einstufung filtern",
+    "claims": "Einstufungen der einzelnen Behauptungen",
+    "caseNote": "Diese Einstufungen sind eine redaktionelle Einschätzung der verfügbaren Belege. Der Archiveintrag selbst zeigt den Fall ohne Bewertung.",
+    "sourceCount": "· {count} verknüpfte Quellen",
+    "backToCase": "Zurück zum Archiveintrag",
+    "allRatings": "Alle Einstufungen",
+    "forCase": "Experten-Meinungen zu diesem Fall"
   }
 }

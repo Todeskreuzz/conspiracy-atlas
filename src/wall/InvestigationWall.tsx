@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import cytoscape, { type Core, type EdgeSingular, type NodeSingular, type StylesheetJson } from 'cytoscape';
 import type { Board, BoardEdge, BoardNode } from '../../shared/types';
-import { CATEGORY_SLUGS, EVIDENCE_STATUSES, NODE_KINDS, RELATION_KINDS, type NodeKind, type RelationKind, type RelationVerification } from '../../shared/constants';
+import { CATEGORY_SLUGS, NODE_KINDS, RELATION_KINDS, type NodeKind, type RelationKind, type RelationVerification } from '../../shared/constants';
 import { useI18n } from '../i18n';
 import { entityPath } from '../pages/Theory';
-import { StatusBadge, CategoryBadge } from '../components/Badges';
+import { CategoryBadge } from '../components/Badges';
 import {
   CARD_H,
   CARD_W,
@@ -545,7 +545,6 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
               <option value="none">{t('wall.groupNone')}</option>
               <option value="category">{t('wall.groupCategory')}</option>
               <option value="kind">{t('wall.groupKind')}</option>
-              <option value="status">{t('wall.groupStatus')}</option>
             </select>
           </section>
 
@@ -578,17 +577,9 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
           </section>
 
           <section className="wall__section">
-            <h4>{t('wall.statuses')}</h4>
-            <div className="wall__chips">
-              {EVIDENCE_STATUSES.map((s) => (
-                <button key={s} type="button" className="chip" aria-pressed={filters.statuses.includes(s)} onClick={() => setFilters({ ...filters, statuses: toggleIn(filters.statuses, s) })}>
-                  {t(`status.${s}`)}
-                </button>
-              ))}
-            </div>
-            <label className="small" style={{ display: 'block', marginTop: 8 }}>
-              {t('wall.category')}
-              <select value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value })}>
+            <h4>{t('wall.category')}</h4>
+            <label className="small" style={{ display: 'block' }}>
+              <select value={filters.category} aria-label={t('wall.category')} onChange={(e) => setFilters({ ...filters, category: e.target.value })}>
                 <option value="">{t('app.all')}</option>
                 {CATEGORY_SLUGS.map((c) => (
                   <option key={c} value={c}>
@@ -650,7 +641,6 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
               <div className="typewriter small muted">{t(`kinds.${selected.node.kind}`)}</div>
               <h3 style={{ margin: '4px 0 8px' }}>{selected.node.title}</h3>
               <div className="btn-row" style={{ marginBottom: 8 }}>
-                <StatusBadge status={selected.node.evidenceStatus} />
                 <CategoryBadge category={selected.node.category} />
               </div>
               {selected.node.summary && <p className="small">{selected.node.summary}</p>}

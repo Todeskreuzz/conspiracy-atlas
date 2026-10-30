@@ -3,7 +3,7 @@ import { useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
 import { api } from '../api/client';
 import type { Paged, TheorySummary } from '../../shared/types';
-import { CATEGORY_SLUGS, EVIDENCE_STATUSES } from '../../shared/constants';
+import { CATEGORY_SLUGS } from '../../shared/constants';
 import { Pagination, TheoryCard } from '../components/TheoryCard';
 import { LoadState } from '../components/Unavailable';
 import { useEffect, useState } from 'react';
@@ -12,7 +12,6 @@ export function ArchivePage() {
   const { t, locale } = useI18n();
   const [params, setParams] = useSearchParams();
   const category = params.get('category') ?? '';
-  const status = params.get('status') ?? '';
   const origin = params.get('origin') ?? '';
   const sort = params.get('sort') ?? '';
   const q = params.get('q') ?? '';
@@ -32,7 +31,6 @@ export function ArchivePage() {
 
   const qs = new URLSearchParams({ pageSize: '12', page: String(page) });
   if (category) qs.set('category', category);
-  if (status) qs.set('status', status);
   if (origin) qs.set('origin', origin);
   if (sort) qs.set('sort', sort);
   if (q) qs.set('q', q);
@@ -64,17 +62,6 @@ export function ArchivePage() {
             {CATEGORY_SLUGS.map((c) => (
               <option key={c} value={c}>
                 {t(`categories.${c}`)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="archive-status">{t('archive.filterStatus')}</label>
-          <select id="archive-status" value={status} onChange={(e) => set('status', e.target.value)}>
-            <option value="">{t('app.all')}</option>
-            {EVIDENCE_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {t(`status.${s}`)}
               </option>
             ))}
           </select>

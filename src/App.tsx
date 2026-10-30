@@ -13,6 +13,7 @@ import { PersonPage } from './pages/Person';
 import { TimelinePage } from './pages/Timeline';
 import { CommunityPage } from './pages/Community';
 import { KnowledgePage } from './pages/Knowledge';
+import { ExpertsPage, ExpertCasePage } from './pages/Experts';
 import { AboutPage } from './pages/About';
 import { NotFoundPage } from './pages/NotFound';
 
@@ -64,6 +65,8 @@ export function AppRoutes() {
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/submit" element={<SubmitPage />} />
           <Route path="/knowledge" element={<KnowledgePage />} />
+          <Route path="/experts" element={<ExpertsPage />} />
+          <Route path="/experts/:slug" element={<ExpertCasePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/admin/*" element={<AdminPage />} />
           <Route path="*" element={<NotFoundPage />} />

@@ -21,6 +21,33 @@ describe('frontend', () => {
     expect(screen.getByText('COINTELPRO')).toBeInTheDocument();
   });
 
+  it('keeps the archive neutral and shows ratings only under Expert opinions', async () => {
+    renderApp('/archive', await makeEnv());
+    await screen.findAllByTestId('theory-card', {}, { timeout: 5000 });
+    expect(document.querySelector('[data-status]')).toBeNull();
+    expect(screen.queryByLabelText('Evidence status')).toBeNull();
+    cleanup();
+
+    renderApp('/theory/cointelpro', await makeEnv());
+    await screen.findByTestId('theory-detail', {}, { timeout: 5000 });
+    expect(document.querySelector('[data-status]')).toBeNull();
+    expect(document.querySelector('.stamp')).toBeNull();
+    expect(screen.getByTestId('expert-link')).toHaveAttribute('href', '/experts/cointelpro');
+    cleanup();
+
+    renderApp('/experts/cointelpro', await makeEnv());
+    await screen.findByTestId('expert-case', {}, { timeout: 5000 });
+    expect(screen.getAllByTestId('expert-claim').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('[data-status]').length).toBeGreaterThan(0);
+  });
+
+  it('lists the ratings of all cases under Expert opinions', async () => {
+    renderApp('/experts', await makeEnv());
+    const list = await screen.findByTestId('expert-list', {}, { timeout: 5000 });
+    expect(within(list).getByText('COINTELPRO')).toBeInTheDocument();
+    expect(list.querySelectorAll('[data-status]').length).toBeGreaterThan(0);
+  });
+
   it('keeps working after navigation when window.scrollTo returns a Promise (newer Chromium)', async () => {
     const original = window.scrollTo;
     window.scrollTo = (() => Promise.resolve()) as unknown as typeof window.scrollTo;

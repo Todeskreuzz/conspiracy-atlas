@@ -234,9 +234,6 @@ export default function SubmitPage() {
       {preview ? (
         <article className="paper" data-testid="submission-preview">
           <span className="pin" aria-hidden="true" />
-          <span className="stamp" style={{ color: '#6f655b' }}>
-            {t('status.unverified')}
-          </span>
           <h1 style={{ marginTop: 14 }}>{draft.title || t('app.untitled')}</h1>
           {draft.subtitle && <p className="muted">{draft.subtitle}</p>}
           <div className="btn-row" style={{ marginBottom: 12 }}>

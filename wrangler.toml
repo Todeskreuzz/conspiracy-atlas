@@ -33,7 +33,7 @@ ENVIRONMENT = "production"
 [[d1_databases]]
 binding = "DB"
 database_name = "conspiracy-atlas-db"
-# Replace with the id printed by `npx wrangler d1 create conspiracy-atlas-db`.
-# The placeholder works for local development only.
-database_id = "00000000-0000-0000-0000-000000000000"
+# Production D1 database (Free plan), created with `npx wrangler d1 create conspiracy-atlas-db`.
+# The id is not a secret; local development uses a local copy of the same binding.
+database_id = "f40a05cf-2834-4552-ab1a-221ac6fe4f61"
 migrations_dir = "migrations/d1"

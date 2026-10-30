@@ -1345,3 +1345,18 @@ table.data th {
 .saved-item > .case-card {
   width: 100%;
 }
+
+/* Reader notes on case pages */
+.case-notes {
+  margin-top: 28px;
+}
+.case-notes__list {
+  margin: 12px 0;
+}
+.case-note {
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(59, 45, 32, 0.25);
+}
+.case-note p {
+  margin: 6px 0;
+}

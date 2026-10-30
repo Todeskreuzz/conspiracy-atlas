@@ -473,7 +473,8 @@
       "reports": "Reports",
       "archive": "Archive",
       "services": "Services & limits",
-      "backup": "Backup"
+      "backup": "Backup",
+      "notes": "Reader notes"
     },
     "queue": "Queue",
     "statuses": {
@@ -535,6 +536,16 @@
       "isCover": "cover",
       "setCover": "Use as cover",
       "upload": "Upload {count} image(s)"
+    },
+    "notesIntro": "Sources and comments that visitors added to case files. Approved notes appear on the case page.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "deleteNote": "Delete",
+    "status": "Status",
+    "noteStatus": {
+      "pending": "Waiting for review",
+      "approved": "Approved",
+      "rejected": "Rejected"
     }
   },
   "search": {
@@ -580,5 +591,26 @@
     "share": "Share",
     "copied": "Link copied",
     "copyPrompt": "Copy this link:"
+  },
+  "notes": {
+    "title": "Notes from readers",
+    "intro": "Additional sources and comments from visitors. They are published only after an editor has approved them; approval does not mean the content has been verified.",
+    "empty": "No notes yet.",
+    "add": "Add a source or comment",
+    "kind": "Type",
+    "kinds": {
+      "source": "Source",
+      "comment": "Comment"
+    },
+    "sourceUrl": "Link to the source",
+    "sourceTitle": "Title of the source (optional)",
+    "sourceBody": "What does this source show?",
+    "body": "Your comment",
+    "anonymous": "Post anonymously",
+    "named": "Post with a display name",
+    "displayName": "Display name",
+    "moderationHint": "Your note is checked by an editor before it appears. Only the display name is stored, no e-mail or IP address.",
+    "send": "Send for review",
+    "sent": "Thank you! Your note will appear after an editor approves it."
   }
 }

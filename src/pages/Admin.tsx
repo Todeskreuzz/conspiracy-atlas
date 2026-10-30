@@ -15,7 +15,7 @@ import {
   type EvidenceStatus,
   type SubmissionStatus,
 } from '../../shared/constants';
-import type { Paged, Source, TheoryDetail, TheorySummary } from '../../shared/types';
+import type { AdminCaseNote, Paged, Source, TheoryDetail, TheorySummary } from '../../shared/types';
 import type { RichNode } from '../../shared/richtext';
 import { LoadState, Unavailable } from '../components/Unavailable';
 import { RichText } from '../components/RichText';
@@ -350,6 +350,68 @@ function Reports({ a }: { a: Api }) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------------- community notes
+
+function Notes({ a }: { a: Api }) {
+  const { t, locale } = useI18n();
+  const [status, setStatus] = useState<AdminCaseNote['status']>('pending');
+  const list = useAsync(() => a.get<Paged<AdminCaseNote>>(`/notes?status=${status}`), [status]);
+  const decide = async (id: number, s: AdminCaseNote['status']) => {
+    await a.post(`/notes/${id}`, { status: s });
+    list.reload();
+  };
+  const remove = async (id: number) => {
+    await a.del(`/notes/${id}`);
+    list.reload();
+  };
+  return (
+    <div data-testid="admin-notes">
+      <p className="muted small">{t('admin.notesIntro')}</p>
+      <select value={status} onChange={(e) => setStatus(e.target.value as typeof status)} style={{ maxWidth: 220, marginBottom: 12 }} aria-label={t('admin.status')}>
+        {(['pending', 'approved', 'rejected'] as const).map((s) => (
+          <option key={s} value={s}>
+            {t(`admin.noteStatus.${s}`)}
+          </option>
+        ))}
+      </select>
+      <LoadState loading={list.loading} error={list.error} onRetry={list.reload} />
+      {list.data?.items.length === 0 && <p className="muted">{t('admin.noItems')}</p>}
+      {list.data?.items.map((n) => (
+        <div key={n.id} className="panel" style={{ marginBottom: 10 }}>
+          <div className="small muted">
+            #{n.id} · <span className="tag">{t(`notes.kinds.${n.kind}`)}</span> · <Link to={`/theory/${n.theory.slug}`}>{n.theory.title}</Link> · {n.authorName} · {n.language.toUpperCase()} ·{' '}
+            {formatDate(n.createdAt, locale)}
+          </div>
+          <p style={{ whiteSpace: 'pre-wrap' }}>{n.body}</p>
+          {n.sourceUrl && (
+            <p className="small">
+              {n.sourceTitle && <strong>{n.sourceTitle}: </strong>}
+              <a href={n.sourceUrl} target="_blank" rel="nofollow noopener noreferrer">
+                {n.sourceUrl}
+              </a>
+            </p>
+          )}
+          <div className="btn-row">
+            {status !== 'approved' && (
+              <button className="btn btn--small btn--primary" onClick={() => decide(n.id, 'approved')}>
+                {t('admin.approve')}
+              </button>
+            )}
+            {status !== 'rejected' && (
+              <button className="btn btn--small" onClick={() => decide(n.id, 'rejected')}>
+                {t('admin.reject')}
+              </button>
+            )}
+            <button className="btn btn--small btn--ghost" onClick={() => remove(n.id)}>
+              {t('admin.deleteNote')}
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -895,7 +957,7 @@ function Backup() {
 export default function AdminPage() {
   const { t } = useI18n();
   const session = useAdminSession();
-  const [tab, setTab] = useState<'moderation' | 'reports' | 'archive' | 'services' | 'backup'>('moderation');
+  const [tab, setTab] = useState<'moderation' | 'notes' | 'reports' | 'archive' | 'services' | 'backup'>('moderation');
 
   const logout = async () => {
     try {
@@ -927,13 +989,14 @@ export default function AdminPage() {
       {session.authenticated && session.csrfToken && (
         <>
           <div className="tabs" role="tablist">
-            {(['moderation', 'reports', 'archive', 'services', 'backup'] as const).map((k) => (
+            {(['moderation', 'notes', 'reports', 'archive', 'services', 'backup'] as const).map((k) => (
               <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
                 {t(`admin.tabs.${k}`)}
               </button>
             ))}
           </div>
           {tab === 'moderation' && <Moderation a={adminApi(session.csrfToken)} />}
+          {tab === 'notes' && <Notes a={adminApi(session.csrfToken)} />}
           {tab === 'reports' && <Reports a={adminApi(session.csrfToken)} />}
           {tab === 'archive' && <Archive a={adminApi(session.csrfToken)} />}
           {tab === 'services' && <Services a={adminApi(session.csrfToken)} />}

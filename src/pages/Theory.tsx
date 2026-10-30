@@ -12,6 +12,7 @@ import { ReportForm } from '../components/ReportForm';
 import { ImageGallery } from '../components/ImageGallery';
 import { SaveButton } from '../components/SaveButton';
 import { ShareButton } from '../components/ShareButton';
+import { CaseNotes } from '../components/CaseNotes';
 
 export function entityPath(type: string, slug: string | null): string | null {
   if (!slug) return null;
@@ -251,6 +252,7 @@ export function TheoryPage() {
           </div>
         </aside>
       </div>
+      <CaseNotes slug={th.slug} />
     </div>
   );
 }

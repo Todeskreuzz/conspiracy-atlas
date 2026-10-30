@@ -15,12 +15,15 @@ export function target(argv) {
   process.exit(2);
 }
 
+// Run the project's wrangler with node directly: no npx and no shell, so arguments such as
+// `--command "SELECT * FROM x"` reach wrangler unsplit on Windows too.
+const WRANGLER_BIN = path.join(ROOT, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
+
 export function wrangler(args, { capture = false } = {}) {
-  const res = spawnSync('npx', ['wrangler', ...args], {
+  const res = spawnSync(process.execPath, [WRANGLER_BIN, ...args], {
     cwd: ROOT,
-    stdio: capture ? ['inherit', 'pipe', 'inherit'] : 'inherit',
+    stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit',
     encoding: 'utf8',
-    shell: process.platform === 'win32',
     maxBuffer: 512 * 1024 * 1024,
   });
   if (res.status !== 0) {

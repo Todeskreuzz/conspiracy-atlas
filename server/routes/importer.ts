@@ -3,6 +3,7 @@ import type { AppEnv } from '../http';
 import { Db } from '../db';
 import { requireFeature } from '../features';
 import { ApiError } from '../errors';
+import { imageStorageLimitBytes } from '../images';
 import { IMPORT_INTERVAL_MIN, claimRun, lastImportResult, runImport } from '../importer';
 
 export const importRoutes = new Hono<AppEnv>();
@@ -17,7 +18,7 @@ importRoutes.post('/import/run', async (c) => {
   if (!(await claimRun(db))) {
     throw new ApiError(429, 'rate_limited', `The import runs at most every ${IMPORT_INTERVAL_MIN} minutes.`);
   }
-  const result = await runImport(db);
+  const result = await runImport(db, undefined, imageStorageLimitBytes(c.env));
   return c.json(result, result.error ? 502 : 200);
 });
 

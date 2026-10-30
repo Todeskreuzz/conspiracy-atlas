@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import { client, makeEnv } from './helpers/app';
-import { importFetch, guessCategory, isTheoryPage, matchKey, parseCandidates, IMPORT_BATCH } from '../server/importer';
+import { importFetch, guessCategory, isFreeLicense, isTheoryPage, matchKey, parseCandidates, IMPORT_BATCH } from '../server/importer';
 import { runCostCheck } from '../scripts/cost-check.mjs';
 
 const original = importFetch.impl;
@@ -25,11 +25,41 @@ function summary(title: string, lang = 'en', type = 'standard') {
 }
 
 /** Fake Wikidata + Wikipedia. `pages` maps "lang:Title" to a summary, null = 404. */
-function fakeUpstream(bindings: unknown[], pages: Record<string, unknown | null>, listPages: unknown[][] = []) {
+const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4, 5, 6]);
+
+/** Lead images per article title: file name and licence (NonFree marks a fair-use file). */
+type FakeImage = { file: string; license: string; nonFree?: boolean };
+
+function fakeUpstream(bindings: unknown[], pages: Record<string, unknown | null>, listPages: unknown[][] = [], images: Record<string, FakeImage> = {}) {
   const calls: string[] = [];
   importFetch.impl = (async (input: RequestInfo | URL) => {
     const url = String(input);
     calls.push(url);
+    if (url.startsWith('https://thumb.wikimedia.org/')) return new Response(JPEG);
+    const titles = () => decodeURIComponent(new URL(url).searchParams.get('titles') ?? '').split('|');
+    if (url.includes('prop=pageimages')) {
+      return Response.json({ query: { pages: titles().map((t) => ({ title: t, ...(images[t] ? { pageimage: images[t].file.replace(/ /g, '_') } : {}) })) } });
+    }
+    if (url.includes('prop=imageinfo')) {
+      const byFile = new Map(Object.values(images).map((i) => [`File:${i.file}`, i]));
+      return Response.json({
+        query: {
+          pages: titles().map((t) => {
+            const i = byFile.get(t)!;
+            return {
+              title: t,
+              imageinfo: [{
+                thumburl: `https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/${encodeURIComponent(i.file)}/640px-x.jpg`,
+                thumbwidth: 640,
+                thumbheight: 480,
+                descriptionurl: `https://commons.wikimedia.org/wiki/${encodeURIComponent(t)}`,
+                extmetadata: { LicenseShortName: { value: i.license }, Artist: { value: '<a href="x">Jane Doe</a>' }, ...(i.nonFree ? { NonFree: { value: 'true' } } : {}) },
+              }],
+            };
+          }),
+        },
+      });
+    }
     if (url.startsWith('https://en.wikipedia.org/w/api.php')) {
       // Two result pages, linked by a continuation token like the real API.
       const n = url.includes('gplcontinue=') ? 1 : 0;
@@ -138,6 +168,44 @@ describe('automatic import', () => {
     expect(failed.status).toBe(502);
     expect(failed.json.error).toMatch(/HTTP 503/);
     expect((await visitor.get('/api/import/status')).json.last.error).toMatch(/HTTP 503/);
+  });
+});
+
+describe('cover images', () => {
+  it('stores a freely licensed lead image in D1 with credit, skips non-free ones and backfills older entries', async () => {
+    const { visitor, raw } = await setup();
+    fakeUpstream(
+      [binding('Q50', 'Flat_Earth'), binding('Q60', 'Hollow_Earth')],
+      { 'en:Flat Earth': summary('Flat Earth'), 'en:Hollow Earth': summary('Hollow Earth') },
+      [],
+      { 'Flat Earth': { file: 'Flat earth.png', license: 'CC BY-SA 4.0' }, 'Hollow Earth': { file: 'Poster.jpg', license: 'Fair use', nonFree: true } },
+    );
+    const r = await visitor.post('/api/import/run');
+    expect(r.json.images).toBe(1);
+    const flat = await visitor.get('/api/theories/flat-earth');
+    expect(flat.json.imagePath).toMatch(/^\/api\/images\/[0-9a-f]{24}$/);
+    expect(flat.json.imageCredit).toBe('Jane Doe · CC BY-SA 4.0 · Wikimedia Commons');
+    expect(flat.json.images).toEqual([]); // cover only, not repeated in the gallery
+    const img = await visitor.get(flat.json.imagePath);
+    expect(img.status).toBe(200);
+    expect(img.headers.get('Content-Type')).toBe('image/jpeg');
+    expect((await visitor.get('/api/theories/hollow-earth')).json.imagePath).toBeNull();
+
+    // An entry imported before images existed gets its cover in a later run.
+    raw.prepare("UPDATE theories SET image_path = NULL, image_credit = NULL WHERE slug = 'flat-earth'").run();
+    raw.prepare("UPDATE settings SET value = '2000-01-01T00:00:00.000Z' WHERE key = 'import.last_run'").run();
+    const again = await visitor.post('/api/import/run');
+    expect(again.json.images).toBe(1);
+    expect((await visitor.get('/api/theories/flat-earth')).json.imagePath).toMatch(/^\/api\/images\//);
+  });
+
+  it('accepts only free licences', () => {
+    expect(isFreeLicense('CC BY-SA 4.0', undefined)).toBe(true);
+    expect(isFreeLicense('CC0', undefined)).toBe(true);
+    expect(isFreeLicense('Public domain', undefined)).toBe(true);
+    expect(isFreeLicense('Fair use', undefined)).toBe(false);
+    expect(isFreeLicense('CC BY-SA 4.0', 'true')).toBe(false);
+    expect(isFreeLicense(undefined, undefined)).toBe(false);
   });
 });
 

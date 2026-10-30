@@ -142,7 +142,8 @@ adminRoutes.get('/overview', async (c) => {
   const db = Db.from(c.env);
   const rows = await db.all('SELECT status, COUNT(*) AS n FROM community_submissions GROUP BY status');
   const reports = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM reports WHERE status = 'open'");
-  const notes = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM case_notes WHERE status = 'pending'");
+  // Until migration 0006 is applied the table is missing; the overview must keep working.
+  const notes = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM case_notes WHERE status = 'pending'").catch(() => null);
   return c.json({
     submissions: Object.fromEntries(rows.map((r) => [r.status, Number(r.n)])),
     openReports: Number(reports?.n ?? 0),

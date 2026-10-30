@@ -14,7 +14,19 @@ import { useFeature } from '../api/status';
 import { ISO_NUMERIC } from './mapData';
 import { eventDate } from './Events';
 
-type MapLocation = LocationItem & { events: EventSummary[]; organizations: Array<Organization & { locationId: number }> };
+type MapCase = { id: number; slug: string; title: string; subtitle: string | null; category: string };
+type MapLocation = LocationItem & { events: EventSummary[]; organizations: Array<Organization & { locationId: number }>; theories?: MapCase[] };
+
+/** A red push pin with the number of cases at this place (drawn locally, no image requests). */
+function casePin(count: number): L.DivIcon {
+  return L.divIcon({
+    className: 'case-pin',
+    html: `<svg width="30" height="40" viewBox="0 0 30 40" aria-hidden="true"><path d="M15 39s12-14.5 12-24A12 12 0 0 0 3 15c0 9.5 12 24 12 24z" fill="#b3261e" stroke="#f1b4ad" stroke-width="1.5"/><circle cx="15" cy="15" r="8" fill="#f1e6cd"/><text x="15" y="19" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="700" fill="#5a0f0a">${count}</text></svg>`,
+    iconSize: [30, 40],
+    iconAnchor: [15, 39],
+    tooltipAnchor: [0, -36],
+  });
+}
 
 // Country shapes are bundled with the application (Natural Earth via world-atlas, public domain / ISC).
 // No tile server or external map service is contacted.
@@ -41,8 +53,9 @@ export default function MapPage() {
   const { t, locale } = useI18n();
   const mapFeature = useFeature('map_data');
   const [params] = useSearchParams();
-  const res = useAsync((signal) => api<{ locations: MapLocation[] }>('/map', { signal }), [locale]);
+  const res = useAsync((signal) => api<{ locations: MapLocation[]; caseCount?: number; placedCases?: number }>('/map', { signal }), [locale]);
   const allEvents = useAsync((signal) => api<{ items: EventSummary[] }>('/events', { signal }), [locale]);
+  const [showCases, setShowCases] = useState(true);
   const [showEvents, setShowEvents] = useState(true);
   const [showOrgs, setShowOrgs] = useState(true);
   const [showRegions, setShowRegions] = useState(true);
@@ -53,7 +66,8 @@ export default function MapPage() {
   const regionRef = useRef<L.GeoJSON | null>(null);
 
   const locations = useMemo(() => res.data?.locations ?? [], [res.data]);
-  const activeCountries = useMemo(() => new Set(locations.filter((l) => l.events.length || l.organizations.length).map((l) => ISO_NUMERIC[l.countryCode ?? ''])), [locations]);
+  const used = (l: MapLocation) => (l.theories?.length ?? 0) + l.events.length + l.organizations.length > 0;
+  const activeCountries = useMemo(() => new Set(locations.filter(used).map((l) => ISO_NUMERIC[l.countryCode ?? ''])), [locations]);
 
   useEffect(() => {
     if (!el.current || mapRef.current) return;
@@ -87,6 +101,14 @@ export default function MapPage() {
     if (!group) return;
     group.clearLayers();
     for (const loc of locations) {
+      const cases = showCases ? (loc.theories?.length ?? 0) : 0;
+      if (cases > 0) {
+        const pin = L.marker([loc.lat, loc.lng], { icon: casePin(cases), riseOnHover: true, zIndexOffset: 1000 });
+        pin.bindTooltip(`${loc.name}: ${t('map.casesHere', { count: cases })}`, { direction: 'top' });
+        pin.on('click', () => setSelected(loc));
+        group.addLayer(pin);
+        continue;
+      }
       const hasEvents = showEvents && loc.events.length > 0;
       const hasOrgs = showOrgs && loc.organizations.length > 0;
       if (!hasEvents && !hasOrgs) continue;
@@ -102,7 +124,7 @@ export default function MapPage() {
       marker.on('click', () => setSelected(loc));
       group.addLayer(marker);
     }
-  }, [locations, showEvents, showOrgs]);
+  }, [locations, showCases, showEvents, showOrgs, t]);
 
   const withoutLocation = (allEvents.data?.items ?? []).filter((e) => !e.location).length;
 
@@ -128,6 +150,9 @@ export default function MapPage() {
           <div className="toolbar">
             <span className="label small">{t('map.layers')}:</span>
             <label className="checkbox">
+              <input type="checkbox" checked={showCases} onChange={(e) => setShowCases(e.target.checked)} /> <span style={{ color: '#b3261e' }}>📍</span> {t('map.showCases')}
+            </label>
+            <label className="checkbox">
               <input type="checkbox" checked={showEvents} onChange={(e) => setShowEvents(e.target.checked)} /> <span style={{ color: '#e0574b' }}>●</span> {t('map.showEvents')}
             </label>
             <label className="checkbox">
@@ -136,7 +161,10 @@ export default function MapPage() {
             <label className="checkbox">
               <input type="checkbox" checked={showRegions} onChange={(e) => setShowRegions(e.target.checked)} /> {t('map.showRegions')}
             </label>
-            <span className="muted small">{t('map.places', { count: locations.filter((l) => l.events.length || l.organizations.length).length })}</span>
+            <span className="muted small">{t('map.places', { count: locations.filter(used).length })}</span>
+            {res.data.caseCount !== undefined && (
+              <span className="muted small">· {t('map.casesPlaced', { placed: res.data.placedCases ?? 0, total: res.data.caseCount })}</span>
+            )}
             {withoutLocation > 0 && <span className="muted small">· {t('map.noLocation', { count: withoutLocation })}</span>}
           </div>
           <div className="two-col" style={{ gridTemplateColumns: 'minmax(0, 1fr) 320px' }}>
@@ -148,7 +176,20 @@ export default function MapPage() {
                   <div className="typewriter small muted">{selected.countryCode}</div>
                   <h3 id={selected.slug}>{selected.name}</h3>
                   {selected.description && <p className="small">{selected.description}</p>}
-                  {selected.events.length > 0 && (
+                  {(selected.theories?.length ?? 0) > 0 && (
+                    <>
+                      <h4>{t('map.cases')}</h4>
+                      <ul className="list-plain small" style={{ marginBottom: 12 }}>
+                        {selected.theories!.map((c) => (
+                          <li key={c.id}>
+                            <Link to={`/theory/${c.slug}`}>{c.title}</Link>
+                            {c.subtitle && <span className="muted"> · {c.subtitle}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  {selected.events.length > 0 && showEvents && (
                     <>
                       <h4>{t('nav.events')}</h4>
                       <ul className="list-plain small">

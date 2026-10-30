@@ -75,6 +75,21 @@ describe('public API', () => {
     expect(auto.some((e: any) => e.shared.some((s: any) => s.title === 'Washington, D.C.'))).toBe(false);
   });
 
+  it('places case files on the map where the archive names a place', async () => {
+    const c = client(await makeEnv());
+    const r = await c.get('/api/map');
+    expect(r.status).toBe(200);
+    const withCases = r.json.locations.filter((l: any) => l.theories.length);
+    expect(withCases.length).toBeGreaterThan(3);
+    expect(r.json.placedCases).toBeGreaterThan(5);
+    expect(r.json.placedCases).toBeLessThanOrEqual(r.json.caseCount);
+    const all = withCases.flatMap((l: any) => l.theories.map((t: any) => t.slug));
+    expect(all).toContain('mkultra');
+    const de = await c.get('/api/map?lang=de');
+    const moon = de.json.locations.flatMap((l: any) => l.theories).find((t: any) => t.slug === 'moon-landing-conspiracy-theory');
+    if (moon) expect(moon.title).toBe('Verschwörungstheorie zur Mondlandung');
+  });
+
   it('serves events for the timeline and map data', async () => {
     const c = client(await makeEnv());
     const ev = await c.get('/api/events?from=1960&to=1980');

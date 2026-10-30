@@ -36,8 +36,17 @@ npx wrangler pages project create conspiracy-atlas --production-branch main
 npx wrangler pages deploy dist --project-name conspiracy-atlas
 ```
 The site is then available at https://conspiracy-atlas.pages.dev.
-Alternatively connect the GitHub repository under *Workers & Pages → Create → Pages →
-Connect to Git* (build command `npm run build`, output `dist`).
+
+**Production setup (since 30 October 2026): Git-connected, deploys automatically.**
+The live project is connected to this GitHub repository, so every merge into `main` is built
+and published by Cloudflare Pages (Free: 500 builds per month). Settings:
+production branch `main`, framework preset *None*, build command
+`npm run cost-check && npm run build`, output `dist`; D1 binding and variables come from
+`wrangler.toml`. A project created by direct upload cannot be switched to Git later; it has to be
+deleted and recreated via *Workers & Pages → Create application → "Looking to deploy Pages?" →
+Import an existing Git repository* in the account that owns the D1 database, after which the
+secrets (step 5) must be set again. Secrets only take effect on the next deployment.
+Database migrations are never applied automatically; run `npm run db:migrate:remote` by hand.
 
 ## 5. Secrets (you enter the values yourself)
 ```bash

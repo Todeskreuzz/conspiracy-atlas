@@ -614,5 +614,21 @@
     "moderationHint": "Your note is checked by an editor before it appears. Only the display name is stored, no e-mail or IP address.",
     "send": "Send for review",
     "sent": "Thank you! Your note will appear after an editor approves it."
+  },
+  "meta": {
+    "home": "An interactive global archive of conspiracy theories, mysteries and documented secret operations. Every claim is linked to its sources and rated by evidence.",
+    "wall": "The investigation wall: case files, people, organisations and events pinned to a cork board and connected with red string.",
+    "archive": "Browse every case file: conspiracy theories, mysteries and documented operations, filtered by category and evidence rating.",
+    "organizations": "Agencies, institutions, companies and groups that appear in the case files, with their documented connections.",
+    "events": "Historical events behind the case files, with dates, places and sources.",
+    "timeline": "A timeline of documented events and conspiracy theories, from antiquity to today.",
+    "map": "A world map of the places where the events behind the case files happened.",
+    "saved": "Your saved case files.",
+    "investigations": "Open investigations: collaborative boards that connect cases, people and documents.",
+    "community": "Theories and notes submitted by the community, checked by moderators.",
+    "submit": "Submit a theory or a source to the archive.",
+    "knowledge": "How to read the archive: evidence ratings, source types and how to check a claim yourself.",
+    "experts": "What scientists, historians and investigators say about the best-known conspiracy theories.",
+    "about": "About The Conspiracy Atlas: what the archive is, how cases are rated and where the sources come from."
   }
 }

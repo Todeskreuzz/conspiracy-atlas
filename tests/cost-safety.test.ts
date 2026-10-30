@@ -69,7 +69,8 @@ describe('static Pages build', () => {
       expect(files).toContain('index.html');
       expect(files).toContain('_routes.json');
       expect(files).toContain('_headers');
-      expect(JSON.parse(readFileSync(join(outDir, '_routes.json'), 'utf8')).include).toEqual(['/api/*', '/theory/*']);
+      expect(JSON.parse(readFileSync(join(outDir, '_routes.json'), 'utf8')).include).toEqual(['/api/*', '/theory/*', '/sitemap.xml']);
+      expect(files).toContain('robots.txt');
       const js = files.filter((f) => f.endsWith('.js')).map((f) => readFileSync(join(outDir, f), 'utf8')).join('\n');
       for (const re of FORBIDDEN_PATTERNS as RegExp[]) expect(re.test(js), String(re)).toBe(false);
       // No map tile servers: the map is rendered from bundled data only.

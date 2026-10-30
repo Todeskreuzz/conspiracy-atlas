@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { api } from '../api/client';
 import type { Organization, Paged, Relationship } from '../../shared/types';
 import { LoadState } from '../components/Unavailable';
@@ -50,6 +51,7 @@ export function OrganizationPage() {
   const { t, locale } = useI18n();
   const res = useAsync((signal) => api<Organization & { relationships: Relationship[] }>(`/organizations/${encodeURIComponent(slug)}`, { signal }), [slug, locale]);
   const o = res.data;
+  usePageMeta(o?.name, o?.description);
   return (
     <div className="container page">
       <LoadState loading={res.loading} error={res.error} onRetry={res.reload} />

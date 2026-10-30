@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { makeEnv } from './helpers/app';
 import { Db } from '../server/db';
-import { clip, injectOg, loadOg } from '../server/og';
+import { clip, injectOg, jsonLd, loadOg } from '../server/og';
+import { onRequestGet as sitemap } from '../functions/sitemap.xml';
 import { onRequestGet } from '../functions/theory/[slug]';
 
 const INDEX = readFileSync('index.html', 'utf8');
@@ -49,5 +50,37 @@ describe('link previews', () => {
     expect(missing).toBe(INDEX);
     const noDb = await (await callFunction('/theory/cointelpro', { ...env, DB: undefined } as any)).text();
     expect(noDb).toBe(INDEX);
+  });
+});
+
+describe('search engines', () => {
+  it('adds hreflang links, the page language and escaped structured data to case pages', async () => {
+    const env = await makeEnv();
+    const html = await (await callFunction('/theory/cointelpro?lang=de', env as any)).text();
+    expect(html).toContain('<html lang="de">');
+    expect(html).toContain('<link rel="alternate" hreflang="en" href="https://conspiracy-atlas.pages.dev/theory/cointelpro" />');
+    expect(html).toContain('<link rel="alternate" hreflang="de" href="https://conspiracy-atlas.pages.dev/theory/cointelpro?lang=de" />');
+    expect(html).toContain('<link rel="canonical" href="https://conspiracy-atlas.pages.dev/theory/cointelpro?lang=de" />');
+    const ld = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/)![1]!);
+    expect(ld['@type']).toBe('Article');
+    expect(ld.inLanguage).toBe('de');
+    expect(ld.dateModified).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+    const evil = jsonLd({ title: '</script><script>alert(1)</script>', description: '', url: 'https://x.test', image: 'https://x.test/i.jpg', locale: 'en' });
+    expect(evil.match(/<\/script>/g)).toHaveLength(1);
+  });
+
+  it('lists published cases and overview pages in the sitemap with both languages', async () => {
+    const env = await makeEnv();
+    const res = await (sitemap as any)({ request: new Request('https://conspiracy-atlas.pages.dev/sitemap.xml'), env });
+    const xml = await res.text();
+    expect(res.headers.get('content-type')).toContain('application/xml');
+    expect(xml).toContain('<loc>https://conspiracy-atlas.pages.dev/theory/area-51</loc>');
+    expect(xml).toContain('hreflang="de" href="https://conspiracy-atlas.pages.dev/theory/area-51?lang=de"');
+    expect(xml).toContain('<loc>https://conspiracy-atlas.pages.dev/timeline</loc>');
+    expect(xml).not.toContain('/admin');
+    expect(xml).toMatch(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
+    const off = await (sitemap as any)({ request: new Request('https://x.test/sitemap.xml'), env: { ...env, DB: undefined } });
+    expect(off.status).toBe(503);
+    expect(await off.text()).toBe('Currently unavailable!');
   });
 });

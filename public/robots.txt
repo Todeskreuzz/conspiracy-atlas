@@ -1,0 +1,8 @@
+# The API stays crawlable: search engines render the pages with it.
+User-agent: *
+Disallow: /admin
+Disallow: /api/admin/
+Disallow: /saved
+Disallow: /submit
+
+Sitemap: https://conspiracy-atlas.pages.dev/sitemap.xml

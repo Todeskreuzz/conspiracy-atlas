@@ -9,7 +9,7 @@ export function TheoryCard({ theory }: { theory: TheorySummary }) {
     <Link to={`/theory/${theory.slug}`} className="case-card" data-testid="theory-card" viewTransition>
       <span className="pin" aria-hidden="true" />
       <div className="case-card__img">
-        <img src={theory.imagePath ?? '/media/cards/theory.svg'} alt="" loading="lazy" />
+        <img src={theory.imagePath ?? '/media/cards/theory.svg'} alt="" loading="lazy" decoding="async" />
       </div>
       <div className="case-card__body">
         <div className="case-card__title">{theory.title}</div>

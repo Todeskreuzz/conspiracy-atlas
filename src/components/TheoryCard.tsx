@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { TheorySummary } from '../../shared/types';
-import { CategoryBadge, StatusBadge } from './Badges';
+import { CategoryBadge } from './Badges';
 import { useT } from '../i18n';
 
 export function TheoryCard({ theory }: { theory: TheorySummary }) {
@@ -16,7 +16,6 @@ export function TheoryCard({ theory }: { theory: TheorySummary }) {
         {theory.subtitle && <div className="case-card__subtitle">{theory.subtitle}</div>}
         <div className="case-card__summary">{theory.summary}</div>
         <div className="case-card__meta">
-          <StatusBadge status={theory.evidenceStatus} />
           <CategoryBadge category={theory.category} />
           {theory.origin === 'community' && <span className="tag">{t('archive.by', { name: theory.authorName ?? 'Anonymous' })}</span>}
         </div>

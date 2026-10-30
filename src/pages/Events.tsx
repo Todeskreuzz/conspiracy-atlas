@@ -5,7 +5,7 @@ import { useAsync } from '../hooks/useAsync';
 import { api } from '../api/client';
 import type { EventSummary, Relationship } from '../../shared/types';
 import { LoadState } from '../components/Unavailable';
-import { CategoryBadge, StatusBadge } from '../components/Badges';
+import { CategoryBadge } from '../components/Badges';
 import { RelationshipList } from './Theory';
 
 export function eventDate(ev: EventSummary, locale: 'en' | 'de') {
@@ -46,8 +46,7 @@ export function EventsPage() {
                 <span className="mono small muted">{eventDate(e, locale)}</span>
                 <span>
                   <Link to={`/events/${e.slug}`}>{e.title}</Link>
-                  {e.location && <span className="muted small"> · {e.location.name}</span>}{' '}
-                  {e.evidenceStatus !== 'historically_documented' && <StatusBadge status={e.evidenceStatus} dark />}
+                  {e.location && <span className="muted small"> · {e.location.name}</span>}
                 </span>
               </li>
             ))}
@@ -73,7 +72,6 @@ export function EventPage() {
             <div className="mono small muted">{eventDate(e, locale)}</div>
             <h1>{e.title}</h1>
             <div className="btn-row" style={{ marginBottom: 12 }}>
-              <StatusBadge status={e.evidenceStatus} />
               <CategoryBadge category={e.category} />
               {e.isPeriod && <span className="badge badge--category">{t('events.period')}</span>}
             </div>

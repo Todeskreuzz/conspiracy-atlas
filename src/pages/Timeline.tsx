@@ -4,9 +4,9 @@ import { useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
 import { api } from '../api/client';
 import type { EventSummary } from '../../shared/types';
-import { CATEGORY_SLUGS, EVIDENCE_STATUSES } from '../../shared/constants';
+import { CATEGORY_SLUGS } from '../../shared/constants';
 import { LoadState } from '../components/Unavailable';
-import { StatusBadge, CategoryBadge, STATUS_COLORS } from '../components/Badges';
+import { CategoryBadge } from '../components/Badges';
 import { eventDate } from './Events';
 
 /** Converts an event date (YYYY, YYYY-MM or YYYY-MM-DD) to a fractional year. */
@@ -63,6 +63,7 @@ export function layoutLanes(events: EventSummary[], x: (year: number) => number,
 }
 
 const AXIS_PAD = 40;
+const EVENT_COLOR = '#c9372c';
 const LANE_H = 30;
 
 export function TimelinePage() {
@@ -70,7 +71,6 @@ export function TimelinePage() {
   const [params, setParams] = useSearchParams();
   const res = useAsync((signal) => api<{ items: EventSummary[] }>('/events', { signal }), [locale]);
   const [category, setCategory] = useState('');
-  const [statuses, setStatuses] = useState<string[]>([...EVIDENCE_STATUSES]);
   const [width, setWidth] = useState(1000);
   const [domain, setDomain] = useState<[number, number] | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -78,8 +78,8 @@ export function TimelinePage() {
   const selectedSlug = params.get('event');
 
   const events = useMemo(
-    () => (res.data?.items ?? []).filter((e) => (!category || e.category === category) && statuses.includes(e.evidenceStatus)),
-    [res.data, category, statuses],
+    () => (res.data?.items ?? []).filter((e) => !category || e.category === category),
+    [res.data, category],
   );
   const full = useMemo<[number, number]>(() => {
     const all = res.data?.items ?? [];
@@ -193,22 +193,6 @@ export function TimelinePage() {
             ))}
           </select>
         </div>
-        <div className="field" style={{ flex: '1 1 300px' }}>
-          <span className="label">{t('archive.filterStatus')}</span>
-          <div className="wall__chips">
-            {EVIDENCE_STATUSES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                className="chip"
-                aria-pressed={statuses.includes(s)}
-                onClick={() => setStatuses((l) => (l.includes(s) ? l.filter((v) => v !== s) : [...l, s]))}
-              >
-                {t(`status.${s}`)}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       <LoadState loading={res.loading} error={res.error} onRetry={res.reload} />
@@ -258,7 +242,7 @@ export function TimelinePage() {
               const cx = x(l.start);
               const nearEnd = cx + Math.min(240, l.event.title.length * 6.6 + 22) > width;
               const y = laneY(l.lane);
-              const color = STATUS_COLORS[l.event.evidenceStatus];
+              const color = EVENT_COLOR;
               if (cx < -200 || cx > width + 200) return null;
               return (
                 <g
@@ -301,7 +285,6 @@ export function TimelinePage() {
                 <Link to={`/events/${selected.slug}`}>{selected.title}</Link>
               </h2>
               <div className="btn-row" style={{ marginBottom: 10 }}>
-                <StatusBadge status={selected.evidenceStatus} />
                 <CategoryBadge category={selected.category} />
               </div>
               <p>{selected.description}</p>

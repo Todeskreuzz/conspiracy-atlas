@@ -17,6 +17,7 @@ export const NAV_ITEMS = [
   ['/community', 'nav.community'],
   ['/submit', 'nav.submit'],
   ['/knowledge', 'nav.knowledge'],
+  ['/experts', 'nav.experts'],
   ['/about', 'nav.about'],
 ] as const;
 

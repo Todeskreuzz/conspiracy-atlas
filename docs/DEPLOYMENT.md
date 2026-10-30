@@ -66,14 +66,22 @@ Community submissions and reports require Turnstile. Until it is set up they sho
 4. Rebuild and deploy.
 
 ## 7. Automatic archive import (free)
-`FEATURE_AUTOMATIC_IMPORT = "true"` enables `POST /api/import/run`. Each run takes up to 10 Wikidata items
+`FEATURE_AUTOMATIC_IMPORT = "true"` enables `POST /api/import/run`. Each run takes up to 6 Wikidata items
 that are a *conspiracy theory* (Q159535, incl. subclasses up to two levels) with an English Wikipedia article, then the theory
 articles linked from Wikipedia's *List of conspiracy theories* (people, places and other links are
 skipped by their short description), skips everything already in the archive and stores the rest neutrally: the Wikipedia lead text (CC BY-SA 4.0,
 attributed and linked), the article as source, a German title and summary if a German article exists.
 No claims, ratings or connections are derived. The endpoint needs no secret and runs at most every
-20 minutes. Each run also adds up to 10 freely licensed Wikipedia lead images from Wikimedia Commons
-(stored in D1, with author and licence shown on the image).
+20 minutes. Each run then fills up to 6 imported entries (new ones first, older ones step by step) from
+the full article text: the whole lead as summary, the origin and background sections, the article's
+other sections under *In detail*, and the central claims as the article states them (one claim per
+subsection of a "Claims" section, otherwise the article's sentences saying what proponents claim;
+sections about criticism or rebuttals are never used as claims). Finally it adds up to 10 cover
+images from Wikimedia Commons, only with a free licence, tried in this order: the article's lead image,
+the Wikidata image (P18), other photos in the article (no icons, logos or flags). They are stored in D1
+with author and licence shown on the image. A case without any free image shows a generated case-file
+cover (drawn in the browser, nothing stored). A run stops fetching after 45 requests, below the 50
+subrequests of Workers Free.
 
 The run is started every 3 hours by the cron Worker in `workers/import-cron/` (Workers Free, Cron
 Trigger, no bindings, no public URL). Deploy it once, after `npx wrangler login`:

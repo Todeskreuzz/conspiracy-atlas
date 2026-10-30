@@ -337,6 +337,7 @@ export async function loadTheoryDetail(db: Db, slug: string, locale: Locale, inc
     background: (full?.background as string) ?? null,
     originStory: (full?.origin_story as string) ?? null,
     imageCredit: (full?.image_credit as string) ?? null,
+    imported: generalSources.some((s) => s.note === 'Wikipedia article (automatic import)'),
     body,
     claims,
     counterArguments,

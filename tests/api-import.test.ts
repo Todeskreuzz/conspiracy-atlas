@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import { client, makeEnv } from './helpers/app';
-import { importFetch, guessCategory, isFreeLicense, isTheoryPage, matchKey, parseCandidates, IMPORT_BATCH } from '../server/importer';
+import { importFetch, guessCategory, isFreeLicense, isTheoryPage, isCoverCandidate, matchKey, parseCandidates, articleDetails, IMPORT_BATCH, MAX_SUBREQUESTS } from '../server/importer';
 import { runCostCheck } from '../scripts/cost-check.mjs';
 
 const original = importFetch.impl;
@@ -30,22 +30,70 @@ const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4, 5, 6]);
 /** Lead images per article title: file name and licence (NonFree marks a fair-use file). */
 type FakeImage = { file: string; license: string; nonFree?: boolean };
 
-function fakeUpstream(bindings: unknown[], pages: Record<string, unknown | null>, listPages: unknown[][] = [], images: Record<string, FakeImage> = {}) {
+/** A plain-text article as the TextExtracts API returns it (exsectionformat=wiki). */
+export function article(title: string) {
+  return [
+    `${title} is a conspiracy theory that has circulated widely.`,
+    `Proponents claim that the truth about ${title} has been hidden from the public for decades.`,
+    '',
+    '== Origins ==',
+    `The idea of ${title} first appeared in a pamphlet in 1903.`,
+    '',
+    '== Claims ==',
+    '=== Cover-up ===',
+    'Believers say that the government hides the evidence. They point to missing files.',
+    '=== Secret group ===',
+    'A secret group is said to control the story.',
+    '',
+    '== Spread ==',
+    'The theory spread on radio shows in the 1990s and later online.',
+    '',
+    '== See also ==',
+    'Other theories',
+    '',
+    '== References ==',
+  ].join('\n');
+}
+
+function fakeUpstream(
+  bindings: unknown[],
+  pages: Record<string, unknown | null>,
+  listPages: unknown[][] = [],
+  images: Record<string, FakeImage> = {},
+  extra: { articles?: Record<string, string | null>; p18?: Record<string, string>; pageFiles?: Record<string, string[]>; licenses?: Record<string, string> } = {},
+) {
   const calls: string[] = [];
+  /** Licences of files that are not a lead image (Wikidata image, other photos in the article). */
+  const extraFiles: Record<string, string> = (extra as { licenses?: Record<string, string> }).licenses ?? {};
   importFetch.impl = (async (input: RequestInfo | URL) => {
     const url = String(input);
     calls.push(url);
     if (url.startsWith('https://thumb.wikimedia.org/')) return new Response(JPEG);
     const titles = () => decodeURIComponent(new URL(url).searchParams.get('titles') ?? '').split('|');
+    if (url.includes('prop=extracts')) {
+      return Response.json({ query: { pages: titles().map((t) => (extra.articles?.[t] === null ? { title: t, missing: true } : { title: t, extract: extra.articles?.[t] ?? article(t) })) } });
+    }
+    if (url.includes('prop=images')) {
+      return Response.json({ query: { pages: titles().map((t) => ({ title: t, images: (extra.pageFiles?.[t] ?? []).map((f) => ({ title: f })) })) } });
+    }
+    if (url.startsWith('https://query.wikidata.org/') && decodeURIComponent(url).includes('P18')) {
+      const rows = Object.entries(extra.p18 ?? {}).map(([qid, file]) => ({
+        item: { value: `http://www.wikidata.org/entity/${qid}` },
+        img: { value: `http://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file.replace(/ /g, '_'))}` },
+      }));
+      return Response.json({ results: { bindings: rows } });
+    }
     if (url.includes('prop=pageimages')) {
       return Response.json({ query: { pages: titles().map((t) => ({ title: t, ...(images[t] ? { pageimage: images[t].file.replace(/ /g, '_') } : {}) })) } });
     }
     if (url.includes('prop=imageinfo')) {
       const byFile = new Map(Object.values(images).map((i) => [`File:${i.file}`, i]));
+      for (const [file, license] of Object.entries(extraFiles)) byFile.set(file, { file: file.slice(5), license });
       return Response.json({
         query: {
           pages: titles().map((t) => {
-            const i = byFile.get(t)!;
+            const i = byFile.get(t);
+            if (!i) return { title: t, missing: true };
             return {
               title: t,
               imageinfo: [{
@@ -112,9 +160,19 @@ describe('automatic import', () => {
     expect(theory.status).toBe(200);
     expect(theory.json.evidenceStatus).toBe('unverified');
     expect(theory.json.category).toBe('space-ufos');
-    expect(theory.json.claims).toEqual([]);
     expect(JSON.stringify(theory.json.body)).toContain('CC BY-SA 4.0');
-    const src = raw.prepare("SELECT s.url, s.source_type FROM sources s JOIN evidence e ON e.source_id = s.id JOIN theories t ON t.id = e.theory_id WHERE t.slug = 'flat-earth'").all();
+    // Filled from the full article in the same run.
+    expect(r.json.detailed).toBe(2);
+    expect(theory.json.imported).toBe(true);
+    expect(theory.json.originStory).toBe('The idea of Flat Earth first appeared in a pamphlet in 1903.');
+    expect(theory.json.claims.map((c: any) => c.text)).toEqual([
+      'Cover-up: Believers say that the government hides the evidence. They point to missing files.',
+      'Secret group: A secret group is said to control the story.',
+    ]);
+    expect(theory.json.claims[0].evidence[0].source.url).toBe('https://en.wikipedia.org/wiki/Flat_Earth');
+    const headings = theory.json.body.content.filter((n: any) => n.type === 'heading').map((n: any) => n.content[0].text);
+    expect(headings).toEqual(['Spread']); // origin and claims have their own fields; see also / references dropped
+    const src = raw.prepare("SELECT s.url, s.source_type FROM sources s JOIN evidence e ON e.source_id = s.id JOIN theories t ON t.id = e.theory_id WHERE t.slug = 'flat-earth' AND e.claim_id IS NULL").all();
     expect(src).toEqual([{ url: 'https://en.wikipedia.org/wiki/Flat_Earth', source_type: 'reference_work' }]);
 
     const de = await visitor.get('/api/theories/birds-aren-t-real?lang=de');
@@ -199,6 +257,34 @@ describe('cover images', () => {
     expect((await visitor.get('/api/theories/flat-earth')).json.imagePath).toMatch(/^\/api\/images\//);
   });
 
+  it('falls back to the Wikidata image and other free photos in the article, never to icons', async () => {
+    const { visitor, raw } = await setup();
+    fakeUpstream(
+      [binding('Q50', 'Flat_Earth'), binding('Q60', 'Hollow_Earth'), binding('Q70', 'Lizard_People')],
+      { 'en:Flat Earth': summary('Flat Earth'), 'en:Hollow Earth': summary('Hollow Earth'), 'en:Lizard People': summary('Lizard People') },
+      [],
+      {},
+      {
+        p18: { Q50: 'Globe photo.jpg' },
+        pageFiles: { 'Hollow Earth': ['File:Commons-logo.svg', 'File:Flag of Atlantis.png', 'File:Hollow earth drawing.jpg'], 'Lizard People': ['File:Question book-new.svg'] },
+        licenses: { 'File:Globe photo.jpg': 'CC0', 'File:Hollow earth drawing.jpg': 'Public domain', 'File:Flag of Atlantis.png': 'CC0' },
+      },
+    );
+    const r = await visitor.post('/api/import/run');
+    expect(r.json.images).toBe(2);
+    const files = raw.prepare("SELECT title FROM sources WHERE publisher = 'Wikimedia Commons' ORDER BY id").all().map((x: any) => x.title);
+    expect(files).toEqual(['File:Globe photo.jpg – Wikimedia Commons', 'File:Hollow earth drawing.jpg – Wikimedia Commons']);
+    // No free image anywhere: the frontend shows the generated case-file cover.
+    expect((await visitor.get('/api/theories/lizard-people')).json.imagePath).toBeNull();
+  });
+
+  it('recognises photos and rejects icons, logos and flags', () => {
+    expect(isCoverCandidate('File:Paul McCartney 1966.jpg')).toBe(true);
+    expect(isCoverCandidate('File:Commons-logo.svg')).toBe(false);
+    expect(isCoverCandidate('File:Flag of Germany.png')).toBe(false);
+    expect(isCoverCandidate('File:Diagram.svg')).toBe(false);
+  });
+
   it('accepts only free licences', () => {
     expect(isFreeLicense('CC BY-SA 4.0', undefined)).toBe(true);
     expect(isFreeLicense('CC0', undefined)).toBe(true);
@@ -206,6 +292,54 @@ describe('cover images', () => {
     expect(isFreeLicense('Fair use', undefined)).toBe(false);
     expect(isFreeLicense('CC BY-SA 4.0', 'true')).toBe(false);
     expect(isFreeLicense(undefined, undefined)).toBe(false);
+  });
+});
+
+describe('article details', () => {
+  it('fills older imported entries from the full article in later runs and keeps every run below the subrequest limit', async () => {
+    const { visitor, raw } = await setup();
+    const many = Array.from({ length: 20 }, (_, i) => binding(`Q${i + 10}`, `Theory_${i}`));
+    const pages = Object.fromEntries(many.map((_, i) => [`en:Theory ${i}`, summary(`Theory ${i}`)]));
+    const calls = fakeUpstream(many, pages, [], Object.fromEntries(many.map((_, i) => [`Theory ${i}`, { file: `T${i}.jpg`, license: 'CC BY 4.0' }])));
+    const first = await visitor.post('/api/import/run');
+    expect(calls.length).toBeLessThanOrEqual(MAX_SUBREQUESTS);
+    expect(first.json.detailed).toBe(first.json.imported.length);
+    // Simulate entries imported before details existed.
+    raw.prepare("DELETE FROM claims WHERE theory_id IN (SELECT id FROM theories WHERE slug LIKE 'theory-%')").run();
+    raw.prepare("UPDATE settings SET value = '2000-01-01T00:00:00.000Z' WHERE key = 'import.last_run'").run();
+    calls.length = 0;
+    const again = await visitor.post('/api/import/run');
+    expect(calls.length).toBeLessThanOrEqual(MAX_SUBREQUESTS);
+    expect(again.json.detailed).toBeGreaterThan(0);
+    expect(raw.prepare("SELECT COUNT(DISTINCT c.theory_id) AS n FROM claims c JOIN theories t ON t.id = c.theory_id WHERE t.slug LIKE 'theory-%'").get().n).toBe(again.json.detailed);
+  });
+
+  it('uses the summary when the article text is missing, so the entry is not retried', async () => {
+    const { visitor, raw } = await setup();
+    fakeUpstream([binding('Q50', 'Flat_Earth')], { 'en:Flat Earth': summary('Flat Earth') }, [], {}, { articles: { 'Flat Earth': null } });
+    const r = await visitor.post('/api/import/run');
+    expect(r.json.detailed).toBe(1);
+    expect(raw.prepare("SELECT c.text FROM claims c JOIN theories t ON t.id = c.theory_id WHERE t.slug = 'flat-earth'").all().map((c: any) => c.text)).toEqual(['Flat Earth is a conspiracy theory that has circulated widely.']);
+  });
+
+  it('takes claims from the article sentences when there is no claims section, never from criticism', () => {
+    const d = articleDetails(
+      [
+        'X is a theory about the weather.',
+        'Its proponents claim that clouds are made by machines.',
+        '',
+        '== Criticism of the claims ==',
+        'Scientists say the claims are false and argue that clouds form naturally.',
+        '',
+        '== History ==',
+        'It began in 1990.',
+      ].join('\n'),
+    );
+    expect(d.claims).toEqual(['Its proponents claim that clouds are made by machines.']);
+    expect(d.background).toBe('It began in 1990.');
+    expect(d.sections.map((s) => s.heading)).toEqual(['Criticism of the claims']);
+    expect(articleDetails('Y is a denial.\n\n== Examination of claims ==\nHistorians show that the claims are false.').claims).toEqual(['Y is a denial.']);
+    expect(d.summary).toBe('X is a theory about the weather.\n\nIts proponents claim that clouds are made by machines.');
   });
 });
 

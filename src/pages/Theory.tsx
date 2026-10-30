@@ -7,6 +7,7 @@ import type { Relationship, TheoryDetail } from '../../shared/types';
 import { CategoryBadge } from '../components/Badges';
 import { LoadState } from '../components/Unavailable';
 import { RichText } from '../components/RichText';
+import { CaseCover } from '../components/CaseCover';
 import { SourceItem } from '../components/SourceItem';
 import { ReportForm } from '../components/ReportForm';
 import { ImageGallery } from '../components/ImageGallery';
@@ -98,6 +99,12 @@ export function TheoryPage() {
                 {th.imageCredit && <figcaption className="dossier__credit">{th.imageCredit}</figcaption>}
               </figure>
             )}
+            {!th.imagePath && (
+              <figure className="dossier__photo">
+                <span className="pin" aria-hidden="true" />
+                <CaseCover id={th.id} title={th.title} category={th.category} />
+              </figure>
+            )}
             <h1>{th.title}</h1>
             {th.subtitle && <p className="muted" style={{ fontSize: '1.1rem', margin: 0 }}>{th.subtitle}</p>}
             <div className="btn-row">
@@ -119,24 +126,24 @@ export function TheoryPage() {
 
           <section>
             <h2>{t('theory.summary')}</h2>
-            <p className="highlight-first">{th.summary}</p>
+            <Paragraphs text={th.summary} className="highlight-first" />
           </section>
 
           {th.background && (
             <section>
               <h2>{t('theory.background')}</h2>
-              <p>{th.background}</p>
+              <Paragraphs text={th.background} />
             </section>
           )}
           {th.originStory && (
             <section>
               <h2>{t('theory.origin')}</h2>
-              <p>{th.originStory}</p>
+              <Paragraphs text={th.originStory} />
             </section>
           )}
-          {th.body && th.origin === 'community' && (
+          {th.body && (th.origin === 'community' || th.imported) && (
             <section>
-              <h2>{t('theory.body')}</h2>
+              <h2>{t(th.imported ? 'theory.details' : 'theory.body')}</h2>
               <RichText doc={th.body} />
             </section>
           )}
@@ -255,5 +262,18 @@ export function TheoryPage() {
       </div>
       <CaseNotes slug={th.slug} />
     </div>
+  );
+}
+
+/** Plain text with blank-line paragraphs (imported articles); hand-written fields are a single paragraph. */
+function Paragraphs({ text, className }: { text: string; className?: string }) {
+  return (
+    <>
+      {text.split(/\n{2,}/).map((p, i) => (
+        <p key={i} className={i === 0 ? className : undefined}>
+          {p}
+        </p>
+      ))}
+    </>
   );
 }

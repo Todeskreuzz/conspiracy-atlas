@@ -76,7 +76,10 @@ No claims, ratings or connections are derived. The endpoint needs no secret and 
 the full article text: the whole lead as summary, the origin and background sections, the article's
 other sections under *In detail*, and the central claims as the article states them (one claim per
 subsection of a "Claims" section, otherwise the article's sentences saying what proponents claim;
-sections about criticism or rebuttals are never used as claims). Finally it adds up to 10 cover
+sections about criticism or rebuttals are never used as claims). Entries with a German article get
+that article in full in the same way, up to 6 per run (also older entries): German summary, origin,
+background, sections and claims, shown in the German view with its own CC BY-SA 4.0 note; without a
+German article the German view keeps the English text. Finally it adds up to 10 cover
 real photos from Wikimedia Commons, only with a free licence, tried in this order: the article's lead
 image, the Wikidata image (P18), the Wikidata images of the people, places, organisations and works the
 theory is about, other photos in the article (no icons, logos or flags) and a Commons search for the

@@ -80,6 +80,8 @@ export interface ImportResult {
   /** Entries filled from the full article in this run. */
   detailed: number;
   detailError?: string;
+  /** Entries given the German article's full text in this run. */
+  detailedDe?: number;
   error: string | null;
 }
 
@@ -377,6 +379,7 @@ export function isFreeLicense(license: string | undefined, nonFree: string | und
 const stripHtml = (html: string) =>
   html.replace(/<[^>]*>/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 
+const DE_API = 'https://de.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&redirects=1&';
 const wikiApi = (params: string) => `https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&redirects=1&${params}`;
 // Commons serves thumbnails from either host.
 const isCommonsThumb = (url: string) => url.startsWith('https://thumb.wikimedia.org/') || url.startsWith('https://upload.wikimedia.org/');
@@ -731,14 +734,28 @@ export function parseArticle(extract: string): { lead: string[]; sections: Artic
   return { lead, sections: sections.filter((s) => s.blocks.some((b) => b.paragraphs.length)) };
 }
 
-const SKIP_SECTION = /^(see also|references|notes|citations|sources|bibliography|further reading|external links|footnotes|works cited|literature|explanatory notes|notes and references|references and notes|gallery|selected bibliography|cited sources)$/i;
-const ORIGIN_SECTION = /\b(origins?|emergence|beginnings?|genesis|inception|roots|creation)\b/i;
-const BACKGROUND_SECTION = /\b(background|history|historical|context|overview|description)\b/i;
-const CLAIMS_SECTION = /\b(claims?|allegations?|beliefs?|tenets|premises?|assertions?|narratives?|content|the theory|theories|main ideas|ideology|thesis|arguments?|accusations?)\b/i;
-const RESPONSE_SECTION = /debunk|critic|refut|respon|reception|reaction|analysis|rebuttal|investigation|examination|evidence|fact[ -]check|scientific|legal|laws?\b|prosecution/i;
-const CLAIM_SENTENCE = /\b(claim(s|ed)?|alleg\w*|assert\w*|believe[sd]?|contend\w*|purport\w*|accus\w*|supposedly|posits?|holds? that|maintains? that|argues? that|theor\w* that|suggests? that)\b/i;
+/** How sections are recognised in English and German articles. */
+const SECTION_RULES = {
+  en: {
+    skip: /^(see also|references|notes|citations|sources|bibliography|further reading|external links|footnotes|works cited|literature|explanatory notes|notes and references|references and notes|gallery|selected bibliography|cited sources)$/i,
+    origin: /\b(origins?|emergence|beginnings?|genesis|inception|roots|creation)\b/i,
+    background: /\b(background|history|historical|context|overview|description)\b/i,
+    claims: /\b(claims?|allegations?|beliefs?|tenets|premises?|assertions?|narratives?|content|the theory|theories|main ideas|ideology|thesis|arguments?|accusations?)\b/i,
+    response: /debunk|critic|refut|respon|reception|reaction|analysis|rebuttal|investigation|examination|evidence|fact[ -]check|scientific|legal|laws?\b|prosecution/i,
+    claimSentence: /\b(claim(s|ed)?|alleg\w*|assert\w*|believe[sd]?|contend\w*|purport\w*|accus\w*|supposedly|posits?|holds? that|maintains? that|argues? that|theor\w* that|suggests? that)\b/i,
+  },
+  de: {
+    skip: /^(siehe auch|literatur|weblinks|einzelnachweise|anmerkungen|quellen|belege|fußnoten|weiterführende literatur|filme|dokumentationen|audio|galerie)$/i,
+    origin: /(ursprung|ursprünge|entstehung|herkunft|anfänge|genese)/i,
+    background: /(hintergrund|geschichte|historisch|kontext|überblick|beschreibung)/i,
+    claims: /(behauptung|thesen?\b|inhalt|theorie|vorwürfe|vorwurf|narrativ|annahmen|ideologie|argumentation|argumente|darstellung der verschwörung)/i,
+    response: /kritik|widerleg|rezeption|reaktion|analyse|untersuchung|prüfung|bewertung|wissenschaft|faktencheck|rechtlich|strafverfolg|gesetz|einordnung|forschung/i,
+    claimSentence: /\b(behaupt\w*|angeblich\w*|vermeintlich\w*|unterstell\w*|vorgeworfen|Vorwurf|glauben|glaubt|These|wonach|beschuldig\w*)\b/i,
+  },
+} as const;
+export type ArticleLang = keyof typeof SECTION_RULES;
 
-const sentencesOf = (text: string) => text.split(/(?<=[.!?])\s+(?=["“(]?[A-Z0-9])/).filter(Boolean);
+const sentencesOf = (text: string) => text.split(/(?<=[.!?])\s+(?=["„“(]?[A-ZÄÖÜ0-9])/).filter(Boolean);
 
 /** Joins paragraphs up to max characters, cutting only at a paragraph or sentence end. */
 export function clip(paragraphs: string[], max: number): string[] {
@@ -768,16 +785,17 @@ export interface ArticleDetails {
 }
 
 /** Sorts the article into the archive's fields. Claims are the article's own sentences, never rephrased. */
-export function articleDetails(extract: string): ArticleDetails {
+export function articleDetails(extract: string, lang: ArticleLang = 'en'): ArticleDetails {
+  const rules = SECTION_RULES[lang];
   const { lead, sections } = parseArticle(extract);
-  const usable = sections.filter((s) => !SKIP_SECTION.test(s.heading));
+  const usable = sections.filter((s) => !rules.skip.test(s.heading));
   const take = (re: RegExp) => {
-    const i = usable.findIndex((s) => re.test(s.heading) && !RESPONSE_SECTION.test(s.heading));
+    const i = usable.findIndex((s) => re.test(s.heading) && !rules.response.test(s.heading));
     return i < 0 ? null : usable.splice(i, 1)[0];
   };
-  const origin = take(ORIGIN_SECTION);
-  const claimsSec = take(CLAIMS_SECTION);
-  const background = take(BACKGROUND_SECTION);
+  const origin = take(rules.origin);
+  const claimsSec = take(rules.claims);
+  const background = take(rules.background);
 
   let claims: string[] = [];
   if (claimsSec) {
@@ -789,8 +807,8 @@ export function articleDetails(extract: string): ArticleDetails {
   }
   if (!claims.length) {
     // Only the theory's own statements: sections about criticism or responses are not searched.
-    const all = [...lead, ...usable.filter((x) => !RESPONSE_SECTION.test(x.heading)).flatMap(blockText)];
-    claims = all.flatMap(sentencesOf).filter((x) => CLAIM_SENTENCE.test(x) && x.length >= 40).slice(0, 4).map((x) => firstSentences(x, 500));
+    const all = [...lead, ...usable.filter((x) => !rules.response.test(x.heading)).flatMap(blockText)];
+    claims = all.flatMap(sentencesOf).filter((x) => rules.claimSentence.test(x) && x.length >= 40).slice(0, 4).map((x) => firstSentences(x, 500));
   }
   if (!claims.length && lead[0]) claims = [firstSentences(sentencesOf(lead[0])[0] ?? lead[0], 500)];
 
@@ -807,7 +825,7 @@ export function articleDetails(extract: string): ArticleDetails {
 const textNode = (text: string, marks?: RichNode['marks']): RichNode => ({ type: 'text', text, ...(marks ? { marks } : {}) });
 
 /** The article's remaining sections as an editor document, followed by the licence note. */
-export function detailsDoc(sections: ArticleSection[], title: string, url: string): RichNode {
+export function detailsDoc(sections: ArticleSection[], title: string, url: string, lang: ArticleLang = 'en'): RichNode {
   const content: RichNode[] = [];
   let total = 0;
   for (const sec of sections) {
@@ -826,19 +844,24 @@ export function detailsDoc(sections: ArticleSection[], title: string, url: strin
       if (room < 200) break;
     }
   }
+  const [lead, tail] =
+    lang === 'de'
+      ? ['Text aus dem Wikipedia-Artikel ', ', lizenziert unter CC BY-SA 4.0. Automatisch ins Archiv übernommen.']
+      : ['Text from the Wikipedia article ', ', licensed under CC BY-SA 4.0. Added to the archive automatically.'];
   content.push({
     type: 'paragraph',
     content: [
-      textNode('Text from the Wikipedia article ', [{ type: 'italic' }]),
+      textNode(lead, [{ type: 'italic' }]),
       textNode(`„${title}“`, [{ type: 'italic' }, { type: 'link', attrs: { href: url } }]),
-      textNode(', licensed under CC BY-SA 4.0. Added to the archive automatically.', [{ type: 'italic' }]),
+      textNode(tail, [{ type: 'italic' }]),
     ],
   });
   return { type: 'doc', content };
 }
 
-async function fetchExtract(title: string): Promise<string | null> {
-  const data = (await getJson(wikiApi(`prop=extracts&explaintext=1&exsectionformat=wiki&titles=${titlesParam([title])}`))) as ApiQuery;
+async function fetchExtract(title: string, lang: ArticleLang = 'en'): Promise<string | null> {
+  const params = `prop=extracts&explaintext=1&exsectionformat=wiki&titles=${titlesParam([title])}`;
+  const data = (await getJson(lang === 'de' ? `${DE_API}${params}` : wikiApi(params))) as ApiQuery;
   const page = pagesByRequestedTitle(data, [title]).get(title);
   return typeof page?.extract === 'string' && page.extract.trim().length >= 40 ? page.extract : null;
 }
@@ -884,6 +907,44 @@ async function addDetails(db: Db): Promise<number> {
   return done;
 }
 
+/**
+ * Gives imported entries with a German article that article's full text as German translations
+ * (summary, background, origin, sections as body_json, claims as claims_json), new ones first,
+ * older ones step by step. An empty body_json marks an article without usable text, so it is not retried.
+ */
+async function addGermanDetails(db: Db): Promise<number> {
+  const rows = await db.all<{ id: number; url: string }>(
+    `SELECT t.id, s.url FROM theories t
+     JOIN evidence e ON e.theory_id = t.id AND e.claim_id IS NULL JOIN sources s ON s.id = e.source_id
+     WHERE s.publisher = 'Wikipedia (Deutsch)' AND s.notes LIKE 'Imported automatically%'
+       AND NOT EXISTS (SELECT 1 FROM translations tr WHERE tr.entity_type = 'theory' AND tr.entity_id = t.id AND tr.locale = 'de' AND tr.field = 'body_json')
+     ORDER BY t.id DESC LIMIT ?`,
+    DETAIL_BATCH,
+  );
+  let done = 0;
+  for (const r of rows) {
+    if (budgetLeft() < 1) break;
+    const title = articleTitle(r.url);
+    const extract = await fetchExtract(title, 'de');
+    const put = (field: string, value: string) =>
+      db.stmt("INSERT OR REPLACE INTO translations (entity_type, entity_id, locale, field, value) VALUES ('theory', ?, 'de', ?, ?)", r.id, field, value);
+    const stmts: D1PreparedStatement[] = [];
+    if (extract) {
+      const d = articleDetails(extract, 'de');
+      if (d.summary) stmts.push(put('summary', d.summary));
+      if (d.background) stmts.push(put('background', d.background));
+      if (d.originStory) stmts.push(put('origin_story', d.originStory));
+      if (d.claims.length) stmts.push(put('claims_json', JSON.stringify(d.claims)));
+      stmts.push(put('body_json', JSON.stringify(detailsDoc(d.sections, title, r.url, 'de'))));
+    } else {
+      stmts.push(put('body_json', ''));
+    }
+    await db.batch(stmts);
+    if (extract) done++;
+  }
+  return done;
+}
+
 export async function runImport(db: Db, batch = IMPORT_BATCH, imageBudgetBytes = IMAGE_LIMITS.defaultStorageMb * 1024 * 1024): Promise<ImportResult> {
   const result: ImportResult = { ranAt: new Date().toISOString(), imported: [], skipped: 0, remaining: 0, images: 0, detailed: 0, error: null };
   requests = 0;
@@ -910,6 +971,10 @@ export async function runImport(db: Db, batch = IMPORT_BATCH, imageBudgetBytes =
     result.remaining = fresh.length - picked.length;
     // A failing detail or image step never undoes or hides the imported entries.
     result.detailed = await addDetails(db).catch((err) => {
+      result.detailError = String((err as Error)?.message ?? err).slice(0, 200);
+      return 0;
+    });
+    result.detailedDe = await addGermanDetails(db).catch((err) => {
       result.detailError = String((err as Error)?.message ?? err).slice(0, 200);
       return 0;
     });

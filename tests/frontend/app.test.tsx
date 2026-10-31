@@ -118,6 +118,22 @@ describe('frontend', () => {
     }
   });
 
+  it('groups related sections in drop-downs that open, close on Escape and mark the active section', async () => {
+    renderApp('/theory/operation-northwoods', await makeEnv());
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    const archive = within(nav).getByRole('button', { name: 'Archive' });
+    expect(archive).toHaveAttribute('aria-expanded', 'false');
+    expect(archive).toHaveClass('active');
+    fireEvent.click(archive);
+    expect(archive).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(archive, { key: 'Escape' });
+    expect(archive).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(within(nav).getByRole('button', { name: 'Map & Time' }));
+    fireEvent.click(within(nav).getByText('World Map'));
+    await waitFor(() => expect(within(nav).getByRole('button', { name: 'Map & Time' })).toHaveAttribute('aria-expanded', 'false'));
+    expect(within(nav).getByRole('button', { name: 'Map & Time' })).toHaveClass('active');
+  });
+
   it('global search finds people by description and navigates to the result', async () => {
     renderApp('/', await makeEnv());
     fireEvent.click(screen.getByRole('button', { name: /Search/ }));

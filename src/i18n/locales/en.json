@@ -42,7 +42,7 @@
     "timeline": "Timeline",
     "map": "World Map",
     "investigations": "Investigations",
-    "community": "Community",
+    "community": "Community theories",
     "submit": "Submit a Theory",
     "knowledge": "Knowledge Archive",
     "experts": "Expert opinions",
@@ -220,7 +220,9 @@
     "sortNewest": "Newest",
     "sortTitle": "Title A–Z",
     "empty": "No entries match these filters.",
-    "by": "by {name}"
+    "by": "by {name}",
+    "communityHint": "Theories from the community are mixed into the archive and carry this stamp.",
+    "communityLink": "Show community theories only"
   },
   "theory": {
     "summary": "Summary",
@@ -360,8 +362,8 @@
     "threadsSuggested": "Threads on your private board are always marked as suggested."
   },
   "community": {
-    "title": "Community",
-    "intro": "Published contributions from visitors around the world. Every contribution has passed moderation.",
+    "title": "Community conspiracy theories",
+    "intro": "Conspiracy theories submitted by visitors from around the world. Every entry has passed moderation before it is published.",
     "anonymity": "Contributors can publish under a display name or as \"Anonymous\".",
     "empty": "No community contributions have been published yet.",
     "submitCta": "Submit your own theory",
@@ -369,7 +371,13 @@
     "step1": "You submit your text with sources.",
     "step2": "The editors review it (pending review).",
     "step3": "Approved contributions are published, marked as community content and initially rated \"Unverified\".",
-    "step4": "Published entries appear on the Investigation Wall with suggested connections."
+    "step4": "Published entries appear on the Investigation Wall with suggested connections.",
+    "disclaimer": "These theories come from the community. Many of them cannot be verified easily, so the editors have not checked their claims. Read them critically and look at the sources.",
+    "badge": "Community",
+    "badgeHelp": "Submitted by the community – claims not verified by the editors",
+    "searchPlaceholder": "Search community theories…",
+    "archiveLink": "Open the full archive",
+    "moreLink": "More community theories"
   },
   "submit": {
     "title": "Submit a Theory",
@@ -650,7 +658,7 @@
     "map": "A world map of the places where the events behind the case files happened.",
     "saved": "Your saved case files.",
     "investigations": "Open investigations: collaborative boards that connect cases, people and documents.",
-    "community": "Theories and notes submitted by the community, checked by moderators.",
+    "community": "Community conspiracy theories: submitted by visitors, moderated, and clearly marked as not editorially verified.",
     "submit": "Submit a theory or a source to the archive.",
     "knowledge": "How to read the archive: evidence ratings, source types and how to check a claim yourself.",
     "experts": "What scientists, historians and investigators say about the best-known conspiracy theories.",

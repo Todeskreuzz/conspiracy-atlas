@@ -23,7 +23,7 @@ const GROUPS = ['theories', 'people', 'organizations', 'events'] as const;
 
 function toHits(r: SearchResponse, t: (k: string) => string): Hit[] {
   return [
-    ...r.theories.map((x) => ({ key: `t-${x.slug}`, group: 'theories' as const, title: x.title, meta: t(`categories.${x.category}`), to: `/theory/${x.slug}` })),
+    ...r.theories.map((x) => ({ key: `t-${x.slug}`, group: 'theories' as const, title: x.title, meta: x.origin === 'community' ? `${t(`categories.${x.category}`)} · ${t('community.badge')}` : t(`categories.${x.category}`), to: `/theory/${x.slug}` })),
     ...r.people.map((x) => ({ key: `p-${x.slug}`, group: 'people' as const, title: x.name, meta: x.role, to: `/people/${x.slug}` })),
     ...r.organizations.map((x) => ({ key: `o-${x.slug}`, group: 'organizations' as const, title: x.name, meta: null, to: `/organizations/${x.slug}` })),
     ...r.events.map((x) => ({ key: `e-${x.slug}`, group: 'events' as const, title: x.title, meta: x.start_year ? String(x.start_year) : null, to: `/events/${x.slug}` })),

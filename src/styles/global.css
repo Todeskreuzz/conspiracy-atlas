@@ -739,6 +739,57 @@ textarea:focus {
   background: rgba(0, 0, 0, 0.05);
 }
 
+/* Community theories: visitor-written, not editorially verified */
+.badge--community {
+  font-family: var(--font-type);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 400;
+  color: #1d6e8a;
+  background: rgba(29, 110, 138, 0.1);
+  border: 1px dashed currentColor;
+}
+.badge--community::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+}
+.notice--community {
+  border-color: #3d93b0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+.notice--community .badge--community {
+  color: #7cc3dc;
+  background: rgba(124, 195, 220, 0.1);
+}
+.paper .notice--community .badge--community {
+  color: #1d6e8a;
+}
+.case-card--community .case-card__img {
+  position: relative;
+}
+.case-card--community .case-card__img::after {
+  content: 'Community';
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  font-family: var(--font-type);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  color: #1d6e8a;
+  background: rgba(244, 236, 220, 0.88);
+  border: 2px solid currentColor;
+  padding: 2px 8px;
+  transform: rotate(-6deg);
+  pointer-events: none;
+}
+
 /* ------------------------------------------------------------------ home */
 .hero {
   position: relative;

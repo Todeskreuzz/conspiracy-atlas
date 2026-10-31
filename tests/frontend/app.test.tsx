@@ -6,6 +6,7 @@ import { makeEnv } from '../helpers/app';
 import { Unavailable } from '../../src/components/Unavailable';
 import { I18nProvider } from '../../src/i18n';
 import { render } from '@testing-library/react';
+import { createDb } from '../helpers/d1';
 
 beforeEach(() => {
   localStorage.clear();
@@ -74,6 +75,24 @@ describe('frontend', () => {
     expect(within(list).getByText('COINTELPRO')).toBeInTheDocument();
     fireEvent.click(within(list).getByRole('button', { name: /Saved/ }));
     await waitFor(() => expect(screen.queryByTestId('saved-list')).toBeNull());
+  });
+
+  it('marks community theories with a Community stamp and lists only them on the community page', async () => {
+    const db = createDb();
+    db.raw.exec(`INSERT INTO authors (id, display_name) VALUES (9001, 'Tester');
+      INSERT INTO theories (slug, title, summary, category_id, evidence_status, author_id, origin, updated_at)
+      VALUES ('community-test-case', 'Community test case', 'A theory written by a visitor.', (SELECT id FROM categories LIMIT 1), 'unverified', 9001, 'community', '2999-01-01');`);
+    renderApp('/archive', await makeEnv({}, db));
+    await screen.findByText('Community test case', {}, { timeout: 5000 });
+    const card = screen.getByText('Community test case').closest('[data-testid="theory-card"]') as HTMLElement;
+    expect(within(card).getByTestId('community-badge')).toBeInTheDocument();
+    expect(screen.getByText('COINTELPRO').closest('[data-testid="theory-card"]')!.querySelector('[data-testid="community-badge"]')).toBeNull();
+    cleanup();
+
+    renderApp('/community', await makeEnv({}, db));
+    await screen.findByText('Community test case', {}, { timeout: 5000 });
+    expect(screen.getByRole('heading', { level: 1, name: 'Community conspiracy theories' })).toBeInTheDocument();
+    expect(screen.getAllByTestId('theory-card')).toHaveLength(1);
   });
 
   it('lists the ratings of all cases under Expert opinions', async () => {

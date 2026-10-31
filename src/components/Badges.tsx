@@ -46,3 +46,13 @@ export function CategoryBadge({ category, dark }: { category: CategorySlug | nul
   if (!category) return null;
   return <span className={`badge ${dark ? 'badge--dark' : 'badge--category'}`}>{t(`categories.${category}`)}</span>;
 }
+
+/** Marks content written by the community (not editorially verified). */
+export function CommunityBadge() {
+  const t = useT();
+  return (
+    <span className="badge badge--community" title={t('community.badgeHelp')} data-testid="community-badge">
+      {t('community.badge')}
+    </span>
+  );
+}

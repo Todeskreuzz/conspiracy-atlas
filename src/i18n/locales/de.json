@@ -42,7 +42,7 @@
     "timeline": "Zeitstrahl",
     "map": "Weltkarte",
     "investigations": "Recherchen",
-    "community": "Community",
+    "community": "Community-Theorien",
     "submit": "Theorie einreichen",
     "knowledge": "Wissensarchiv",
     "experts": "Experten-Meinungen",
@@ -220,7 +220,9 @@
     "sortNewest": "Neueste",
     "sortTitle": "Titel A–Z",
     "empty": "Keine Einträge entsprechen diesen Filtern.",
-    "by": "von {name}"
+    "by": "von {name}",
+    "communityHint": "Theorien aus der Community sind im Archiv mit dabei und tragen diesen Stempel.",
+    "communityLink": "Nur Community-Theorien anzeigen"
   },
   "theory": {
     "summary": "Zusammenfassung",
@@ -360,8 +362,8 @@
     "threadsSuggested": "Fäden auf deiner privaten Pinnwand sind immer als vorgeschlagen gekennzeichnet."
   },
   "community": {
-    "title": "Community",
-    "intro": "Veröffentlichte Beiträge von Besucherinnen und Besuchern aus aller Welt. Jeder Beitrag wurde moderiert.",
+    "title": "Community-Verschwörungstheorien",
+    "intro": "Verschwörungstheorien, die Besucherinnen und Besucher aus aller Welt eingereicht haben. Jeder Eintrag wurde vor der Veröffentlichung moderiert.",
     "anonymity": "Beiträge können mit Anzeigenamen oder als „Anonymous“ veröffentlicht werden.",
     "empty": "Es wurden noch keine Community-Beiträge veröffentlicht.",
     "submitCta": "Eigene Theorie einreichen",
@@ -369,7 +371,13 @@
     "step1": "Du reichst deinen Text mit Quellen ein.",
     "step2": "Die Redaktion prüft ihn (Pending Review).",
     "step3": "Freigegebene Beiträge werden veröffentlicht, als Community-Inhalt gekennzeichnet und zunächst als „Unbelegt“ eingestuft.",
-    "step4": "Veröffentlichte Einträge erscheinen auf der Ermittlungswand mit vorgeschlagenen Verbindungen."
+    "step4": "Veröffentlichte Einträge erscheinen auf der Ermittlungswand mit vorgeschlagenen Verbindungen.",
+    "disclaimer": "Diese Theorien stammen aus der Community. Viele davon lassen sich nicht einfach überprüfen, deshalb hat die Redaktion ihre Behauptungen nicht verifiziert. Lies sie kritisch und schau dir die Quellen an.",
+    "badge": "Community",
+    "badgeHelp": "Von der Community eingereicht – Behauptungen nicht von der Redaktion geprüft",
+    "searchPlaceholder": "Community-Theorien durchsuchen…",
+    "archiveLink": "Zum gesamten Archiv",
+    "moreLink": "Weitere Community-Theorien"
   },
   "submit": {
     "title": "Theorie einreichen",
@@ -650,7 +658,7 @@
     "map": "Eine Weltkarte der Orte, an denen die Ereignisse hinter den Fallakten stattfanden.",
     "saved": "Deine gespeicherten Fallakten.",
     "investigations": "Offene Ermittlungen: gemeinsame Pinnwände, die Fälle, Personen und Dokumente verbinden.",
-    "community": "Von der Community eingereichte Theorien und Notizen, von Moderatoren geprüft.",
+    "community": "Community-Verschwörungstheorien: von Besuchern eingereicht, moderiert und klar als nicht redaktionell geprüft gekennzeichnet.",
     "submit": "Eine Theorie oder Quelle für das Archiv einreichen.",
     "knowledge": "So liest du das Archiv: Bewertungen der Beweislage, Quellenarten und wie du eine Behauptung selbst prüfst.",
     "experts": "Was Wissenschaftler, Historiker und Ermittler zu den bekanntesten Verschwörungstheorien sagen.",

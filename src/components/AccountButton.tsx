@@ -51,6 +51,10 @@ export function AdminNavLink() {
   if (!account.user?.isAdmin && !adminHint) return null;
   return (
     <NavLink to="/admin" viewTransition className={({ isActive }) => `nav-tab nav-admin${isActive ? ' active' : ''}`} data-testid="nav-admin">
+      <svg className="nav-admin__icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+        <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+        <path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
       {t('nav.admin')}
     </NavLink>
   );

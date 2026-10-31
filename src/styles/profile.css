@@ -542,8 +542,28 @@
   content: '△ ';
 }
 
-/* Admin tab: only rendered for accounts with admin rights. */
-.main-nav .nav-admin {
-  color: var(--accent, #b3261e);
-  font-weight: 700;
+/* Admin tab: only rendered for admins; same look as every other tab, plus a small shield. */
+.nav-admin__icon {
+  opacity: 0.75;
+}
+/* The single header row has no room for the extra tab: admins keep the two-row header on wide screens too. */
+@media (min-width: 1480px) {
+  :root:has(.nav-admin) {
+    --header-h: 112px;
+  }
+  .site-header__inner:has(.nav-admin) {
+    flex-wrap: wrap;
+    row-gap: 0;
+    align-content: center;
+  }
+  .site-header__inner:has(.nav-admin) > .brand {
+    height: 60px;
+  }
+  .site-header__inner:has(.nav-admin) > .main-nav {
+    order: 3;
+    flex: 1 0 100%;
+    height: 48px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    padding-top: 2px;
+  }
 }

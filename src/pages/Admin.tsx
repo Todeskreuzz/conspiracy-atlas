@@ -1217,7 +1217,7 @@ function OverviewPanel({ data, onOpen, who }: { data: Overview | null | undefine
       {data && open.length === 0 && <p className="adm-allclear">✓ {t('admin.overview.allClear')}</p>}
       <div className="adm-tiles">
         {queues.map(({ k, n }) => (
-          <button key={k} type="button" className={`adm-tile${n > 0 ? ' adm-tile--hot' : ''}`} onClick={() => onOpen(k)}>
+          <button key={k} type="button" className={`adm-tile${n > 0 ? ' adm-tile--hot' : ''}`} data-flag={t('admin.overview.urgent')} onClick={() => onOpen(k)}>
             <span className="adm-tile__icon" aria-hidden="true">
               {SECTION_ICONS[k]}
             </span>
@@ -1306,6 +1306,9 @@ export default function AdminPage() {
       {authed && session.csrfToken && (
         <div className="adm-shell">
           <nav className="adm-nav" aria-label={t('admin.title')} role="tablist">
+            <div className="adm-nav__tab" aria-hidden="true">
+              {t('admin.folderLabel')}
+            </div>
             {SECTION_GROUPS.map((g) => (
               <div key={g.group} className="adm-nav__group">
                 {g.group !== 'start' && <div className="adm-nav__label">{t(`admin.groups.${g.group}`)}</div>}
@@ -1325,6 +1328,12 @@ export default function AdminPage() {
             ))}
           </nav>
           <section className="adm-main" role="tabpanel">
+            <span className="adm-stamp" aria-hidden="true">
+              {t('admin.stamp')}
+            </span>
+            <div className="adm-fileno" aria-hidden="true">
+              {t('admin.fileNo', { n: String(SECTION_KEYS.indexOf(tab) + 1).padStart(2, '0') })}
+            </div>
             {tab !== 'overview' && (
               <header className="adm-section-head">
                 <h2>

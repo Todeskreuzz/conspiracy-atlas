@@ -113,7 +113,7 @@ function MainNav({ open }: { open: boolean }) {
   return (
     <nav id="main-nav" className={`main-nav${open ? ' open' : ''}`} aria-label="Main">
       {NAV.map((entry) =>
-        isGroup(entry) ? (
+        !isGroup(entry) && entry.cta ? null : isGroup(entry) ? (
           entry.items.length === 1 ? (
             <NavTab key={entry.group} item={entry.items[0]} pathname={pathname} />
           ) : (
@@ -124,6 +124,9 @@ function MainNav({ open }: { open: boolean }) {
         ),
       )}
       <AdminNavLink />
+      {NAV.filter((e): e is NavItem => !isGroup(e) && !!e.cta).map((item) => (
+        <NavTab key={item.to} item={item} pathname={pathname} />
+      ))}
       <AccountNavLink />
     </nav>
   );

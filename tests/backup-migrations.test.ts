@@ -7,12 +7,12 @@ import { createDb, migrationFiles } from './helpers/d1';
 const REQUIRED_TABLES = [
   'theories', 'categories', 'claims', 'evidence', 'sources', 'counter_arguments', 'organizations', 'people', 'locations',
   'events', 'relationships', 'documents', 'boards', 'board_nodes', 'board_positions', 'investigations', 'investigation_notes',
-  'community_submissions', 'moderation_actions', 'authors', 'reports', 'tags', 'translations', 'settings', 'case_notes', 'users', 'user_sessions',
+  'community_submissions', 'moderation_actions', 'authors', 'reports', 'tags', 'translations', 'settings', 'case_notes', 'users', 'user_sessions', 'profile_images',
 ];
 
 describe('migrations', () => {
   it('are numbered and create every required table', () => {
-    expect(migrationFiles()).toEqual(['0001_schema.sql', '0002_seed.sql', '0003_images.sql', '0004_case_images.sql', '0005_more_cases.sql', '0006_case_notes.sql', '0007_case_years.sql', '0008_user_profiles.sql']);
+    expect(migrationFiles()).toEqual(['0001_schema.sql', '0002_seed.sql', '0003_images.sql', '0004_case_images.sql', '0005_more_cases.sql', '0006_case_notes.sql', '0007_case_years.sql', '0008_user_profiles.sql', '0009_profile_images.sql']);
     const db = createDb({ seed: false });
     const tables = db.raw.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r: any) => r.name);
     for (const t of REQUIRED_TABLES) expect(tables, t).toContain(t);

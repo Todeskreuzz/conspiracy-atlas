@@ -7,9 +7,9 @@ import { ApiError, notFound } from '../errors';
 import { assertSameOrigin, rateLimit, verifyTurnstile } from '../security';
 import { hashPassword, randomToken, sha256Hex, toHex, timingSafeEqual, verifyPassword } from '../crypto';
 import { THEORY_FIELDS, THEORY_SUMMARY_SELECT, mapTheorySummary, translate } from '../repo';
-import { assertImageQuota, imageResponse, parseImages } from '../images';
+import { assertImageQuota } from '../images';
 import { turnstileFetch } from './community';
-import { IMAGE_LIMITS } from '../../shared/images';
+import { ANIMATED_IMAGE_MAX_BYTES, IMAGE_LIMITS, PROFILE_IMAGE_MIME_TYPES, base64ToBytes, isGif, sniffImageMime } from '../../shared/images';
 import {
   PROFILE_IMAGE_SLOTS,
   normalizeUsername,
@@ -22,7 +22,7 @@ import {
   type ProfileSubmission,
   type PublicProfile,
 } from '../../shared/profile';
-import { ValidationError, oneOf } from '../../shared/validation';
+import { ValidationError, int, oneOf } from '../../shared/validation';
 import {
   clearUserCookie,
   createUserSession,
@@ -40,32 +40,26 @@ import {
  */
 export const accountRoutes = new Hono<AppEnv>();
 
-const MAX_IMAGE_BODY = Math.ceil((IMAGE_LIMITS.maxBytes * 4) / 3) + 4_000;
 /** Same cost for unknown usernames, so login timing does not reveal which accounts exist. */
 const DUMMY_HASH = `pbkdf2_sha256$100000$${'0'.repeat(32)}$${'0'.repeat(64)}`;
 
 const recoveryHash = (username: string, code: string) => sha256Hex(`recovery|${username}|${normalizeRecoveryCode(code)}`);
 
-function imageUrl(publicId: string, status: string, isOwner: boolean): string {
-  return status === 'approved' ? `/api/images/${publicId}` : isOwner ? `/api/account/images/${publicId}` : '';
-}
-
-function imageInfo(publicId: unknown, status: unknown, isOwner: boolean): ProfileImageInfo | null {
-  if (typeof publicId !== 'string' || !publicId || (status !== 'approved' && !(isOwner && status === 'pending'))) return null;
-  return { url: imageUrl(publicId, String(status), isOwner), status: status === 'approved' ? 'approved' : 'pending' };
+function imageInfo(publicId: unknown): ProfileImageInfo | null {
+  return typeof publicId === 'string' && publicId ? { url: `/api/images/${publicId}`, status: 'approved' } : null;
 }
 
 const USER_SELECT = `
-  SELECT u.*, av.status AS avatar_status, bn.status AS banner_status FROM users u
-  LEFT JOIN images av ON av.public_id = u.avatar_image AND av.user_id = u.id
-  LEFT JOIN images bn ON bn.public_id = u.banner_image AND bn.user_id = u.id`;
+  SELECT u.*, av.public_id AS avatar_id, bn.public_id AS banner_id FROM users u
+  LEFT JOIN profile_images av ON av.user_id = u.id AND av.slot = 'avatar'
+  LEFT JOIN profile_images bn ON bn.user_id = u.id AND bn.slot = 'banner'`;
 
 function mapAccountUser(r: Row): AccountUser {
   return {
     id: Number(r.id),
     username: String(r.username),
     displayName: String(r.display_name),
-    avatarUrl: imageInfo(r.avatar_image, r.avatar_status, true)?.url ?? null,
+    avatarUrl: imageInfo(r.avatar_id)?.url ?? null,
     createdAt: String(r.created_at),
   };
 }
@@ -191,7 +185,7 @@ async function checkPassword(db: Db, userId: number, password: unknown): Promise
   }
 }
 
-/** Profile as stored, for the editor (includes private settings and pending images). */
+/** Profile as stored, for the editor (includes private settings). */
 accountRoutes.get('/account/profile', async (c) => {
   const db = Db.from(c.env);
   const row = await db.first(`${USER_SELECT} WHERE u.id = ?`, me(c).userId);
@@ -199,8 +193,9 @@ accountRoutes.get('/account/profile', async (c) => {
   return c.json({
     user: mapAccountUser(row),
     profile: parseStoredProfile(row.profile_json),
-    avatar: imageInfo(row.avatar_image, row.avatar_status, true),
-    banner: imageInfo(row.banner_image, row.banner_status, true),
+    avatar: imageInfo(row.avatar_id),
+    banner: imageInfo(row.banner_id),
+    allowAnimated: Number(row.allow_animated) === 1,
   });
 });
 
@@ -249,7 +244,8 @@ accountRoutes.delete('/account', async (c) => {
   const db = Db.from(c.env);
   const body = await readJson(c, 2_000);
   await checkPassword(db, me(c).userId, body.currentPassword);
-  await db.batch([db.stmt('DELETE FROM images WHERE user_id = ?', me(c).userId), db.stmt('DELETE FROM users WHERE id = ?', me(c).userId)]);
+  // Profile images and sessions go with the account (ON DELETE CASCADE).
+  await db.run('DELETE FROM users WHERE id = ?', me(c).userId);
   c.header('Set-Cookie', clearUserCookie());
   return c.json({ ok: true });
 });
@@ -265,54 +261,63 @@ accountRoutes.get('/account/submissions', async (c) => {
   return c.json({ items: rows.map(mapProfileSubmission) });
 });
 
-// Profile images: one avatar and one banner per account, pending until an editor approves them.
+/**
+ * Profile images: one avatar and one banner per account, public at once (editors can delete them).
+ * Static images are re-encoded in the browser; animated GIFs are stored as uploaded and only accepted
+ * for accounts an editor allowed (users.allow_animated).
+ */
+function parseProfileImage(raw: unknown, allowAnimated: boolean) {
+  const o = (raw ?? {}) as Record<string, unknown>;
+  const mime = oneOf(o.mime, 'image.mime', PROFILE_IMAGE_MIME_TYPES);
+  const animated = mime === 'image/gif';
+  if (animated && !allowAnimated) throw new ApiError(403, 'gif_not_allowed', 'Animated GIFs are not enabled for this account', undefined, 'image');
+  const max = animated ? ANIMATED_IMAGE_MAX_BYTES : IMAGE_LIMITS.maxBytes;
+  if (typeof o.data !== 'string' || !/^[A-Za-z0-9+/]+=*$/.test(o.data) || o.data.length > Math.ceil((max * 4) / 3) + 4) {
+    throw new ValidationError('image', `invalid image or too large (max. ${Math.round(max / 1024)} KB)`);
+  }
+  const bytes = base64ToBytes(o.data);
+  if (bytes.length === 0 || bytes.length > max) throw new ValidationError('image', `image too large (max. ${Math.round(max / 1024)} KB)`);
+  const real = isGif(bytes) ? 'image/gif' : sniffImageMime(bytes);
+  if (real !== mime) throw new ValidationError('image', 'file content does not match an allowed image type');
+  return {
+    bytes,
+    mime,
+    width: int(o.width, 'image.width', { min: 1, max: IMAGE_LIMITS.maxDimension }) as number,
+    height: int(o.height, 'image.height', { min: 1, max: IMAGE_LIMITS.maxDimension }) as number,
+  };
+}
+
+const MAX_PROFILE_IMAGE_BODY = Math.ceil((ANIMATED_IMAGE_MAX_BYTES * 4) / 3) + 4_000;
+
 accountRoutes.put('/account/images/:slot', async (c) => {
   requireFeature(c.env, 'community_uploads');
   const slot = oneOf(c.req.param('slot'), 'slot', PROFILE_IMAGE_SLOTS);
-  const body = await readJson(c, MAX_IMAGE_BODY);
-  const [img] = parseImages(body.image ? [body.image] : []);
-  if (!img) throw new ValidationError('image', 'is required');
+  const body = await readJson(c, MAX_PROFILE_IMAGE_BODY);
+  if (!body.image) throw new ValidationError('image', 'is required');
   const db = Db.from(c.env);
-  await rateLimit(db, c.env, c.req.raw, 'profile_image', 20, 3600);
   const userId = me(c).userId;
-  const column = slot === 'avatar' ? 'avatar_image' : 'banner_image';
-  const old = await db.first<{ img: string | null }>(`SELECT ${column} AS img FROM users WHERE id = ?`, userId);
-  const oldSize = old?.img ? (await db.first<{ size: number }>('SELECT size FROM images WHERE public_id = ? AND user_id = ?', old.img, userId))?.size ?? 0 : 0;
-  await assertImageQuota(db, c.env, img.bytes.length - Number(oldSize));
+  const user = await db.first<{ allow_animated: number }>('SELECT allow_animated FROM users WHERE id = ?', userId);
+  const img = parseProfileImage(body.image, Number(user?.allow_animated) === 1);
+  await rateLimit(db, c.env, c.req.raw, 'profile_image', 20, 3600);
+  const old = await db.first<{ size: number }>('SELECT size FROM profile_images WHERE user_id = ? AND slot = ?', userId, slot);
+  await assertImageQuota(db, c.env, img.bytes.length - Number(old?.size ?? 0));
   const publicId = randomToken(12);
   const data = img.bytes.buffer.slice(img.bytes.byteOffset, img.bytes.byteOffset + img.bytes.byteLength);
   await db.batch([
-    ...(old?.img ? [db.stmt('DELETE FROM images WHERE public_id = ? AND user_id = ?', old.img, userId)] : []),
+    db.stmt('DELETE FROM profile_images WHERE user_id = ? AND slot = ?', userId, slot),
     db.stmt(
-      `INSERT INTO images (public_id, user_id, mime, width, height, size, sha256, alt, position, status, data)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'pending', ?)`,
-      publicId, userId, img.mime, img.width, img.height, img.bytes.length, toHex(await crypto.subtle.digest('SHA-256', img.bytes)), slot, data,
+      `INSERT INTO profile_images (public_id, user_id, slot, mime, width, height, size, sha256, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      publicId, userId, slot, img.mime, img.width, img.height, img.bytes.length, toHex(await crypto.subtle.digest('SHA-256', img.bytes)), data,
     ),
-    db.stmt(`UPDATE users SET ${column} = ?, updated_at = datetime('now') WHERE id = ?`, publicId, userId),
+    db.stmt("UPDATE users SET updated_at = datetime('now') WHERE id = ?", userId),
   ]);
-  return c.json({ [slot]: { url: imageUrl(publicId, 'pending', true), status: 'pending' } }, 201);
+  return c.json({ [slot]: imageInfo(publicId) }, 201);
 });
 
 accountRoutes.delete('/account/images/:slot', async (c) => {
   const slot = oneOf(c.req.param('slot'), 'slot', PROFILE_IMAGE_SLOTS);
-  const column = slot === 'avatar' ? 'avatar_image' : 'banner_image';
-  const db = Db.from(c.env);
-  const userId = me(c).userId;
-  const old = await db.first<{ img: string | null }>(`SELECT ${column} AS img FROM users WHERE id = ?`, userId);
-  await db.batch([
-    ...(old?.img ? [db.stmt('DELETE FROM images WHERE public_id = ? AND user_id = ?', old.img, userId)] : []),
-    db.stmt(`UPDATE users SET ${column} = NULL, updated_at = datetime('now') WHERE id = ?`, userId),
-  ]);
+  await Db.from(c.env).run('DELETE FROM profile_images WHERE user_id = ? AND slot = ?', me(c).userId, slot);
   return c.json({ ok: true });
-});
-
-/** The owner sees their own images while they wait for review (never cached, never public). */
-accountRoutes.get('/account/images/:id', async (c) => {
-  const id = c.req.param('id');
-  if (!/^[0-9a-f]{24}$/.test(id)) throw notFound('Image');
-  const row = await Db.from(c.env).first('SELECT mime, data FROM images WHERE public_id = ? AND user_id = ?', id, me(c).userId);
-  if (!row) throw notFound('Image');
-  return imageResponse(row, 'private');
 });
 
 // ---------------------------------------------------------------------------
@@ -364,8 +369,8 @@ accountRoutes.get('/users/:username', async (c) => {
     displayName: String(row.display_name),
     createdAt: String(row.created_at),
     isOwner,
-    avatar: imageInfo(row.avatar_image, row.avatar_status, isOwner),
-    banner: imageInfo(row.banner_image, row.banner_status, isOwner),
+    avatar: imageInfo(row.avatar_id),
+    banner: imageInfo(row.banner_id),
     profile,
     favorites,
     submissions: submissionRows.map(mapProfileSubmission),

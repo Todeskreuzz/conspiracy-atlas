@@ -49,13 +49,13 @@
     "about": "About",
     "admin": "Admin",
     "saved": "Saved cases"
-  },  "navGroup": {
+  },
+  "navGroup": {
     "archive": "Archive",
     "explore": "Map & Time",
     "casework": "Casework",
     "community": "Community"
   },
-
   "unavailable": {
     "germanNote": "Note (German):",
     "states": {
@@ -590,8 +590,8 @@
       "rejected": "Rejected"
     },
     "users": {
-      "imagesTitle": "Profile images waiting for review",
-      "imagesIntro": "Profile pictures and banners stay private until you approve them. Rejecting deletes the image.",
+      "imagesTitle": "Newest profile pictures and banners",
+      "imagesIntro": "Profile images are public at once. Delete anything illegal here; locking an account also hides its images.",
       "listTitle": "Accounts",
       "search": "Search username or name",
       "joined": "Joined",
@@ -603,7 +603,10 @@
       "lock": "Lock",
       "unlock": "Unlock",
       "delete": "Delete",
-      "confirmDelete": "Delete the account @{name} with its profile and images for good?"
+      "confirmDelete": "Delete the account @{name} with its profile and images for good?",
+      "deleteImage": "Delete image",
+      "confirmDeleteImage": "Delete this image for good?",
+      "gif": "Animated GIFs"
     }
   },
   "search": {
@@ -794,8 +797,8 @@
     },
     "avatar": "Profile picture",
     "banner": "Banner image",
-    "avatarHelp": "Square images work best. Reduced to 400 px in your browser; visible to others after review.",
-    "bannerHelp": "Wide images work best. Reduced in your browser; visible to others after review.",
+    "avatarHelp": "Square images work best. Reduced to 400 px in your browser and public at once.",
+    "bannerHelp": "Wide images work best. Reduced in your browser and public at once.",
     "uploadImage": "Upload image",
     "replaceImage": "Replace image",
     "removeImage": "Remove",
@@ -867,6 +870,9 @@
     "session": "Session",
     "deleteAccount": "Delete account",
     "deleteHelp": "Deletes your account, profile and images for good. Published case files stay in the archive.",
-    "typeUsername": "Type your username ({name}) to confirm"
+    "typeUsername": "Type your username ({name}) to confirm",
+    "gifAllowed": "Animated GIFs are kept as they are (max. 1.5 MB).",
+    "gifStatic": "GIFs are saved as a still image.",
+    "gifTooLarge": "This GIF is too large (max. {max} KB)."
   }
 }

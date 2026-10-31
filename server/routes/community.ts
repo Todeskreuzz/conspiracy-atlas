@@ -26,9 +26,16 @@ export const turnstileFetch: { impl: typeof fetch } = { impl: (...args) => fetch
 communityRoutes.get('/images/:id', async (c) => {
   const id = c.req.param('id');
   if (!/^[0-9a-f]{24}$/.test(id)) throw notFound('Image');
-  const row = await Db.from(c.env).first("SELECT mime, data FROM images WHERE public_id = ? AND status = 'approved'", id);
-  if (!row) throw notFound('Image');
-  return imageResponse(row, 'public');
+  const db = Db.from(c.env);
+  const row = await db.first("SELECT mime, data FROM images WHERE public_id = ? AND status = 'approved'", id);
+  if (row) return imageResponse(row, 'public');
+  // Profile pictures and banners (public at once, removable by editors).
+  const profileImage = await db.first(
+    "SELECT p.mime, p.data FROM profile_images p JOIN users u ON u.id = p.user_id AND u.status = 'active' WHERE p.public_id = ?",
+    id,
+  );
+  if (!profileImage) throw notFound('Image');
+  return imageResponse(profileImage, 'short');
 });
 
 /** New community submission. Always lands in the moderation queue (pending_review). */

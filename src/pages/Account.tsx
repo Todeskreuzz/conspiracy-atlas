@@ -10,6 +10,7 @@ import { LoadState, Unavailable } from '../components/Unavailable';
 import { RichEditor } from '../components/RichEditor';
 import { ProfileView } from '../components/ProfileView';
 import { compressImage } from '../components/ImageUploader';
+import { ANIMATED_IMAGE_MAX_BYTES, bytesToBase64 } from '../../shared/images';
 import { RecoveryCodeNotice } from './Login';
 import { emptyDoc, type RichNode } from '../../shared/richtext';
 import type { TheorySummary } from '../../shared/types';
@@ -35,6 +36,18 @@ interface OwnProfile {
   profile: ProfileSettings;
   avatar: ProfileImageInfo | null;
   banner: ProfileImageInfo | null;
+  /** Animated GIFs are stored as uploaded (only for accounts an editor allowed). */
+  allowAnimated: boolean;
+}
+
+/** Reads a GIF unchanged (re-encoding would lose the animation). */
+async function readGif(file: File) {
+  const bitmap = await createImageBitmap(file);
+  const size = { width: bitmap.width, height: bitmap.height };
+  bitmap.close();
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (bytes.length > ANIMATED_IMAGE_MAX_BYTES) throw new Error('too_large');
+  return { data: bytesToBase64(bytes), mime: 'image/gif', ...size };
 }
 
 function errorText(err: unknown, t: (k: string) => string): string {
@@ -46,7 +59,19 @@ function errorText(err: unknown, t: (k: string) => string): string {
 // Design editor with live preview
 // ---------------------------------------------------------------------------
 
-function ImageField({ slot, value, csrf, onChange }: { slot: ProfileImageSlot; value: ProfileImageInfo | null; csrf: string | null; onChange: (v: ProfileImageInfo | null) => void }) {
+function ImageField({
+  slot,
+  value,
+  csrf,
+  allowAnimated,
+  onChange,
+}: {
+  slot: ProfileImageSlot;
+  value: ProfileImageInfo | null;
+  csrf: string | null;
+  allowAnimated: boolean;
+  onChange: (v: ProfileImageInfo | null) => void;
+}) {
   const { t } = useI18n();
   const uploads = useFeature('community_uploads');
   const input = useRef<HTMLInputElement>(null);
@@ -57,14 +82,20 @@ function ImageField({ slot, value, csrf, onChange }: { slot: ProfileImageSlot; v
     setError(null);
     setBusy(true);
     try {
-      const img = await compressImage(file, slot === 'avatar' ? PROFILE_LIMITS.avatarEdge : PROFILE_LIMITS.bannerEdge);
-      URL.revokeObjectURL(img.previewUrl);
-      const r = await accountApi(csrf).put<Record<ProfileImageSlot, ProfileImageInfo>>(`/account/images/${slot}`, {
-        image: { data: img.data, mime: img.mime, width: img.width, height: img.height, alt: null },
-      });
+      let image: { data: string; mime: string; width: number; height: number };
+      if (allowAnimated && file.type === 'image/gif') {
+        image = await readGif(file).catch((e: Error) => {
+          throw new Error(e.message === 'too_large' ? t('profileEditor.gifTooLarge', { max: Math.round(ANIMATED_IMAGE_MAX_BYTES / 1024) }) : t('submit.images.failed', { name: file.name }));
+        });
+      } else {
+        const img = await compressImage(file, slot === 'avatar' ? PROFILE_LIMITS.avatarEdge : PROFILE_LIMITS.bannerEdge);
+        URL.revokeObjectURL(img.previewUrl);
+        image = { data: img.data, mime: img.mime, width: img.width, height: img.height };
+      }
+      const r = await accountApi(csrf).put<Record<ProfileImageSlot, ProfileImageInfo>>(`/account/images/${slot}`, { image });
       onChange(r[slot]);
     } catch (err) {
-      setError(err instanceof ApiFailure ? err.message : t('submit.images.failed', { name: file.name }));
+      setError(err instanceof ApiFailure || err instanceof Error ? err.message : t('submit.images.failed', { name: file.name }));
     } finally {
       setBusy(false);
       if (input.current) input.current.value = '';
@@ -97,7 +128,9 @@ function ImageField({ slot, value, csrf, onChange }: { slot: ProfileImageSlot; v
           )}
         </div>
       )}
-      <span className="help">{value?.status === 'pending' ? t('profile.pendingImage') : t(`profileEditor.${slot}Help`)}</span>
+      <span className="help">
+        {t(`profileEditor.${slot}Help`)} {allowAnimated ? t('profileEditor.gifAllowed') : t('profileEditor.gifStatic')}
+      </span>
       {error && (
         <span className="error-text" role="alert">
           {error}
@@ -198,8 +231,8 @@ function DesignEditor({ initial, csrf, publicData }: { initial: OwnProfile; csrf
             <label htmlFor="pf-location">{t('profileEditor.location')}</label>
             <input id="pf-location" type="text" value={p.location ?? ''} maxLength={PROFILE_LIMITS.location} onChange={(e) => set({ location: e.target.value || null })} />
           </div>
-          <ImageField slot="avatar" value={avatar} csrf={csrf} onChange={setAvatar} />
-          <ImageField slot="banner" value={banner} csrf={csrf} onChange={setBanner} />
+          <ImageField slot="avatar" value={avatar} csrf={csrf} allowAnimated={initial.allowAnimated} onChange={setAvatar} />
+          <ImageField slot="banner" value={banner} csrf={csrf} allowAnimated={initial.allowAnimated} onChange={setBanner} />
           <div className="field">
             <span className="label" id="pf-bio-label">
               {t('profile.sections.about')}

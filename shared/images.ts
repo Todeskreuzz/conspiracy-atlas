@@ -2,6 +2,11 @@
 
 export const IMAGE_MIME_TYPES = ['image/webp', 'image/jpeg', 'image/png'] as const;
 export type ImageMime = (typeof IMAGE_MIME_TYPES)[number];
+/** Profile pictures and banners may also be animated GIFs (only for accounts an editor allows). */
+export const PROFILE_IMAGE_MIME_TYPES = [...IMAGE_MIME_TYPES, 'image/gif'] as const;
+export type ProfileImageMime = (typeof PROFILE_IMAGE_MIME_TYPES)[number];
+/** Animated GIFs are not re-encoded in the browser, so they get a larger cap (D1 rows hold at most 2 MB). */
+export const ANIMATED_IMAGE_MAX_BYTES = 1536 * 1024;
 
 export const IMAGE_LIMITS = {
   perSubmission: 4,
@@ -36,6 +41,11 @@ export interface PublicImage {
   height: number;
   size: number;
   alt: string | null;
+}
+
+/** True for GIF87a / GIF89a files. */
+export function isGif(bytes: Uint8Array): boolean {
+  return bytes.length >= 6 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61;
 }
 
 /** Detects the real file type from its first bytes (never trust the declared type alone). */

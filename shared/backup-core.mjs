@@ -1,10 +1,11 @@
 // Backup helpers shared by the API (export) and the local Node scripts (backup / restore).
 // Plain JavaScript so it runs in Node without a build step.
 
-/** Tables in foreign-key dependency order (parents first). Sessions and rate limits are not backed up. */
+/** Tables in foreign-key dependency order (parents first). Sessions, rate limits and images are not backed up; users keep only password hashes. */
 export const BACKUP_TABLES = [
   'categories',
   'authors',
+  'users',
   'tags',
   'sources',
   'locations',

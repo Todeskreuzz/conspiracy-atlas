@@ -515,7 +515,8 @@
       "archive": "Archive",
       "services": "Services & limits",
       "backup": "Backup",
-      "notes": "Reader notes"
+      "notes": "Reader notes",
+      "users": "Accounts"
     },
     "queue": "Queue",
     "statuses": {
@@ -587,6 +588,22 @@
       "pending": "Waiting for review",
       "approved": "Approved",
       "rejected": "Rejected"
+    },
+    "users": {
+      "imagesTitle": "Profile images waiting for review",
+      "imagesIntro": "Profile pictures and banners stay private until you approve them. Rejecting deletes the image.",
+      "listTitle": "Accounts",
+      "search": "Search username or name",
+      "joined": "Joined",
+      "submissions": "Submissions",
+      "status": {
+        "active": "Active",
+        "locked": "Locked"
+      },
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "delete": "Delete",
+      "confirmDelete": "Delete the account @{name} with its profile and images for good?"
     }
   },
   "search": {
@@ -681,5 +698,175 @@
     "experts": "Assessment",
     "about": "Memorandum",
     "submit": "Form CA-7"
+  },
+  "account": {
+    "kicker": "Your account",
+    "signIn": "Sign in",
+    "myProfile": "My profile",
+    "logout": "Sign out",
+    "alreadySignedIn": "You are signed in as {name}.",
+    "login": {
+      "tab": "Sign in",
+      "title": "Sign in",
+      "intro": "Sign in to design your own profile page and collect your case files.",
+      "submit": "Sign in",
+      "forgot": "Forgot your password?"
+    },
+    "register": {
+      "tab": "Create account",
+      "title": "Create an account",
+      "intro": "An account gives you your own profile page that you can design yourself.",
+      "submit": "Create account",
+      "privacy": "No e-mail address needed. We store your username, a hash of your password and what you put on your profile, nothing else."
+    },
+    "recover": {
+      "title": "Reset your password",
+      "intro": "Enter your username and the recovery code you received when you signed up.",
+      "submit": "Set new password",
+      "back": "Back to sign in"
+    },
+    "fields": {
+      "username": "Username",
+      "usernameHelp": "3–24 characters: a–z, 0–9, \"-\" and \"_\". Your profile address will be /u/username.",
+      "displayName": "Display name",
+      "password": "Password",
+      "passwordHelp": "At least {min} characters.",
+      "repeatPassword": "Repeat password",
+      "newPassword": "New password",
+      "recoveryCode": "Recovery code"
+    },
+    "errors": {
+      "mismatch": "The two passwords are not the same.",
+      "credentials": "Username or password is wrong.",
+      "taken": "This username is already taken.",
+      "recovery": "Username or recovery code is wrong.",
+      "locked": "This account has been locked by the editors.",
+      "wrongPassword": "The current password is wrong."
+    },
+    "recovery": {
+      "title": "Your recovery code",
+      "text": "Keep this code somewhere safe. It is the only way to reset your password, because we do not store an e-mail address. It is shown only once.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "done": "I have saved it"
+    }
+  },
+  "profile": {
+    "sections": {
+      "about": "About me",
+      "favorites": "Favourite case files",
+      "submissions": "My published case files",
+      "links": "Links",
+      "stats": "File card"
+    },
+    "empty": {
+      "about": "Write a few lines about yourself in the editor.",
+      "favorites": "Pick favourite case files from your saved cases.",
+      "submissions": "Case files you submit under your name appear here once they are published.",
+      "links": "Add links to your website or social media."
+    },
+    "stats": {
+      "since": "Member since",
+      "submissions": "Published case files",
+      "favorites": "Favourites"
+    },
+    "pendingImage": "Waiting for review – only you can see this image for now.",
+    "privateStamp": "Private",
+    "metaDescription": "Profile of {name} on The Conspiracy Atlas.",
+    "notFound": "Profile not found",
+    "notFoundText": "This profile does not exist or is private.",
+    "ownerHint": "This is your profile as others see it.",
+    "edit": "Edit profile"
+  },
+  "profileEditor": {
+    "title": "My profile",
+    "intro": "Design your own profile page. Changes appear in the preview straight away and are public once you save.",
+    "tabs": {
+      "design": "Design",
+      "submissions": "My submissions",
+      "security": "Account & security"
+    },
+    "groups": {
+      "identity": "Who you are",
+      "look": "Look",
+      "sections": "Sections",
+      "visibility": "Visibility"
+    },
+    "avatar": "Profile picture",
+    "banner": "Banner image",
+    "avatarHelp": "Square images work best. Reduced to 400 px in your browser; visible to others after review.",
+    "bannerHelp": "Wide images work best. Reduced in your browser; visible to others after review.",
+    "uploadImage": "Upload image",
+    "replaceImage": "Replace image",
+    "removeImage": "Remove",
+    "tagline": "Tagline",
+    "location": "Location",
+    "theme": "Design",
+    "themes": {
+      "dossier": "Dossier",
+      "noir": "Noir",
+      "cork": "Cork board",
+      "blueprint": "Blueprint",
+      "redacted": "Redacted",
+      "newsprint": "Newsprint"
+    },
+    "accent": "Accent colour",
+    "customColor": "Choose your own colour",
+    "font": "Font",
+    "fonts": {
+      "typewriter": "Typewriter",
+      "serif": "Headline serif",
+      "sans": "Clean sans",
+      "mono": "Monospace",
+      "marker": "Marker",
+      "hand": "Handwriting"
+    },
+    "layout": "Layout",
+    "layouts": {
+      "classic": "Classic",
+      "sidebar": "With sidebar",
+      "centered": "Centred column"
+    },
+    "pattern": "Banner pattern",
+    "patterns": {
+      "plain": "Plain",
+      "grid": "Map grid",
+      "stripes": "Hazard stripes",
+      "dots": "Dots",
+      "strings": "Red strings",
+      "topo": "Contour lines"
+    },
+    "sectionsHelp": "Choose which sections appear and in which order.",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "favoritesHelp": "Choose up to {max} case files. The list shows the cases you saved with the bookmark button.",
+    "noSaved": "You have not saved any case files yet.",
+    "linkLabel": "Label",
+    "linkUrl": "Address",
+    "addLink": "Add link",
+    "visibility": {
+      "public": "Public",
+      "publicHelp": "Anyone can see your profile.",
+      "private": "Private",
+      "privateHelp": "Only you can see your profile."
+    },
+    "save": "Save profile",
+    "saved": "Profile saved.",
+    "viewProfile": "View profile",
+    "preview": "Preview",
+    "noSubmissions": "You have not submitted any case files while signed in yet.",
+    "submissionTitle": "Title",
+    "submissionStatus": "Status",
+    "submissionDate": "Submitted",
+    "submissionsHelp": "Only published case files sent under your name appear on your profile; anonymous ones never do.",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "passwordChanged": "Password changed. Other devices have been signed out.",
+    "newRecoveryCode": "New recovery code",
+    "recoveryHelp": "Lost your recovery code? Enter your current password and create a new one; the old one stops working.",
+    "session": "Session",
+    "deleteAccount": "Delete account",
+    "deleteHelp": "Deletes your account, profile and images for good. Published case files stay in the archive.",
+    "typeUsername": "Type your username ({name}) to confirm"
   }
 }

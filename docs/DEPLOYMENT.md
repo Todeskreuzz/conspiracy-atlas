@@ -133,3 +133,10 @@ The new image table is created by the migration `0003_images.sql`; run
 The timeline places case files by year. Migration `0007_case_years.sql` adds the year columns that the
 automatic import fills from Wikidata; run `npm run db:migrate:remote` once. Until then the timeline still
 works and places cases by the years of their linked events.
+
+Visitor accounts and profile pages (`/u/<username>`) need migration `0008_user_profiles.sql` (tables `users`,
+`user_sessions`, plus a `user_id` column on `images` and `community_submissions`); run `npm run db:migrate:remote`
+before deploying this version. Sign-up uses Turnstile; there is no e-mail service, so users reset a forgotten password
+with the recovery code shown once at sign-up. Profile images share the `IMAGE_STORAGE_LIMIT_MB` budget and stay private
+until an editor approves them under *Admin → Accounts*. The JSON backup includes `users` (password hashes only),
+not sessions. `FEATURE_ACCOUNTS = "false"` switches accounts off.

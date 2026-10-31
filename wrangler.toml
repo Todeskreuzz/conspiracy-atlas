@@ -26,6 +26,7 @@ FEATURE_TURNSTILE = "true"            # free Turnstile widget for conspiracy-atl
 FEATURE_ADMIN_PANEL = "true"
 FEATURE_INVESTIGATIONS = "true"
 FEATURE_REPORTS = "true"
+FEATURE_ACCOUNTS = "true"             # visitor accounts and profile pages, stored in D1
 # Public Turnstile site key (not a secret). The secret key is set with wrangler pages secret put.
 TURNSTILE_SITE_KEY = "0x4AAAAAAFsJ72PHY21MeM2j"
 ENVIRONMENT = "production"

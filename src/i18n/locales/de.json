@@ -515,7 +515,8 @@
       "archive": "Archiv",
       "services": "Dienste & Grenzen",
       "backup": "Sicherung",
-      "notes": "Leser-Hinweise"
+      "notes": "Leser-Hinweise",
+      "users": "Konten"
     },
     "queue": "Warteschlange",
     "statuses": {
@@ -587,6 +588,22 @@
       "pending": "Wartet auf Prüfung",
       "approved": "Freigegeben",
       "rejected": "Abgelehnt"
+    },
+    "users": {
+      "imagesTitle": "Profilbilder zur Prüfung",
+      "imagesIntro": "Profil- und Bannerbilder bleiben privat, bis du sie freigibst. Ablehnen löscht das Bild.",
+      "listTitle": "Konten",
+      "search": "Benutzername oder Name suchen",
+      "joined": "Registriert",
+      "submissions": "Einreichungen",
+      "status": {
+        "active": "Aktiv",
+        "locked": "Gesperrt"
+      },
+      "lock": "Sperren",
+      "unlock": "Entsperren",
+      "delete": "Löschen",
+      "confirmDelete": "Konto @{name} mit Profil und Bildern endgültig löschen?"
     }
   },
   "search": {
@@ -681,5 +698,175 @@
     "experts": "Gutachten",
     "about": "Memorandum",
     "submit": "Formular CA-7"
+  },
+  "account": {
+    "kicker": "Dein Konto",
+    "signIn": "Anmelden",
+    "myProfile": "Mein Profil",
+    "logout": "Abmelden",
+    "alreadySignedIn": "Du bist als {name} angemeldet.",
+    "login": {
+      "tab": "Anmelden",
+      "title": "Anmelden",
+      "intro": "Melde dich an, um deine eigene Profilseite zu gestalten und deine Fallakten zu sammeln.",
+      "submit": "Anmelden",
+      "forgot": "Passwort vergessen?"
+    },
+    "register": {
+      "tab": "Konto erstellen",
+      "title": "Konto erstellen",
+      "intro": "Mit einem Konto bekommst du deine eigene Profilseite, die du selbst gestalten kannst.",
+      "submit": "Konto erstellen",
+      "privacy": "Keine E-Mail-Adresse nötig. Gespeichert werden nur dein Benutzername, ein Hash deines Passworts und was du in dein Profil schreibst."
+    },
+    "recover": {
+      "title": "Passwort zurücksetzen",
+      "intro": "Gib deinen Benutzernamen und den Wiederherstellungscode ein, den du bei der Registrierung bekommen hast.",
+      "submit": "Neues Passwort setzen",
+      "back": "Zurück zur Anmeldung"
+    },
+    "fields": {
+      "username": "Benutzername",
+      "usernameHelp": "3–24 Zeichen: a–z, 0–9, „-“ und „_“. Deine Profiladresse lautet dann /u/benutzername.",
+      "displayName": "Anzeigename",
+      "password": "Passwort",
+      "passwordHelp": "Mindestens {min} Zeichen.",
+      "repeatPassword": "Passwort wiederholen",
+      "newPassword": "Neues Passwort",
+      "recoveryCode": "Wiederherstellungscode"
+    },
+    "errors": {
+      "mismatch": "Die beiden Passwörter stimmen nicht überein.",
+      "credentials": "Benutzername oder Passwort ist falsch.",
+      "taken": "Dieser Benutzername ist schon vergeben.",
+      "recovery": "Benutzername oder Wiederherstellungscode ist falsch.",
+      "locked": "Dieses Konto wurde von der Redaktion gesperrt.",
+      "wrongPassword": "Das aktuelle Passwort ist falsch."
+    },
+    "recovery": {
+      "title": "Dein Wiederherstellungscode",
+      "text": "Bewahre diesen Code sicher auf. Nur damit kannst du dein Passwort zurücksetzen, denn wir speichern keine E-Mail-Adresse. Er wird nur einmal angezeigt.",
+      "copy": "Kopieren",
+      "copied": "Kopiert",
+      "done": "Ich habe ihn gespeichert"
+    }
+  },
+  "profile": {
+    "sections": {
+      "about": "Über mich",
+      "favorites": "Lieblingsfälle",
+      "submissions": "Meine veröffentlichten Fallakten",
+      "links": "Links",
+      "stats": "Karteikarte"
+    },
+    "empty": {
+      "about": "Schreib im Editor ein paar Zeilen über dich.",
+      "favorites": "Wähle Lieblingsfälle aus deinen gespeicherten Fällen.",
+      "submissions": "Fallakten, die du unter deinem Namen einreichst, erscheinen hier, sobald sie veröffentlicht sind.",
+      "links": "Füge Links zu deiner Website oder deinen Social-Media-Profilen hinzu."
+    },
+    "stats": {
+      "since": "Mitglied seit",
+      "submissions": "Veröffentlichte Fallakten",
+      "favorites": "Lieblingsfälle"
+    },
+    "pendingImage": "Wartet auf Prüfung – vorerst siehst nur du dieses Bild.",
+    "privateStamp": "Privat",
+    "metaDescription": "Profil von {name} im Conspiracy Atlas.",
+    "notFound": "Profil nicht gefunden",
+    "notFoundText": "Dieses Profil gibt es nicht oder es ist privat.",
+    "ownerHint": "So sehen andere dein Profil.",
+    "edit": "Profil bearbeiten"
+  },
+  "profileEditor": {
+    "title": "Mein Profil",
+    "intro": "Gestalte deine eigene Profilseite. Änderungen siehst du sofort in der Vorschau; öffentlich werden sie beim Speichern.",
+    "tabs": {
+      "design": "Gestaltung",
+      "submissions": "Meine Einreichungen",
+      "security": "Konto & Sicherheit"
+    },
+    "groups": {
+      "identity": "Wer du bist",
+      "look": "Aussehen",
+      "sections": "Abschnitte",
+      "visibility": "Sichtbarkeit"
+    },
+    "avatar": "Profilbild",
+    "banner": "Bannerbild",
+    "avatarHelp": "Am besten quadratisch. Wird im Browser auf 400 px verkleinert und ist nach der Prüfung für andere sichtbar.",
+    "bannerHelp": "Am besten im Querformat. Wird im Browser verkleinert und ist nach der Prüfung für andere sichtbar.",
+    "uploadImage": "Bild hochladen",
+    "replaceImage": "Bild ersetzen",
+    "removeImage": "Entfernen",
+    "tagline": "Untertitel",
+    "location": "Ort",
+    "theme": "Design",
+    "themes": {
+      "dossier": "Dossier",
+      "noir": "Noir",
+      "cork": "Pinnwand",
+      "blueprint": "Blaupause",
+      "redacted": "Geschwärzt",
+      "newsprint": "Zeitungspapier"
+    },
+    "accent": "Akzentfarbe",
+    "customColor": "Eigene Farbe wählen",
+    "font": "Schrift",
+    "fonts": {
+      "typewriter": "Schreibmaschine",
+      "serif": "Schlagzeile (Serif)",
+      "sans": "Schlicht",
+      "mono": "Monospace",
+      "marker": "Filzstift",
+      "hand": "Handschrift"
+    },
+    "layout": "Layout",
+    "layouts": {
+      "classic": "Klassisch",
+      "sidebar": "Mit Seitenleiste",
+      "centered": "Zentrierte Spalte"
+    },
+    "pattern": "Banner-Muster",
+    "patterns": {
+      "plain": "Schlicht",
+      "grid": "Kartenraster",
+      "stripes": "Warnstreifen",
+      "dots": "Punkte",
+      "strings": "Rote Fäden",
+      "topo": "Höhenlinien"
+    },
+    "sectionsHelp": "Wähle, welche Abschnitte erscheinen und in welcher Reihenfolge.",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
+    "favoritesHelp": "Wähle bis zu {max} Fallakten. Die Liste zeigt die Fälle, die du mit dem Lesezeichen gespeichert hast.",
+    "noSaved": "Du hast noch keine Fallakten gespeichert.",
+    "linkLabel": "Bezeichnung",
+    "linkUrl": "Adresse",
+    "addLink": "Link hinzufügen",
+    "visibility": {
+      "public": "Öffentlich",
+      "publicHelp": "Alle können dein Profil sehen.",
+      "private": "Privat",
+      "privateHelp": "Nur du siehst dein Profil."
+    },
+    "save": "Profil speichern",
+    "saved": "Profil gespeichert.",
+    "viewProfile": "Profil ansehen",
+    "preview": "Vorschau",
+    "noSubmissions": "Du hast angemeldet noch keine Fallakten eingereicht.",
+    "submissionTitle": "Titel",
+    "submissionStatus": "Status",
+    "submissionDate": "Eingereicht",
+    "submissionsHelp": "Auf deinem Profil erscheinen nur veröffentlichte Fallakten, die du unter deinem Namen eingereicht hast; anonyme nie.",
+    "changePassword": "Passwort ändern",
+    "currentPassword": "Aktuelles Passwort",
+    "passwordChanged": "Passwort geändert. Andere Geräte wurden abgemeldet.",
+    "newRecoveryCode": "Neuer Wiederherstellungscode",
+    "recoveryHelp": "Wiederherstellungscode verloren? Gib dein aktuelles Passwort ein und erstelle einen neuen; der alte gilt dann nicht mehr.",
+    "session": "Sitzung",
+    "deleteAccount": "Konto löschen",
+    "deleteHelp": "Löscht dein Konto, dein Profil und deine Bilder endgültig. Veröffentlichte Fallakten bleiben im Archiv.",
+    "typeUsername": "Gib zur Bestätigung deinen Benutzernamen ({name}) ein"
   }
 }

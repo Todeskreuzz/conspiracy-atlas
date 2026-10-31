@@ -18,6 +18,8 @@ export interface Env {
   FEATURE_ADMIN_PANEL?: string;
   FEATURE_INVESTIGATIONS?: string;
   FEATURE_REPORTS?: string;
+  /** Visitor accounts with profile pages (stored in D1; sign-up needs Turnstile). */
+  FEATURE_ACCOUNTS?: string;
 
   // Public Turnstile site key (not secret) and secret key (set via `wrangler pages secret put`)
   TURNSTILE_SITE_KEY?: string;

@@ -18,10 +18,10 @@ function canvasBlob(canvas: HTMLCanvasElement, type: string, quality: number): P
  * Re-encodes an image in the browser: longest edge at most 1600 px, WebP (JPEG where WebP is not
  * supported), lowering quality and size until it fits. Metadata such as GPS data is dropped.
  */
-export async function compressImage(file: File): Promise<Omit<PickedImage, 'key' | 'alt'>> {
+export async function compressImage(file: File, maxEdge: number = IMAGE_LIMITS.maxEdge): Promise<Omit<PickedImage, 'key' | 'alt'>> {
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
   try {
-    let scale = Math.min(1, IMAGE_LIMITS.maxEdge / Math.max(bitmap.width, bitmap.height));
+    let scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
     for (let round = 0; round < 4; round++) {
       const width = Math.max(1, Math.round(bitmap.width * scale));
       const height = Math.max(1, Math.round(bitmap.height * scale));

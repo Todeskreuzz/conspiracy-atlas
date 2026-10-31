@@ -9,6 +9,7 @@ import { communityRoutes } from './routes/community';
 import { investigationRoutes } from './routes/investigations';
 import { adminRoutes } from './routes/admin';
 import { importRoutes } from './routes/importer';
+import { accountRoutes } from './routes/account';
 
 export type { AppEnv, Ctx } from './http';
 
@@ -28,6 +29,7 @@ export function createApp() {
   app.route('/', communityRoutes);
   app.route('/', investigationRoutes);
   app.route('/', importRoutes);
+  app.route('/', accountRoutes);
   app.route('/admin', adminRoutes);
 
   app.notFound((c) => c.json({ error: { code: 'not_found', message: 'Endpoint not found' } }, 404));

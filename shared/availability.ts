@@ -12,6 +12,7 @@ export const FEATURE_KEYS = [
   'automatic_import',
   'investigations',
   'reports',
+  'accounts',
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 
@@ -42,6 +43,7 @@ const FEATURE_EXPLANATIONS_EN: Partial<Record<FeatureKey, string>> = {
   turnstile: 'Anti-spam verification has not been configured.',
   database: 'The database service is temporarily unavailable.',
   automatic_import: 'Automatic import is not activated.',
+  accounts: 'User accounts are switched off.',
 };
 
 const FEATURE_EXPLANATIONS_DE: Partial<Record<FeatureKey, string>> = {
@@ -50,6 +52,7 @@ const FEATURE_EXPLANATIONS_DE: Partial<Record<FeatureKey, string>> = {
   turnstile: 'Die Anti-Spam-Prüfung (Turnstile) ist nicht eingerichtet.',
   database: 'Die Datenbank ist vorübergehend nicht erreichbar.',
   automatic_import: 'Der automatische Import ist nicht aktiviert.',
+  accounts: 'Benutzerkonten sind ausgeschaltet.',
 };
 
 const STATE_EXPLANATIONS_EN: Record<ServiceState, string> = {

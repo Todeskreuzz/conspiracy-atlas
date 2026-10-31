@@ -4,5 +4,8 @@ Disallow: /admin
 Disallow: /api/admin/
 Disallow: /saved
 Disallow: /submit
+Disallow: /login
+Disallow: /account
+Disallow: /api/account/
 
 Sitemap: https://conspiracy-atlas.pages.dev/sitemap.xml

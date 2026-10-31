@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
 import type { TheorySummary } from '../../shared/types';
-import { CategoryBadge } from './Badges';
+import { CategoryBadge, CommunityBadge } from './Badges';
 import { useT } from '../i18n';
 
 export function TheoryCard({ theory }: { theory: TheorySummary }) {
   const t = useT();
   return (
-    <Link to={`/theory/${theory.slug}`} className="case-card" data-testid="theory-card" viewTransition>
+    <Link to={`/theory/${theory.slug}`} className={`case-card${theory.origin === 'community' ? ' case-card--community' : ''}`} data-testid="theory-card" viewTransition>
       <span className="pin" aria-hidden="true" />
       <div className="case-card__img">
         <img src={theory.imagePath ?? '/media/cards/theory.svg'} alt="" loading="lazy" decoding="async" />
@@ -16,6 +16,7 @@ export function TheoryCard({ theory }: { theory: TheorySummary }) {
         {theory.subtitle && <div className="case-card__subtitle">{theory.subtitle}</div>}
         <div className="case-card__summary">{theory.summary}</div>
         <div className="case-card__meta">
+          {theory.origin === 'community' && <CommunityBadge />}
           <CategoryBadge category={theory.category} />
           {theory.origin === 'community' && <span className="tag">{t('archive.by', { name: theory.authorName ?? 'Anonymous' })}</span>}
         </div>

@@ -4,7 +4,7 @@ import { formatDate, useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
 import { api } from '../api/client';
 import type { Relationship, TheoryDetail } from '../../shared/types';
-import { CategoryBadge } from '../components/Badges';
+import { CategoryBadge, CommunityBadge } from '../components/Badges';
 import { LoadState } from '../components/Unavailable';
 import { RichText } from '../components/RichText';
 import { SourceItem } from '../components/SourceItem';
@@ -100,6 +100,7 @@ export function TheoryPage() {
             <div className="btn-row">
               <SaveButton theory={th} small />
               <ShareButton title={th.title} text={th.subtitle ?? undefined} />
+              {th.origin === 'community' && <CommunityBadge />}
               <CategoryBadge category={th.category} />
               {th.tags.map((tag) => (
                 <span key={tag} className="tag">
@@ -108,8 +109,9 @@ export function TheoryPage() {
               ))}
             </div>
             {th.origin === 'community' && (
-              <p className="notice">
-                {t('theory.communityNote')} {t('archive.by', { name: th.authorName ?? 'Anonymous' })}
+              <p className="notice notice--community">
+                {t('theory.communityNote')} {t('archive.by', { name: th.authorName ?? 'Anonymous' })}{' '}
+                <Link to="/community">{t('community.moreLink')}</Link>
               </p>
             )}
           </header>

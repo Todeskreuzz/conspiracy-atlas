@@ -1,4 +1,5 @@
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { CommunityBadge } from '../components/Badges';
 import { useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
 import { api } from '../api/client';
@@ -42,6 +43,9 @@ export function ArchivePage() {
         <div className="kicker">{t('nav.archive')}</div>
         <h1>{t('archive.title')}</h1>
         <p>{t('archive.intro')}</p>
+        <p className="small muted archive-community-hint">
+          <CommunityBadge /> {t('archive.communityHint')} <Link to="/community">{t('archive.communityLink')}</Link>
+        </p>
       </header>
       <form
         className="toolbar"

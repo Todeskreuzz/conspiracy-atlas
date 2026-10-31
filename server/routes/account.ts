@@ -26,6 +26,8 @@ import { ValidationError, int, oneOf } from '../../shared/validation';
 import {
   clearUserCookie,
   createUserSession,
+  canUseAnimated,
+  isAdminUser,
   loadUserSession,
   normalizeRecoveryCode,
   recoveryCode,
@@ -67,7 +69,7 @@ function mapAccountUser(r: Row): AccountUser {
 async function sessionJson(db: Db, userId: number, csrfToken: string) {
   const row = await db.first(`${USER_SELECT} WHERE u.id = ?`, userId);
   if (!row) throw notFound('Account');
-  return { authenticated: true, available: true, csrfToken, user: mapAccountUser(row) };
+  return { authenticated: true, available: true, csrfToken, user: { ...mapAccountUser(row), isAdmin: await isAdminUser(db, userId) } };
 }
 
 function guard(c: Ctx) {
@@ -195,7 +197,7 @@ accountRoutes.get('/account/profile', async (c) => {
     profile: parseStoredProfile(row.profile_json),
     avatar: imageInfo(row.avatar_id),
     banner: imageInfo(row.banner_id),
-    allowAnimated: Number(row.allow_animated) === 1,
+    allowAnimated: await canUseAnimated(db, Number(row.id), row.allow_animated),
   });
 });
 
@@ -264,7 +266,7 @@ accountRoutes.get('/account/submissions', async (c) => {
 /**
  * Profile images: one avatar and one banner per account, public at once (editors can delete them).
  * Static images are re-encoded in the browser; animated GIFs are stored as uploaded and only accepted
- * for accounts an editor allowed (users.allow_animated).
+ * for admins and for accounts an editor allowed (users.allow_animated).
  */
 function parseProfileImage(raw: unknown, allowAnimated: boolean) {
   const o = (raw ?? {}) as Record<string, unknown>;
@@ -297,7 +299,7 @@ accountRoutes.put('/account/images/:slot', async (c) => {
   const db = Db.from(c.env);
   const userId = me(c).userId;
   const user = await db.first<{ allow_animated: number }>('SELECT allow_animated FROM users WHERE id = ?', userId);
-  const img = parseProfileImage(body.image, Number(user?.allow_animated) === 1);
+  const img = parseProfileImage(body.image, await canUseAnimated(db, userId, user?.allow_animated));
   await rateLimit(db, c.env, c.req.raw, 'profile_image', 20, 3600);
   const old = await db.first<{ size: number }>('SELECT size FROM profile_images WHERE user_id = ? AND slot = ?', userId, slot);
   await assertImageQuota(db, c.env, img.bytes.length - Number(old?.size ?? 0));
@@ -369,6 +371,7 @@ accountRoutes.get('/users/:username', async (c) => {
     displayName: String(row.display_name),
     createdAt: String(row.created_at),
     isOwner,
+    isAdmin: await isAdminUser(db, Number(row.id)),
     avatar: imageInfo(row.avatar_id),
     banner: imageInfo(row.banner_id),
     profile,

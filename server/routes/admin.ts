@@ -15,6 +15,7 @@ import {
   sessionCookie,
   type AdminSession,
 } from '../auth';
+import { adminUserIds, setAdminUser } from '../users';
 import {
   CATEGORY_SLUGS,
   ENTITY_TYPES,
@@ -73,7 +74,7 @@ adminRoutes.get('/session', async (c) => {
   const session = await loadSession(Db.from(c.env), c.env, c.req.raw);
   return c.json(
     session
-      ? { authenticated: true, available: true, csrfToken: session.csrfToken, username: session.username }
+      ? { authenticated: true, available: true, csrfToken: session.csrfToken, username: session.username, viaAccount: !!session.viaAccount }
       : { authenticated: false, available: true },
   );
 });
@@ -513,8 +514,10 @@ adminRoutes.get('/users', async (c) => {
     limit,
     offset,
   );
+  const admins = new Set(await adminUserIds(db));
   const items = rows.map((r) => ({
     id: Number(r.id),
+    isAdmin: admins.has(Number(r.id)),
     username: String(r.username),
     displayName: String(r.display_name),
     status: r.status as 'active' | 'locked',
@@ -533,11 +536,14 @@ adminRoutes.post('/users/:id', async (c) => {
   const db = Db.from(c.env);
   const id = idParam(c);
   const body = await readJson(c, 2_000);
-  const action = oneOf(body.action, 'action', ['lock', 'unlock', 'allow_gif', 'disallow_gif'] as const);
+  const action = oneOf(body.action, 'action', ['lock', 'unlock', 'allow_gif', 'disallow_gif', 'make_admin', 'remove_admin'] as const);
   const r =
     action === 'lock' || action === 'unlock'
       ? await db.run("UPDATE users SET status = ?, updated_at = datetime('now') WHERE id = ?", action === 'lock' ? 'locked' : 'active', id)
-      : await db.run("UPDATE users SET allow_animated = ?, updated_at = datetime('now') WHERE id = ?", action === 'allow_gif' ? 1 : 0, id);
+      : action === 'allow_gif' || action === 'disallow_gif'
+        ? await db.run("UPDATE users SET allow_animated = ?, updated_at = datetime('now') WHERE id = ?", action === 'allow_gif' ? 1 : 0, id)
+        : await db.run("UPDATE users SET updated_at = datetime('now') WHERE id = ?", id);
+  if (r.changes && (action === 'make_admin' || action === 'remove_admin')) await setAdminUser(db, id, action === 'make_admin');
   if (!r.changes) throw notFound('Account');
   if (action === 'lock') await db.run('DELETE FROM user_sessions WHERE user_id = ?', id);
   await db.run('INSERT INTO moderation_actions (action, note, actor) VALUES (?, ?, ?)', `user_${action}:${id}`, optStr(body.note, 'note', 2000), actor(c));

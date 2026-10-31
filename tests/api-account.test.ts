@@ -224,6 +224,39 @@ describe('profile pages', () => {
     expect((await c.put('/api/account/images/avatar', { image: { ...gif, data: PNG } })).status).toBe(400);
   });
 
+  it('gives accounts admin rights: admin area with the normal login and GIFs automatically', async () => {
+    const env = await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'true' });
+    const c = client(env);
+    await register(c);
+    expect((await c.get('/api/admin/overview')).status).toBe(401);
+    expect((await c.get('/api/admin/session')).json.authenticated).toBe(false);
+
+    const admin = client(env);
+    await admin.login();
+    const user = (await admin.get('/api/admin/users')).json.items[0];
+    expect(user.isAdmin).toBe(false);
+    expect((await admin.post(`/api/admin/users/${user.id}`, { action: 'make_admin' })).status).toBe(200);
+    expect((await admin.get('/api/admin/users')).json.items[0].isAdmin).toBe(true);
+
+    const session = (await c.get('/api/admin/session')).json;
+    expect(session).toMatchObject({ authenticated: true, viaAccount: true, username: '@night_owl' });
+    expect((await c.get('/api/admin/overview')).status).toBe(200);
+    // Writes in the admin area use the account's CSRF token.
+    expect((await c.post(`/api/admin/users/${user.id}`, { action: 'allow_gif' })).status).toBe(200);
+    expect((await c.post(`/api/admin/users/${user.id}`, { action: 'allow_gif' }, { 'X-CSRF-Token': 'wrong' })).status).toBe(403);
+    expect((await c.get('/api/account/me')).json.user.isAdmin).toBe(true);
+    expect((await client(env).get('/api/users/night_owl')).json.isAdmin).toBe(true);
+
+    // Admins may upload GIFs without the per-account switch.
+    await admin.post(`/api/admin/users/${user.id}`, { action: 'disallow_gif' });
+    expect((await c.get('/api/account/profile')).json.allowAnimated).toBe(true);
+    expect((await c.put('/api/account/images/avatar', { image: { data: GIF, mime: 'image/gif', width: 1, height: 1 } })).status).toBe(201);
+
+    await admin.post(`/api/admin/users/${user.id}`, { action: 'remove_admin' });
+    expect((await c.get('/api/admin/overview')).status).toBe(401);
+    expect((await c.get('/api/account/profile')).json.allowAnimated).toBe(false);
+  });
+
   it('shows "Currently unavailable!" for profile images when uploads are off', async () => {
     const c = client(await makeEnv());
     await register(c);

@@ -132,7 +132,10 @@ export function ProfileView({ data, preview }: Props) {
         </div>
         <div className="profile__id">
           <h1 className="profile__name">{data.displayName}</h1>
-          <div className="profile__handle mono">@{data.username}</div>
+          <div className="profile__handle mono">
+            @{data.username}
+            {data.isAdmin && <span className="profile__badge">{t('profile.adminBadge')}</span>}
+          </div>
           {p.tagline && <p className="profile__tagline">{p.tagline}</p>}
           {p.location && <p className="profile__location small">⌖ {p.location}</p>}
         </div>

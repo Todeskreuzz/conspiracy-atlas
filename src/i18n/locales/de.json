@@ -606,7 +606,10 @@
       "confirmDelete": "Konto @{name} mit Profil und Bildern endgültig löschen?",
       "deleteImage": "Bild löschen",
       "confirmDeleteImage": "Dieses Bild endgültig löschen?",
-      "gif": "Animierte GIFs"
+      "gif": "Animierte GIFs",
+      "admin": "Admin",
+      "confirmAdmin": "@{name} Admin-Rechte geben? Das Konto kann dann mit seinem normalen Login den Admin-Bereich öffnen.",
+      "gifAdmin": "Admins dürfen immer animierte GIFs verwenden."
     }
   },
   "search": {
@@ -779,7 +782,8 @@
     "notFound": "Profil nicht gefunden",
     "notFoundText": "Dieses Profil gibt es nicht oder es ist privat.",
     "ownerHint": "So sehen andere dein Profil.",
-    "edit": "Profil bearbeiten"
+    "edit": "Profil bearbeiten",
+    "adminBadge": "Admin"
   },
   "profileEditor": {
     "title": "Mein Profil",
@@ -873,6 +877,7 @@
     "typeUsername": "Gib zur Bestätigung deinen Benutzernamen ({name}) ein",
     "gifAllowed": "Animierte GIFs bleiben unverändert (max. 1,5 MB).",
     "gifStatic": "GIFs werden als Standbild gespeichert.",
-    "gifTooLarge": "Dieses GIF ist zu groß (max. {max} KB)."
+    "gifTooLarge": "Dieses GIF ist zu groß (max. {max} KB).",
+    "openAdmin": "Admin-Bereich öffnen"
   }
 }

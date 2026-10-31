@@ -187,6 +187,8 @@ export interface AccountUser {
   displayName: string;
   avatarUrl: string | null;
   createdAt: string;
+  /** Account with admin rights (opens the admin area with its normal login). */
+  isAdmin?: boolean;
 }
 
 export interface ProfileImageInfo {
@@ -208,6 +210,7 @@ export interface PublicProfile {
   displayName: string;
   createdAt: string;
   isOwner: boolean;
+  isAdmin: boolean;
   avatar: ProfileImageInfo | null;
   banner: ProfileImageInfo | null;
   profile: ProfileSettings;

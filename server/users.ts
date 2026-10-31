@@ -79,3 +79,39 @@ export async function requireUser(db: Db, req: Request): Promise<UserSession> {
   }
   return session;
 }
+
+/**
+ * Accounts with admin rights. Stored as a JSON list of user ids in `settings` (no schema change);
+ * the secret admin login keeps working independently of it.
+ */
+export const ADMIN_USERS_KEY = 'admin_user_ids';
+
+export async function adminUserIds(db: Db): Promise<number[]> {
+  const row = await db.first<{ value: string }>('SELECT value FROM settings WHERE key = ?', ADMIN_USERS_KEY);
+  try {
+    const list = JSON.parse(row?.value ?? '[]');
+    return Array.isArray(list) ? list.filter((n): n is number => Number.isInteger(n) && n > 0) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function isAdminUser(db: Db, userId: number): Promise<boolean> {
+  return (await adminUserIds(db)).includes(userId);
+}
+
+export async function setAdminUser(db: Db, userId: number, admin: boolean): Promise<void> {
+  const ids = new Set(await adminUserIds(db));
+  if (admin) ids.add(userId);
+  else ids.delete(userId);
+  await db.run(
+    "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')",
+    ADMIN_USERS_KEY,
+    JSON.stringify([...ids].sort((a, b) => a - b)),
+  );
+}
+
+/** Admins may always use animated GIFs; other accounts only with the per-account switch. */
+export async function canUseAnimated(db: Db, userId: number, allowAnimated: unknown): Promise<boolean> {
+  return Number(allowAnimated) === 1 || (await isAdminUser(db, userId));
+}

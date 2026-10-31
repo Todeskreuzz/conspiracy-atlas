@@ -2,6 +2,7 @@ import type { Env } from './env';
 import type { Db } from './db';
 import { randomToken, sha256Hex, timingSafeEqual, verifyPassword } from './crypto';
 import { ApiError, unauthorized } from './errors';
+import { isAdminUser, loadUserSession } from './users';
 
 export const SESSION_COOKIE = '__Host-ca_admin';
 export const SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -10,6 +11,8 @@ export interface AdminSession {
   idHash: string;
   csrfToken: string;
   username: string;
+  /** Signed in through a visitor account that has admin rights (not the secret admin login). */
+  viaAccount?: boolean;
 }
 
 export function readCookie(req: Request, name: string): string | null {
@@ -52,14 +55,20 @@ export async function createSession(db: Db): Promise<{ token: string; csrfToken:
 
 export async function loadSession(db: Db, env: Env, req: Request): Promise<AdminSession | null> {
   const token = readCookie(req, SESSION_COOKIE);
-  if (!token || !/^[0-9a-f]{64}$/.test(token)) return null;
-  const idHash = await sha256Hex(token);
-  const row = await db.first<{ csrf_token: string; expires_at: string }>(
-    'SELECT csrf_token, expires_at FROM admin_sessions WHERE id_hash = ?',
-    idHash,
-  );
-  if (!row || row.expires_at < new Date().toISOString()) return null;
-  return { idHash, csrfToken: row.csrf_token, username: env.ADMIN_USERNAME ?? 'admin' };
+  if (token && /^[0-9a-f]{64}$/.test(token)) {
+    const idHash = await sha256Hex(token);
+    const row = await db.first<{ csrf_token: string; expires_at: string }>(
+      'SELECT csrf_token, expires_at FROM admin_sessions WHERE id_hash = ?',
+      idHash,
+    );
+    if (row && row.expires_at >= new Date().toISOString()) return { idHash, csrfToken: row.csrf_token, username: env.ADMIN_USERNAME ?? 'admin' };
+  }
+  // A signed-in visitor account with admin rights works as well (its own session and CSRF token).
+  const user = await loadUserSession(db, req);
+  if (user && (await isAdminUser(db, user.userId))) {
+    return { idHash: user.idHash, csrfToken: user.csrfToken, username: `@${user.username}`, viaAccount: true };
+  }
+  return null;
 }
 
 export async function requireSession(db: Db, env: Env, req: Request): Promise<AdminSession> {
@@ -73,5 +82,6 @@ export async function requireSession(db: Db, env: Env, req: Request): Promise<Ad
 }
 
 export async function destroySession(db: Db, session: AdminSession): Promise<void> {
+  if (session.viaAccount) return; // signing out of the account happens on the account page
   await db.run('DELETE FROM admin_sessions WHERE id_hash = ?', session.idHash);
 }

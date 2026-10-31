@@ -606,7 +606,10 @@
       "confirmDelete": "Delete the account @{name} with its profile and images for good?",
       "deleteImage": "Delete image",
       "confirmDeleteImage": "Delete this image for good?",
-      "gif": "Animated GIFs"
+      "gif": "Animated GIFs",
+      "admin": "Admin",
+      "confirmAdmin": "Give @{name} admin rights? The account can then open the admin area with its normal login.",
+      "gifAdmin": "Admins can always use animated GIFs."
     }
   },
   "search": {
@@ -779,7 +782,8 @@
     "notFound": "Profile not found",
     "notFoundText": "This profile does not exist or is private.",
     "ownerHint": "This is your profile as others see it.",
-    "edit": "Edit profile"
+    "edit": "Edit profile",
+    "adminBadge": "Admin"
   },
   "profileEditor": {
     "title": "My profile",
@@ -873,6 +877,7 @@
     "typeUsername": "Type your username ({name}) to confirm",
     "gifAllowed": "Animated GIFs are kept as they are (max. 1.5 MB).",
     "gifStatic": "GIFs are saved as a still image.",
-    "gifTooLarge": "This GIF is too large (max. {max} KB)."
+    "gifTooLarge": "This GIF is too large (max. {max} KB).",
+    "openAdmin": "Open admin area"
   }
 }

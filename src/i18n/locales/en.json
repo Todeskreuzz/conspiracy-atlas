@@ -510,13 +510,14 @@
     "password": "Password",
     "loginFailed": "Sign-in failed.",
     "tabs": {
-      "moderation": "Moderation",
+      "moderation": "Submissions",
       "reports": "Reports",
       "archive": "Archive",
       "services": "Services & limits",
       "backup": "Backup",
       "notes": "Reader notes",
-      "users": "Accounts"
+      "users": "Accounts",
+      "overview": "Overview"
     },
     "queue": "Queue",
     "statuses": {
@@ -613,7 +614,63 @@
       "owner": "Grand Master (owner)",
       "ownerOnly": "Only the owner or the secret admin login can grant this rank.",
       "confirmOwner": "Give @{name} the \"Grand Master\" (owner) rank? Owners have all admin rights.",
-      "adminOwner": "The Grand Master always has admin rights."
+      "adminOwner": "The Grand Master always has admin rights.",
+      "rank": "Rank",
+      "ranks": {
+        "member": "Member",
+        "admin": "Admin",
+        "owner": "Grand Master"
+      },
+      "legendRank": "Member is the default. Admins can open this area. The Grand Master is the owner and cannot be changed by admins.",
+      "legendGif": "Allows animated GIF profile pictures and banners. Admins always may.",
+      "legendLock": "A locked account is signed out and its profile and images are hidden. Unlocking makes everything visible again.",
+      "count": "{n} accounts on this page",
+      "submissionsN": "{n} submissions",
+      "allowed": "Allowed",
+      "notAllowed": "Not allowed",
+      "gifAlways": "Always (admin)",
+      "showImages": "Show images",
+      "hideImages": "Hide images"
+    },
+    "signedInAs": "Signed in as",
+    "groups": {
+      "review": "Review",
+      "manage": "Manage",
+      "system": "System"
+    },
+    "sections": {
+      "overview": "What needs attention and where to find everything.",
+      "moderation": "Theories sent in by visitors. Pick a submission on the left, read it and decide: approve, request changes or reject. Approved submissions can then be published.",
+      "notes": "Sources and comments visitors added to case files. Approved notes appear on the case page, rejected ones do not.",
+      "reports": "Visitors report errors or problematic content here. Check the spot, fix it if needed, then mark the report as resolved or dismissed.",
+      "users": "All registered accounts. Assign ranks, allow GIF images, lock or delete accounts and remove illegal profile images here.",
+      "archive": "The published case files. Click a title to edit it, or create a new theory.",
+      "services": "Shows whether all Cloudflare services are running and how much of the free limit is used.",
+      "backup": "Download a complete backup of the database. Do this regularly and before big changes."
+    },
+    "overview": {
+      "welcome": "Welcome, {name}! Here is what needs doing at a glance.",
+      "todo": "Waiting for you",
+      "allClear": "All done. Nothing is waiting for review.",
+      "queue": {
+        "moderation": "new submissions",
+        "notes": "reader notes to review",
+        "reports": "open reports"
+      },
+      "accounts": "accounts ({locked} locked, {images} new images in 7 days)",
+      "review": "Review now",
+      "open": "Open",
+      "all": "All sections"
+    },
+    "reportStatus": {
+      "open": "Open",
+      "resolved": "Resolved",
+      "dismissed": "Dismissed"
+    },
+    "reportCols": {
+      "reason": "Reason",
+      "details": "Details",
+      "date": "Date"
     }
   },
   "search": {

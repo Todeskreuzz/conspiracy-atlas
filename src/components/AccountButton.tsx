@@ -3,6 +3,7 @@ import { useT } from '../i18n';
 import { useAccount } from '../api/account';
 import { useFeature } from '../api/status';
 import { Avatar } from './ProfileView';
+import { useAdminHint } from '../api/admin';
 
 /** Header entry: "Sign in" for visitors, avatar and name (linking to the own profile) when signed in. */
 export function AccountButton() {
@@ -42,11 +43,12 @@ export function AccountNavLink() {
   );
 }
 
-/** Admin tab in the main navigation; only accounts with admin rights see it. */
+/** Admin tab in the main navigation; only admins (account rank or secret admin login in this browser) see it. */
 export function AdminNavLink() {
   const t = useT();
   const account = useAccount();
-  if (!account.user?.isAdmin) return null;
+  const adminHint = useAdminHint();
+  if (!account.user?.isAdmin && !adminHint) return null;
   return (
     <NavLink to="/admin" viewTransition className={({ isActive }) => `nav-tab nav-admin${isActive ? ' active' : ''}`} data-testid="nav-admin">
       {t('nav.admin')}

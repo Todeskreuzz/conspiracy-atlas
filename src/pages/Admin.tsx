@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { formatDate, useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
 import { api, ApiFailure } from '../api/client';
@@ -24,6 +24,7 @@ import { StatusBadge } from '../components/Badges';
 import { SourceItem } from '../components/SourceItem';
 import { Pagination } from '../components/TheoryCard';
 import { ImageGallery } from '../components/ImageGallery';
+import { Avatar } from '../components/ProfileView';
 import { ImageUploader, toUploads, type PickedImage } from '../components/ImageUploader';
 import type { PublicImage } from '../../shared/images';
 
@@ -314,21 +315,40 @@ function Reports({ a }: { a: Api }) {
   };
   return (
     <div>
-      <select value={status} onChange={(e) => setStatus(e.target.value as typeof status)} style={{ maxWidth: 220, marginBottom: 12 }}>
-        <option value="open">open</option>
-        <option value="resolved">resolved</option>
-        <option value="dismissed">dismissed</option>
-      </select>
+      <div className="adm-toolbar">
+        <label className="adm-control">
+          <span>{t('admin.status')}</span>
+          <select value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
+            {(['open', 'resolved', 'dismissed'] as const).map((s) => (
+              <option key={s} value={s}>
+                {t(`admin.reportStatus.${s}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       <LoadState loading={list.loading} error={list.error} onRetry={list.reload} />
       {list.data?.items.length === 0 && <p className="muted">{t('admin.noItems')}</p>}
       <div className="table-wrap">
         <table className="data">
+          {!!list.data?.items.length && (
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{t('admin.target')}</th>
+                <th>{t('admin.reportCols.reason')}</th>
+                <th>{t('admin.reportCols.details')}</th>
+                <th>{t('admin.reportCols.date')}</th>
+                <th />
+              </tr>
+            </thead>
+          )}
           <tbody>
             {list.data?.items.map((r) => (
               <tr key={r.id}>
                 <td className="mono">#{r.id}</td>
                 <td>
-                  {t('admin.target')}: {r.target_type} #{r.target_id}
+                  {r.target_type} #{r.target_id}
                 </td>
                 <td>{t(`report.reasons.${r.reason}`)}</td>
                 <td>{r.details}</td>
@@ -370,14 +390,18 @@ function Notes({ a }: { a: Api }) {
   };
   return (
     <div data-testid="admin-notes">
-      <p className="muted small">{t('admin.notesIntro')}</p>
-      <select value={status} onChange={(e) => setStatus(e.target.value as typeof status)} style={{ maxWidth: 220, marginBottom: 12 }} aria-label={t('admin.status')}>
-        {(['pending', 'approved', 'rejected'] as const).map((s) => (
-          <option key={s} value={s}>
-            {t(`admin.noteStatus.${s}`)}
-          </option>
-        ))}
-      </select>
+      <div className="adm-toolbar">
+        <label className="adm-control">
+          <span>{t('admin.status')}</span>
+          <select value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
+            {(['pending', 'approved', 'rejected'] as const).map((s) => (
+              <option key={s} value={s}>
+                {t(`admin.noteStatus.${s}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       <LoadState loading={list.loading} error={list.error} onRetry={list.reload} />
       {list.data?.items.length === 0 && <p className="muted">{t('admin.noItems')}</p>}
       {list.data?.items.map((n) => (
@@ -427,6 +451,7 @@ interface AdminUser {
   allowAnimated: boolean;
   isAdmin: boolean;
   isOwner: boolean;
+  avatarUrl: string | null;
   submissions: number;
 }
 interface AdminProfileImage {
@@ -441,12 +466,24 @@ interface AdminProfileImage {
   createdAt: string;
 }
 
+type Rank = 'member' | 'admin' | 'owner';
+const rankOf = (u: AdminUser): Rank => (u.isOwner ? 'owner' : u.isAdmin ? 'admin' : 'member');
+
+/** Actions that move an account from one rank to another (owners are admins implicitly). */
+function rankActions(from: Rank, to: Rank): string[] {
+  if (from === to) return [];
+  if (to === 'owner') return ['make_owner'];
+  if (to === 'admin') return from === 'owner' ? ['remove_owner', 'make_admin'] : ['make_admin'];
+  return from === 'owner' ? ['remove_owner', 'remove_admin'] : ['remove_admin'];
+}
+
 function Users({ a, canManageOwners }: { a: Api; canManageOwners: boolean }) {
   const { t, locale } = useI18n();
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
   const [imagePage, setImagePage] = useState(1);
-  const images = useAsync(() => a.get<Paged<AdminProfileImage>>(`/profile-images?page=${imagePage}`), [imagePage]);
+  const [showImages, setShowImages] = useState(true);
+  const images = useAsync(() => (showImages ? a.get<Paged<AdminProfileImage>>(`/profile-images?page=${imagePage}`) : Promise.resolve(null)), [imagePage, showImages]);
   const users = useAsync(() => a.get<Paged<AdminUser>>(`/users?page=${page}&q=${encodeURIComponent(q)}`), [page, q]);
   const [error, setError] = useState<string | null>(null);
   const act = async (fn: () => Promise<unknown>) => {
@@ -459,126 +496,139 @@ function Users({ a, canManageOwners }: { a: Api; canManageOwners: boolean }) {
     images.reload();
     users.reload();
   };
+  const changeRank = (u: AdminUser, to: Rank) => {
+    const from = rankOf(u);
+    if (from === to) return;
+    if (to !== 'member' && !window.confirm(t(to === 'owner' ? 'admin.users.confirmOwner' : 'admin.users.confirmAdmin', { name: u.username }))) return;
+    void act(async () => {
+      for (const action of rankActions(from, to)) await a.post(`/users/${u.id}`, { action });
+    });
+  };
+
   return (
     <div data-testid="admin-users">
-      <h3>{t('admin.users.imagesTitle')}</h3>
-      <p className="muted small">{t('admin.users.imagesIntro')}</p>
+      <ul className="adm-legend">
+        <li>
+          <strong>{t('admin.users.rank')}:</strong> {t('admin.users.legendRank')}
+        </li>
+        <li>
+          <strong>{t('admin.users.gif')}:</strong> {t('admin.users.legendGif')}
+        </li>
+        <li>
+          <strong>{t('admin.users.lock')}:</strong> {t('admin.users.legendLock')}
+        </li>
+      </ul>
       {error && <p className="notice notice--error">{error}</p>}
-      <LoadState loading={images.loading} error={images.error} onRetry={images.reload} />
-      {images.data?.items.length === 0 && <p className="muted">{t('admin.noItems')}</p>}
-      <div className="grid grid--cards">
-        {images.data?.items.map((img) => (
-          <div key={img.id} className="panel">
-            <img src={img.url} alt="" loading="lazy" style={{ width: '100%', height: 160, objectFit: 'contain', background: '#000' }} />
-            <div className="small muted">
-              {t(`profileEditor.${img.slot}`)}
-              {img.mime === 'image/gif' ? ' · GIF' : ''} · <Link to={`/u/${img.username}`}>@{img.username}</Link>
-              {img.userStatus === 'locked' ? ` · ${t('admin.users.status.locked')}` : ''} · {formatDate(img.createdAt, locale)}
-            </div>
-            <div className="btn-row">
-              <button
-                className="btn btn--small btn--danger"
-                onClick={() => {
-                  if (window.confirm(t('admin.users.confirmDeleteImage'))) void act(() => a.del(`/profile-images/${img.id}`));
-                }}
-              >
-                {t('admin.users.deleteImage')}
-              </button>
-            </div>
-          </div>
-        ))}
+
+      <div className="adm-toolbar">
+        <input type="search" placeholder={t('admin.users.search')} aria-label={t('admin.users.search')} value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} />
+        {users.data && <span className="small muted">{t('admin.users.count', { n: users.data.items.length })}</span>}
       </div>
-      {images.data && <Pagination page={images.data.page} hasMore={images.data.hasMore} onPage={setImagePage} />}
-      <h3 style={{ marginTop: 24 }}>{t('admin.users.listTitle')}</h3>
-      <input type="search" placeholder={t('admin.users.search')} aria-label={t('admin.users.search')} value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} style={{ maxWidth: 320, marginBottom: 12 }} />
       <LoadState loading={users.loading} error={users.error} onRetry={users.reload} />
-      {users.data && (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>{t('account.fields.username')}</th>
-                <th>{t('account.fields.displayName')}</th>
-                <th>{t('admin.status')}</th>
-                <th>{t('admin.users.owner')}</th>
-                <th>{t('admin.users.admin')}</th>
-                <th>{t('admin.users.gif')}</th>
-                <th>{t('admin.users.joined')}</th>
-                <th>{t('admin.users.submissions')}</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {users.data.items.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <Link to={`/u/${u.username}`}>@{u.username}</Link>
-                  </td>
-                  <td>{u.displayName}</td>
-                  <td>{t(`admin.users.status.${u.status}`)}</td>
-                  <td>
-                    <label className="checkbox" title={canManageOwners ? undefined : t('admin.users.ownerOnly')}>
-                      <input
-                        type="checkbox"
-                        checked={u.isOwner}
-                        disabled={!canManageOwners}
-                        aria-label={t('admin.users.owner')}
-                        onChange={(e) => {
-                          if (e.target.checked ? window.confirm(t('admin.users.confirmOwner', { name: u.username })) : true) {
-                            void act(() => a.post(`/users/${u.id}`, { action: e.target.checked ? 'make_owner' : 'remove_owner' }));
-                          }
-                        }}
-                      />
-                    </label>
-                  </td>
-                  <td>
-                    <label className="checkbox" title={u.isOwner ? t('admin.users.adminOwner') : undefined}>
-                      <input
-                        type="checkbox"
-                        disabled={u.isOwner}
-                        checked={u.isAdmin}
-                        aria-label={t('admin.users.admin')}
-                        onChange={(e) => {
-                          if (e.target.checked ? window.confirm(t('admin.users.confirmAdmin', { name: u.username })) : true) {
-                            void act(() => a.post(`/users/${u.id}`, { action: e.target.checked ? 'make_admin' : 'remove_admin' }));
-                          }
-                        }}
-                      />
-                    </label>
-                  </td>
-                  <td>
-                    <label className="checkbox" title={u.isAdmin ? t('admin.users.gifAdmin') : undefined}>
-                      <input
-                        type="checkbox"
-                        disabled={u.isAdmin}
-                        checked={u.allowAnimated || u.isAdmin}
-                        aria-label={t('admin.users.gif')}
-                        onChange={(e) => void act(() => a.post(`/users/${u.id}`, { action: e.target.checked ? 'allow_gif' : 'disallow_gif' }))}
-                      />
-                    </label>
-                  </td>
-                  <td>{formatDate(u.createdAt, locale)}</td>
-                  <td>{u.submissions}</td>
-                  <td className="btn-row">
-                    <button className="btn btn--small" onClick={() => void act(() => a.post(`/users/${u.id}`, { action: u.status === 'active' ? 'lock' : 'unlock' }))}>
-                      {u.status === 'active' ? t('admin.users.lock') : t('admin.users.unlock')}
-                    </button>
-                    <button
-                      className="btn btn--small btn--danger"
-                      onClick={() => {
-                        if (window.confirm(t('admin.users.confirmDelete', { name: u.username }))) void act(() => a.del(`/users/${u.id}`));
-                      }}
-                    >
-                      {t('admin.users.delete')}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination page={users.data.page} hasMore={users.data.hasMore} onPage={setPage} />
+      {users.data?.items.length === 0 && <p className="adm-empty">{t('admin.noItems')}</p>}
+      <div className="adm-users">
+        {users.data?.items.map((u) => {
+          const rank = rankOf(u);
+          const protectedOwner = u.isOwner && !canManageOwners;
+          return (
+            <article key={u.id} className={`adm-user${u.status === 'locked' ? ' adm-user--locked' : ''}`} data-testid="admin-user">
+              <div className="adm-user__who">
+                <Avatar url={u.avatarUrl} name={u.displayName} size="small" />
+                <div>
+                  <div className="adm-user__name">
+                    {u.displayName}
+                    <span className={`adm-pill adm-pill--${rank}`}>{t(`admin.users.ranks.${rank}`)}</span>
+                    <span className={`adm-pill adm-pill--${u.status}`}>{t(`admin.users.status.${u.status}`)}</span>
+                  </div>
+                  <div className="small muted">
+                    <Link to={`/u/${u.username}`}>@{u.username}</Link> · {t('admin.users.joined')} {formatDate(u.createdAt, locale)} · {t('admin.users.submissionsN', { n: u.submissions })}
+                  </div>
+                </div>
+              </div>
+              <div className="adm-user__controls">
+                <label className="adm-control">
+                  <span>{t('admin.users.rank')}</span>
+                  <select value={rank} disabled={protectedOwner} onChange={(e) => changeRank(u, e.target.value as Rank)} title={protectedOwner ? t('admin.users.ownerOnly') : undefined}>
+                    <option value="member">{t('admin.users.ranks.member')}</option>
+                    <option value="admin">{t('admin.users.ranks.admin')}</option>
+                    <option value="owner" disabled={!canManageOwners}>
+                      {t('admin.users.ranks.owner')}
+                    </option>
+                  </select>
+                </label>
+                <label className="adm-control adm-control--switch" title={u.isAdmin ? t('admin.users.gifAdmin') : undefined}>
+                  <span>{t('admin.users.gif')}</span>
+                  <span className="adm-switch">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      disabled={u.isAdmin}
+                      checked={u.allowAnimated || u.isAdmin}
+                      onChange={(e) => void act(() => a.post(`/users/${u.id}`, { action: e.target.checked ? 'allow_gif' : 'disallow_gif' }))}
+                    />
+                    <span className="small">{u.isAdmin ? t('admin.users.gifAlways') : u.allowAnimated ? t('admin.users.allowed') : t('admin.users.notAllowed')}</span>
+                  </span>
+                </label>
+                <div className="adm-user__buttons">
+                  <button className="btn btn--small" disabled={protectedOwner} onClick={() => void act(() => a.post(`/users/${u.id}`, { action: u.status === 'active' ? 'lock' : 'unlock' }))}>
+                    {u.status === 'active' ? t('admin.users.lock') : t('admin.users.unlock')}
+                  </button>
+                  <button
+                    className="btn btn--small adm-danger"
+                    disabled={protectedOwner}
+                    onClick={() => {
+                      if (window.confirm(t('admin.users.confirmDelete', { name: u.username }))) void act(() => a.del(`/users/${u.id}`));
+                    }}
+                  >
+                    {t('admin.users.delete')}
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+      {users.data && <Pagination page={users.data.page} hasMore={users.data.hasMore} onPage={setPage} />}
+
+      <section className="adm-subsection">
+        <div className="adm-subsection__head">
+          <div>
+            <h3>{t('admin.users.imagesTitle')}</h3>
+            <p className="small muted">{t('admin.users.imagesIntro')}</p>
+          </div>
+          <button className="btn btn--small" onClick={() => setShowImages((v) => !v)} aria-expanded={showImages}>
+            {showImages ? t('admin.users.hideImages') : t('admin.users.showImages')}
+          </button>
         </div>
-      )}
+        {showImages && (
+          <>
+            <LoadState loading={images.loading} error={images.error} onRetry={images.reload} />
+            {images.data?.items.length === 0 && <p className="adm-empty">{t('admin.noItems')}</p>}
+            <div className="adm-images">
+              {images.data?.items.map((img) => (
+                <figure key={img.id} className="adm-image">
+                  <img src={img.url} alt="" loading="lazy" />
+                  <figcaption className="small">
+                    <Link to={`/u/${img.username}`}>@{img.username}</Link> · {t(`profileEditor.${img.slot}`)}
+                    {img.mime === 'image/gif' ? ' · GIF' : ''}
+                    {img.userStatus === 'locked' ? ` · ${t('admin.users.status.locked')}` : ''}
+                    <div className="muted">{formatDate(img.createdAt, locale)}</div>
+                  </figcaption>
+                  <button
+                    className="btn btn--small adm-danger"
+                    onClick={() => {
+                      if (window.confirm(t('admin.users.confirmDeleteImage'))) void act(() => a.del(`/profile-images/${img.id}`));
+                    }}
+                  >
+                    {t('admin.users.deleteImage')}
+                  </button>
+                </figure>
+              ))}
+            </div>
+            {images.data && <Pagination page={images.data.page} hasMore={images.data.hasMore} onPage={setImagePage} />}
+          </>
+        )}
+      </section>
     </div>
   );
 }
@@ -1121,10 +1171,103 @@ function Backup() {
 
 // ----------------------------------------------------------------------------------- page
 
+type SectionKey = 'overview' | 'moderation' | 'notes' | 'reports' | 'users' | 'archive' | 'services' | 'backup';
+interface Overview {
+  submissions: Record<string, number>;
+  openReports: number;
+  pendingNotes: number;
+  accounts?: { total: number; locked: number; newImages: number };
+}
+
+const SECTION_GROUPS: readonly { group: string; items: readonly SectionKey[] }[] = [
+  { group: 'start', items: ['overview'] },
+  { group: 'review', items: ['moderation', 'notes', 'reports'] },
+  { group: 'manage', items: ['users', 'archive'] },
+  { group: 'system', items: ['services', 'backup'] },
+];
+const SECTION_KEYS = SECTION_GROUPS.flatMap((g) => g.items);
+const SECTION_ICONS: Record<SectionKey, string> = {
+  overview: '⌂',
+  moderation: '✉',
+  notes: '✎',
+  reports: '⚑',
+  users: '☺',
+  archive: '▤',
+  services: '⚙',
+  backup: '⇩',
+};
+
+/** Open work per section; only the review sections have a queue. */
+function pendingCount(key: SectionKey, o: Overview | null | undefined): number {
+  if (!o) return 0;
+  if (key === 'moderation') return o.submissions.pending_review ?? 0;
+  if (key === 'notes') return o.pendingNotes;
+  if (key === 'reports') return o.openReports;
+  return 0;
+}
+
+function OverviewPanel({ data, onOpen, who }: { data: Overview | null | undefined; onOpen: (k: SectionKey) => void; who: string | null }) {
+  const { t } = useI18n();
+  const queues = (['moderation', 'notes', 'reports'] as const).map((k) => ({ k, n: pendingCount(k, data) }));
+  const open = queues.filter((q) => q.n > 0);
+  return (
+    <div data-testid="admin-overview">
+      <p className="adm-welcome">{t('admin.overview.welcome', { name: who ?? 'Admin' })}</p>
+      <h3 className="adm-h3">{t('admin.overview.todo')}</h3>
+      {data && open.length === 0 && <p className="adm-allclear">✓ {t('admin.overview.allClear')}</p>}
+      <div className="adm-tiles">
+        {queues.map(({ k, n }) => (
+          <button key={k} type="button" className={`adm-tile${n > 0 ? ' adm-tile--hot' : ''}`} onClick={() => onOpen(k)}>
+            <span className="adm-tile__icon" aria-hidden="true">
+              {SECTION_ICONS[k]}
+            </span>
+            <span className="adm-tile__count">{data ? n : '…'}</span>
+            <span className="adm-tile__label">{t(`admin.overview.queue.${k}`)}</span>
+            <span className="adm-tile__go">{n > 0 ? t('admin.overview.review') : t('admin.overview.open')} →</span>
+          </button>
+        ))}
+        <button type="button" className="adm-tile" onClick={() => onOpen('users')}>
+          <span className="adm-tile__icon" aria-hidden="true">
+            {SECTION_ICONS.users}
+          </span>
+          <span className="adm-tile__count">{data?.accounts ? data.accounts.total : '…'}</span>
+          <span className="adm-tile__label">{t('admin.overview.accounts', { locked: data?.accounts?.locked ?? 0, images: data?.accounts?.newImages ?? 0 })}</span>
+          <span className="adm-tile__go">{t('admin.overview.open')} →</span>
+        </button>
+      </div>
+      <h3 className="adm-h3">{t('admin.overview.all')}</h3>
+      <div className="adm-guide">
+        {SECTION_KEYS.filter((k) => k !== 'overview').map((k) => (
+          <button key={k} type="button" className="adm-guide__item" onClick={() => onOpen(k)}>
+            <span className="adm-guide__icon" aria-hidden="true">
+              {SECTION_ICONS[k]}
+            </span>
+            <span>
+              <strong>{t(`admin.tabs.${k}`)}</strong>
+              <span className="small">{t(`admin.sections.${k}`)}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { t } = useI18n();
   const session = useAdminSession();
-  const [tab, setTab] = useState<'moderation' | 'notes' | 'reports' | 'users' | 'archive' | 'services' | 'backup'>('moderation');
+  const [params, setParams] = useSearchParams();
+  const requested = params.get('tab') as SectionKey | null;
+  const tab: SectionKey = requested && SECTION_KEYS.includes(requested) ? requested : 'overview';
+  const setTab = (k: SectionKey) => {
+    setParams(k === 'overview' ? {} : { tab: k }, { replace: false });
+    window.scrollTo({ top: 0 });
+  };
+  const authed = session.authenticated && !!session.csrfToken;
+  const overview = useAsync(
+    () => (authed && session.csrfToken ? adminApi(session.csrfToken).get<Overview>('/overview') : Promise.resolve(null)),
+    [authed, tab],
+  );
 
   const logout = async () => {
     try {
@@ -1137,15 +1280,22 @@ export default function AdminPage() {
 
   return (
     <div className="container page">
-      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', flexWrap: 'wrap', gap: 12 }}>
+      <header className="page-header adm-header">
         <div>
           <div className="kicker">{t('nav.admin')}</div>
           <h1>{t('admin.title')}</h1>
         </div>
-        {session.authenticated && !session.viaAccount && (
-          <button className="btn btn--small" onClick={logout}>
-            {t('admin.logout')} ({session.username})
-          </button>
+        {session.authenticated && (
+          <div className="adm-session">
+            <span className="small">
+              {t('admin.signedInAs')} <strong>{session.username}</strong>
+            </span>
+            {!session.viaAccount && (
+              <button className="btn btn--small" onClick={logout}>
+                {t('admin.logout')}
+              </button>
+            )}
+          </div>
         )}
       </header>
       {session.loading && <p className="muted loading">{t('app.loading')}</p>}
@@ -1153,23 +1303,46 @@ export default function AdminPage() {
         <Unavailable feature="admin_panel" state={(session.state as never) ?? 'not_configured'} explanation={session.message?.replace('Currently unavailable! ', '') ?? undefined} />
       )}
       {!session.loading && session.available && !session.authenticated && <LoginForm />}
-      {session.authenticated && session.csrfToken && (
-        <>
-          <div className="tabs" role="tablist">
-            {(['moderation', 'notes', 'reports', 'users', 'archive', 'services', 'backup'] as const).map((k) => (
-              <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
-                {t(`admin.tabs.${k}`)}
-              </button>
+      {authed && session.csrfToken && (
+        <div className="adm-shell">
+          <nav className="adm-nav" aria-label={t('admin.title')} role="tablist">
+            {SECTION_GROUPS.map((g) => (
+              <div key={g.group} className="adm-nav__group">
+                {g.group !== 'start' && <div className="adm-nav__label">{t(`admin.groups.${g.group}`)}</div>}
+                {g.items.map((k) => {
+                  const n = pendingCount(k, overview.data);
+                  return (
+                    <button key={k} type="button" role="tab" aria-selected={tab === k} className="adm-nav__item" onClick={() => setTab(k)}>
+                      <span className="adm-nav__icon" aria-hidden="true">
+                        {SECTION_ICONS[k]}
+                      </span>
+                      <span className="adm-nav__text">{t(`admin.tabs.${k}`)}</span>
+                      {n > 0 && <span className="adm-count">{n}</span>}
+                    </button>
+                  );
+                })}
+              </div>
             ))}
-          </div>
-          {tab === 'moderation' && <Moderation a={adminApi(session.csrfToken)} />}
-          {tab === 'notes' && <Notes a={adminApi(session.csrfToken)} />}
-          {tab === 'reports' && <Reports a={adminApi(session.csrfToken)} />}
-          {tab === 'users' && <Users a={adminApi(session.csrfToken)} canManageOwners={!!session.canManageOwners} />}
-          {tab === 'archive' && <Archive a={adminApi(session.csrfToken)} />}
-          {tab === 'services' && <Services a={adminApi(session.csrfToken)} />}
-          {tab === 'backup' && <Backup />}
-        </>
+          </nav>
+          <section className="adm-main" role="tabpanel">
+            {tab !== 'overview' && (
+              <header className="adm-section-head">
+                <h2>
+                  <span aria-hidden="true">{SECTION_ICONS[tab]}</span> {t(`admin.tabs.${tab}`)}
+                </h2>
+                <p>{t(`admin.sections.${tab}`)}</p>
+              </header>
+            )}
+            {tab === 'overview' && <OverviewPanel data={overview.data} onOpen={setTab} who={session.username} />}
+            {tab === 'moderation' && <Moderation a={adminApi(session.csrfToken)} />}
+            {tab === 'notes' && <Notes a={adminApi(session.csrfToken)} />}
+            {tab === 'reports' && <Reports a={adminApi(session.csrfToken)} />}
+            {tab === 'users' && <Users a={adminApi(session.csrfToken)} canManageOwners={!!session.canManageOwners} />}
+            {tab === 'archive' && <Archive a={adminApi(session.csrfToken)} />}
+            {tab === 'services' && <Services a={adminApi(session.csrfToken)} />}
+            {tab === 'backup' && <Backup />}
+          </section>
+        </div>
       )}
     </div>
   );

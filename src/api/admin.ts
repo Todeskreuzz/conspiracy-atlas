@@ -20,8 +20,27 @@ let current: AdminSessionState = { loading: true, available: false, authenticate
 const listeners = new Set<Listener>();
 let inflight: Promise<void> | null = null;
 
+const ADMIN_HINT_KEY = 'ca.admin';
+
+/** Remembers in this browser that an admin session exists, so the header can show the admin tab without a request. */
+export function hasAdminHint(): boolean {
+  try {
+    return window.localStorage.getItem(ADMIN_HINT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 function publish(next: AdminSessionState) {
   current = next;
+  if (!next.loading && next.available !== undefined) {
+    try {
+      if (next.authenticated) window.localStorage.setItem(ADMIN_HINT_KEY, '1');
+      else window.localStorage.removeItem(ADMIN_HINT_KEY);
+    } catch {
+      // Storage blocked: the tab simply depends on the account rank.
+    }
+  }
   listeners.forEach((l) => l(next));
 }
 
@@ -64,6 +83,19 @@ export function useAdminSession(): AdminSessionState {
     };
   }, []);
   return state;
+}
+
+/** Whether this browser has an admin session, without sending a request; follows logins and logouts live. */
+export function useAdminHint(): boolean {
+  const [hint, setHint] = useState(hasAdminHint);
+  useEffect(() => {
+    const l: Listener = () => setHint(hasAdminHint());
+    listeners.add(l);
+    return () => {
+      listeners.delete(l);
+    };
+  }, []);
+  return hint;
 }
 
 /** Admin API helpers that attach the CSRF token to every state-changing request. */

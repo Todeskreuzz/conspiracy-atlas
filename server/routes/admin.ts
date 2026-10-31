@@ -146,10 +146,19 @@ adminRoutes.get('/overview', async (c) => {
   const reports = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM reports WHERE status = 'open'");
   // Until migration 0006 is applied the table is missing; the overview must keep working.
   const notes = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM case_notes WHERE status = 'pending'").catch(() => null);
+  // Accounts exist from migration 0008/0009 on; before that the dashboard just shows zero.
+  const accounts = await db
+    .first<{ total: number; locked: number; images: number }>(
+      `SELECT COUNT(*) AS total, COALESCE(SUM(CASE WHEN status = 'locked' THEN 1 ELSE 0 END), 0) AS locked,
+              (SELECT COUNT(*) FROM profile_images WHERE created_at >= datetime('now', '-7 days')) AS images
+       FROM users`,
+    )
+    .catch(() => null);
   return c.json({
     submissions: Object.fromEntries(rows.map((r) => [r.status, Number(r.n)])),
     openReports: Number(reports?.n ?? 0),
     pendingNotes: Number(notes?.n ?? 0),
+    accounts: { total: Number(accounts?.total ?? 0), locked: Number(accounts?.locked ?? 0), newImages: Number(accounts?.images ?? 0) },
   });
 });
 
@@ -506,6 +515,7 @@ adminRoutes.get('/users', async (c) => {
   const rows = await db.all(
     `SELECT u.id, u.username, u.display_name, u.status, u.created_at,
             u.allow_animated,
+            (SELECT p.public_id FROM profile_images p WHERE p.user_id = u.id AND p.slot = 'avatar') AS avatar_id,
             (SELECT COUNT(*) FROM community_submissions s WHERE s.user_id = u.id) AS submissions
      FROM users u WHERE (? IS NULL OR u.username LIKE ? OR u.display_name LIKE ?)
      ORDER BY u.created_at DESC, u.id DESC LIMIT ? OFFSET ?`,
@@ -525,6 +535,7 @@ adminRoutes.get('/users', async (c) => {
     status: r.status as 'active' | 'locked',
     createdAt: String(r.created_at),
     allowAnimated: Number(r.allow_animated) === 1,
+    avatarUrl: r.avatar_id ? `/api/images/${String(r.avatar_id)}` : null,
     submissions: Number(r.submissions),
   }));
   return c.json(paged(items, page, pageSize));

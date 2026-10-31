@@ -39,6 +39,8 @@ export function computeFeatures(env: Env, dbState: ServiceState = 'available'): 
     map_data: !flag(env.FEATURE_MAP_DATA, true) ? 'disabled' : 'available',
     automatic_import: flag(env.FEATURE_AUTOMATIC_IMPORT) ? needsDb('available') : 'disabled',
     investigations: !flag(env.FEATURE_INVESTIGATIONS, true) ? 'disabled' : needsDb('available'),
+    // Sign-up is protected by Turnstile, so accounts need it like submissions do.
+    accounts: !flag(env.FEATURE_ACCOUNTS, true) ? 'disabled' : !turnstileConfigured(env) ? 'not_configured' : needsDb('available'),
   };
 
   const map = {} as FeatureStatusMap;
@@ -46,6 +48,7 @@ export function computeFeatures(env: Env, dbState: ServiceState = 'available'): 
   // Turnstile is required for submissions: if it is missing, explain that specifically.
   if (states.community_submissions === 'not_configured') map.community_submissions = { ...map.turnstile, key: 'community_submissions', state: 'not_configured', available: false };
   if (states.community_uploads === 'not_configured') map.community_uploads = { ...map.turnstile, key: 'community_uploads', state: 'not_configured', available: false };
+  if (states.accounts === 'not_configured') map.accounts = { ...map.turnstile, key: 'accounts', state: 'not_configured', available: false };
   if (states.reports === 'not_configured') map.reports = { ...map.turnstile, key: 'reports', state: 'not_configured', available: false };
   return map;
 }
@@ -54,6 +57,6 @@ export function computeFeatures(env: Env, dbState: ServiceState = 'available'): 
 export function requireFeature(env: Env, key: FeatureKey): void {
   const status = computeFeatures(env)[key];
   if (!status.available) {
-    throw new UnavailableError(key === 'community_submissions' || key === 'reports' || key === 'community_uploads' ? (status.state === 'not_configured' ? 'turnstile' : key) : key, status.state);
+    throw new UnavailableError(key === 'community_submissions' || key === 'reports' || key === 'community_uploads' || key === 'accounts' ? (status.state === 'not_configured' ? 'turnstile' : key) : key, status.state);
   }
 }

@@ -12,6 +12,7 @@ import type { CaseNote } from '../../shared/types';
 import { ApiError, notFound } from '../errors';
 import { assertImageQuota, imageInsertStatements, imageResponse, parseImages } from '../images';
 import { IMAGE_LIMITS } from '../../shared/images';
+import { loadUserSession } from '../users';
 
 export const communityRoutes = new Hono<AppEnv>();
 
@@ -46,6 +47,8 @@ communityRoutes.post('/submissions', async (c) => {
   const category = await db.first<{ id: number }>('SELECT id FROM categories WHERE slug = ?', input.category);
   if (!category) throw new ApiError(400, 'invalid', 'Unknown category', undefined, 'category');
 
+  // Signed-in authors see the submission in their account; it appears on their profile only if named and published.
+  const session = await loadUserSession(db, c.req.raw);
   // Only the chosen public name is stored; for anonymous submissions just "Anonymous".
   const isAnon = input.displayMode === 'anonymous';
   const author = await db.first<{ id: number }>(
@@ -58,8 +61,8 @@ communityRoutes.post('/submissions', async (c) => {
     db.stmt(
       `INSERT INTO community_submissions
          (title, subtitle, summary, body_json, category_id, tags_json, sources_json, document_links_json, counter_arguments_json,
-          related_events_json, related_theory_ids_json, language, author_id, display_mode, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_review')`,
+          related_events_json, related_theory_ids_json, language, author_id, display_mode, user_id, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_review')`,
       input.title,
       input.subtitle,
       input.summary,
@@ -74,6 +77,7 @@ communityRoutes.post('/submissions', async (c) => {
       input.language,
       author?.id ?? null,
       input.displayMode,
+      session?.userId ?? null,
     ),
     ...(await imageInsertStatements(db, images)),
   ]);

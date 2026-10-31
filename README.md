@@ -61,7 +61,7 @@ Feature switches live in `wrangler.toml` `[vars]`:
 `FEATURE_COMMUNITY_SUBMISSIONS`, `FEATURE_COMMUNITY_UPLOADS` (images, compressed in the browser and stored in D1;
 `IMAGE_STORAGE_LIMIT_MB` caps the total, default 250, max 400 – no R2),
 `FEATURE_MAP_DATA`, `FEATURE_AUTOMATIC_IMPORT`, `FEATURE_TURNSTILE`, `FEATURE_ADMIN_PANEL`,
-`FEATURE_INVESTIGATIONS`, `FEATURE_REPORTS`. Secrets are set with
+`FEATURE_INVESTIGATIONS`, `FEATURE_REPORTS`, `FEATURE_ACCOUNTS` (visitor accounts with profile pages, stored in D1). Secrets are set with
 `wrangler pages secret put` (see the deployment guide).
 
 ## Sources

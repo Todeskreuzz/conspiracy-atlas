@@ -4,6 +4,7 @@ import { useI18n } from '../i18n';
 import { LOCALES } from '../../shared/constants';
 import { setApiLocale } from '../api/client';
 import { GlobalSearch } from './GlobalSearch';
+import { AccountButton, AccountNavLink } from './AccountButton';
 
 export type NavItem = { to: string; key: string; /** Extra path prefixes (detail pages) that count as this section. */ match?: readonly string[]; cta?: boolean };
 export type NavEntry = NavItem | { group: string; items: readonly NavItem[] };
@@ -122,6 +123,7 @@ function MainNav({ open }: { open: boolean }) {
           <NavTab key={entry.to} item={entry} pathname={pathname} />
         ),
       )}
+      <AccountNavLink />
     </nav>
   );
 }
@@ -183,6 +185,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="header-tools">
             <GlobalSearch />
             <LanguageSwitch />
+            <AccountButton />
             <button type="button" className="btn btn--ghost btn--small menu-toggle" aria-expanded={open} aria-controls="main-nav" onClick={() => setOpen((o) => !o)}>
               {t('app.menu')}
             </button>

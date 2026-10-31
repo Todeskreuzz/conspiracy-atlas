@@ -416,6 +416,116 @@ function Notes({ a }: { a: Api }) {
   );
 }
 
+// ----------------------------------------------------------------------------------- accounts
+
+interface AdminUser {
+  id: number;
+  username: string;
+  displayName: string;
+  status: 'active' | 'locked';
+  createdAt: string;
+  pendingImages: number;
+  submissions: number;
+}
+interface PendingProfileImage extends PublicImage {
+  slot: 'avatar' | 'banner';
+  username: string;
+  displayName: string;
+  createdAt: string;
+}
+
+function Users({ a }: { a: Api }) {
+  const { t, locale } = useI18n();
+  const [q, setQ] = useState('');
+  const [page, setPage] = useState(1);
+  const images = useAsync(() => a.get<{ items: PendingProfileImage[] }>('/profile-images'), []);
+  const users = useAsync(() => a.get<Paged<AdminUser>>(`/users?page=${page}&q=${encodeURIComponent(q)}`), [page, q]);
+  const [error, setError] = useState<string | null>(null);
+  const act = async (fn: () => Promise<unknown>) => {
+    setError(null);
+    try {
+      await fn();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+    images.reload();
+    users.reload();
+  };
+  return (
+    <div data-testid="admin-users">
+      <h3>{t('admin.users.imagesTitle')}</h3>
+      <p className="muted small">{t('admin.users.imagesIntro')}</p>
+      <LoadState loading={images.loading} error={images.error} onRetry={images.reload} />
+      {images.data?.items.length === 0 && <p className="muted">{t('admin.noItems')}</p>}
+      <div className="grid grid--cards">
+        {images.data?.items.map((img) => (
+          <div key={img.id} className="panel">
+            <img src={img.url} alt="" style={{ width: '100%', maxHeight: 220, objectFit: 'contain', background: '#000' }} />
+            <div className="small muted">
+              {t(`profileEditor.${img.slot}`)} · <Link to={`/u/${img.username}`}>@{img.username}</Link> · {formatDate(img.createdAt, locale)}
+            </div>
+            <div className="btn-row">
+              <button className="btn btn--small btn--primary" onClick={() => void act(() => a.post(`/profile-images/${img.id}`, { action: 'approve' }))}>
+                {t('admin.approve')}
+              </button>
+              <button className="btn btn--small" onClick={() => void act(() => a.post(`/profile-images/${img.id}`, { action: 'reject' }))}>
+                {t('admin.reject')}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <h3 style={{ marginTop: 24 }}>{t('admin.users.listTitle')}</h3>
+      <input type="search" placeholder={t('admin.users.search')} aria-label={t('admin.users.search')} value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} style={{ maxWidth: 320, marginBottom: 12 }} />
+      {error && <p className="notice notice--error">{error}</p>}
+      <LoadState loading={users.loading} error={users.error} onRetry={users.reload} />
+      {users.data && (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{t('account.fields.username')}</th>
+                <th>{t('account.fields.displayName')}</th>
+                <th>{t('admin.status')}</th>
+                <th>{t('admin.users.joined')}</th>
+                <th>{t('admin.users.submissions')}</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {users.data.items.map((u) => (
+                <tr key={u.id}>
+                  <td>
+                    <Link to={`/u/${u.username}`}>@{u.username}</Link>
+                  </td>
+                  <td>{u.displayName}</td>
+                  <td>{t(`admin.users.status.${u.status}`)}</td>
+                  <td>{formatDate(u.createdAt, locale)}</td>
+                  <td>{u.submissions}</td>
+                  <td className="btn-row">
+                    <button className="btn btn--small" onClick={() => void act(() => a.post(`/users/${u.id}`, { action: u.status === 'active' ? 'lock' : 'unlock' }))}>
+                      {u.status === 'active' ? t('admin.users.lock') : t('admin.users.unlock')}
+                    </button>
+                    <button
+                      className="btn btn--small btn--danger"
+                      onClick={() => {
+                        if (window.confirm(t('admin.users.confirmDelete', { name: u.username }))) void act(() => a.del(`/users/${u.id}`));
+                      }}
+                    >
+                      {t('admin.users.delete')}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <Pagination page={users.data.page} hasMore={users.data.hasMore} onPage={setPage} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ----------------------------------------------------------------------------------- archive
 
 interface TheoryFormState {
@@ -957,7 +1067,7 @@ function Backup() {
 export default function AdminPage() {
   const { t } = useI18n();
   const session = useAdminSession();
-  const [tab, setTab] = useState<'moderation' | 'notes' | 'reports' | 'archive' | 'services' | 'backup'>('moderation');
+  const [tab, setTab] = useState<'moderation' | 'notes' | 'reports' | 'users' | 'archive' | 'services' | 'backup'>('moderation');
 
   const logout = async () => {
     try {
@@ -989,7 +1099,7 @@ export default function AdminPage() {
       {session.authenticated && session.csrfToken && (
         <>
           <div className="tabs" role="tablist">
-            {(['moderation', 'notes', 'reports', 'archive', 'services', 'backup'] as const).map((k) => (
+            {(['moderation', 'notes', 'reports', 'users', 'archive', 'services', 'backup'] as const).map((k) => (
               <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
                 {t(`admin.tabs.${k}`)}
               </button>
@@ -998,6 +1108,7 @@ export default function AdminPage() {
           {tab === 'moderation' && <Moderation a={adminApi(session.csrfToken)} />}
           {tab === 'notes' && <Notes a={adminApi(session.csrfToken)} />}
           {tab === 'reports' && <Reports a={adminApi(session.csrfToken)} />}
+          {tab === 'users' && <Users a={adminApi(session.csrfToken)} />}
           {tab === 'archive' && <Archive a={adminApi(session.csrfToken)} />}
           {tab === 'services' && <Services a={adminApi(session.csrfToken)} />}
           {tab === 'backup' && <Backup />}

@@ -200,6 +200,36 @@ describe('frontend', () => {
     expect(n).toHaveTextContent('Die Anti-Spam-Prüfung (Turnstile) ist nicht eingerichtet.');
   });
 
+  it('renders a user profile with its own design and favourite cases', async () => {
+    const env = await makeEnv();
+    const profile = { tagline: 'Reading declassified files', theme: 'blueprint', accent: '#3366ff', font: 'serif', layout: 'sidebar', pattern: 'grid', favorites: ['watergate'] };
+    (env.DB as any).raw
+      .prepare("INSERT INTO users (username, password_hash, recovery_hash, display_name, profile_json) VALUES ('night_owl', 'x', 'y', 'The Night Owl', ?)")
+      .run(JSON.stringify(profile));
+    const { calls } = renderApp('/u/night_owl', env);
+    const view = await screen.findByTestId('profile', {}, { timeout: 5000 });
+    expect(view).toHaveAttribute('data-theme', 'blueprint');
+    expect(view).toHaveAttribute('data-layout', 'sidebar');
+    expect(view.style.getPropertyValue('--pf-accent')).toBe('#3366ff');
+    expect(within(view).getByText('The Night Owl')).toBeInTheDocument();
+    expect(within(view).getByText('Reading declassified files')).toBeInTheDocument();
+    expect(await within(view).findAllByTestId('theory-card')).toHaveLength(1);
+    // Visitors who never signed in do not trigger a session request.
+    expect(calls.some((c) => c.startsWith('/api/account/me'))).toBe(false);
+    expect(screen.getByTestId('account-button')).toHaveTextContent('Sign in');
+  });
+
+  it('shows the sign-in form, and "Currently unavailable!" when accounts are off', async () => {
+    renderApp('/login', await makeEnv());
+    expect(await screen.findByTestId('auth-form', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.getByLabelText('Username')).toBeInTheDocument();
+    cleanup();
+    renderApp('/login', await makeEnv({ FEATURE_ACCOUNTS: 'false' }));
+    const notice = await screen.findByTestId('unavailable', {}, { timeout: 5000 });
+    expect(notice).toHaveTextContent('Currently unavailable!');
+    expect(screen.queryByTestId('auth-form')).not.toBeInTheDocument();
+  });
+
   it('never contacts a host other than the own API', async () => {
     const { calls } = renderApp('/', await makeEnv());
     await screen.findAllByTestId('theory-card', {}, { timeout: 5000 });

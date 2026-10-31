@@ -1,26 +1,130 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { LOCALES } from '../../shared/constants';
 import { setApiLocale } from '../api/client';
 import { GlobalSearch } from './GlobalSearch';
 
-export const NAV_ITEMS = [
-  ['/', 'nav.home'],
-  ['/wall', 'nav.wall'],
-  ['/archive', 'nav.archive'],
-  ['/organizations', 'nav.organizations'],
-  ['/events', 'nav.events'],
-  ['/timeline', 'nav.timeline'],
-  ['/map', 'nav.map'],
-  ['/saved', 'nav.saved'],
-  ['/investigations', 'nav.investigations'],
-  ['/community', 'nav.community'],
-  ['/submit', 'nav.submit'],
-  ['/knowledge', 'nav.knowledge'],
-  ['/experts', 'nav.experts'],
-  ['/about', 'nav.about'],
-] as const;
+export type NavItem = { to: string; key: string; /** Extra path prefixes (detail pages) that count as this section. */ match?: readonly string[]; cta?: boolean };
+export type NavEntry = NavItem | { group: string; items: readonly NavItem[] };
+
+/**
+ * Top navigation. Related sections share a drop-down group so the bar stays readable; a group with a
+ * single item renders as a plain tab, so adding a section is one line here plus its i18n key.
+ */
+export const NAV: readonly NavEntry[] = [
+  { to: '/', key: 'nav.home' },
+  { to: '/wall', key: 'nav.wall' },
+  {
+    group: 'archive',
+    items: [
+      { to: '/archive', key: 'nav.archive', match: ['/theory/'] },
+      { to: '/organizations', key: 'nav.organizations', match: ['/people/'] },
+      { to: '/events', key: 'nav.events' },
+      { to: '/knowledge', key: 'nav.knowledge' },
+      { to: '/experts', key: 'nav.experts' },
+    ],
+  },
+  {
+    group: 'explore',
+    items: [
+      { to: '/timeline', key: 'nav.timeline' },
+      { to: '/map', key: 'nav.map' },
+    ],
+  },
+  {
+    group: 'casework',
+    items: [
+      { to: '/investigations', key: 'nav.investigations' },
+      { to: '/saved', key: 'nav.saved' },
+    ],
+  },
+  { group: 'community', items: [{ to: '/community', key: 'nav.community' }] },
+  { to: '/about', key: 'nav.about' },
+  { to: '/submit', key: 'nav.submit', cta: true },
+];
+
+const isGroup = (e: NavEntry): e is { group: string; items: readonly NavItem[] } => 'group' in e;
+
+/** Flat list of all nav targets as [path, i18n key]. */
+export const NAV_ITEMS: readonly (readonly [string, string])[] = NAV.flatMap((e) => (isGroup(e) ? e.items : [e])).map((i) => [i.to, i.key] as const);
+
+function matches(item: NavItem, pathname: string) {
+  if (item.to === '/') return pathname === '/';
+  return pathname === item.to || pathname.startsWith(`${item.to}/`) || (item.match ?? []).some((m) => pathname.startsWith(m));
+}
+
+function NavTab({ item, pathname, onNavigate }: { item: NavItem; pathname: string; onNavigate?: () => void }) {
+  const { t } = useI18n();
+  const active = matches(item, pathname);
+  return (
+    <NavLink to={item.to} end={item.to === '/'} viewTransition onClick={onNavigate} className={`nav-tab${active ? ' active' : ''}${item.cta ? ' nav-submit' : ''}`}>
+      {t(item.key)}
+    </NavLink>
+  );
+}
+
+function NavGroup({ id, items, pathname, open, onToggle, onClose }: { id: string; items: readonly NavItem[]; pathname: string; open: boolean; onToggle: () => void; onClose: () => void }) {
+  const { t } = useI18n();
+  const ref = useRef<HTMLDivElement>(null);
+  const active = items.some((i) => matches(i, pathname));
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [open, onClose]);
+  const menuId = `nav-group-${id}`;
+  return (
+    <div
+      ref={ref}
+      className={`nav-group${open ? ' open' : ''}${active ? ' active' : ''}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && open) {
+          e.stopPropagation();
+          onClose();
+          ref.current?.querySelector('button')?.focus();
+        }
+      }}
+    >
+      <button type="button" className={`nav-tab nav-group__toggle${active ? ' active' : ''}`} aria-expanded={open} aria-controls={menuId} onClick={onToggle}>
+        {t(`navGroup.${id}`)}
+        <svg className="nav-group__caret" viewBox="0 0 10 6" aria-hidden="true">
+          <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <div id={menuId} className="nav-group__menu">
+        {items.map((item) => (
+          <NavTab key={item.to} item={item} pathname={pathname} onNavigate={onClose} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MainNav({ open }: { open: boolean }) {
+  const { pathname } = useLocation();
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const close = useCallback(() => setOpenGroup(null), []);
+  useEffect(close, [pathname, close]);
+  return (
+    <nav id="main-nav" className={`main-nav${open ? ' open' : ''}`} aria-label="Main">
+      {NAV.map((entry) =>
+        isGroup(entry) ? (
+          entry.items.length === 1 ? (
+            <NavTab key={entry.group} item={entry.items[0]} pathname={pathname} />
+          ) : (
+            <NavGroup key={entry.group} id={entry.group} items={entry.items} pathname={pathname} open={openGroup === entry.group} onToggle={() => setOpenGroup((g) => (g === entry.group ? null : entry.group))} onClose={close} />
+          )
+        ) : (
+          <NavTab key={entry.to} item={entry} pathname={pathname} />
+        ),
+      )}
+    </nav>
+  );
+}
 
 /** Sections whose page header carries a stamp (text in i18n under tabStamp). */
 export const TAB_STAMPS = ['archive', 'events', 'organizations', 'saved', 'investigations', 'community', 'knowledge', 'experts', 'about', 'submit'] as const;
@@ -75,13 +179,7 @@ export function Layout({ children }: { children: ReactNode }) {
               The Conspiracy <span>Atlas</span>
             </span>
           </Link>
-          <nav id="main-nav" className={`main-nav${open ? ' open' : ''}`} aria-label="Main">
-            {NAV_ITEMS.map(([to, key]) => (
-              <NavLink key={to} to={to} end={to === '/'} viewTransition className={({ isActive }) => `${isActive ? 'active' : ''}${to === '/submit' ? ' nav-submit' : ''}`}>
-                {t(key)}
-              </NavLink>
-            ))}
-          </nav>
+          <MainNav open={open} />
           <div className="header-tools">
             <GlobalSearch />
             <LanguageSwitch />

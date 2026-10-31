@@ -609,7 +609,11 @@
       "gif": "Animated GIFs",
       "admin": "Admin",
       "confirmAdmin": "Give @{name} admin rights? The account can then open the admin area with its normal login.",
-      "gifAdmin": "Admins can always use animated GIFs."
+      "gifAdmin": "Admins can always use animated GIFs.",
+      "owner": "Grand Master (owner)",
+      "ownerOnly": "Only the owner or the secret admin login can grant this rank.",
+      "confirmOwner": "Give @{name} the \"Grand Master\" (owner) rank? Owners have all admin rights.",
+      "adminOwner": "The Grand Master always has admin rights."
     }
   },
   "search": {
@@ -783,7 +787,9 @@
     "notFoundText": "This profile does not exist or is private.",
     "ownerHint": "This is your profile as others see it.",
     "edit": "Edit profile",
-    "adminBadge": "Admin"
+    "adminBadge": "Admin",
+    "ownerBadge": "Grand Master",
+    "ownerBadgeTitle": "Founder and owner of the Atlas"
   },
   "profileEditor": {
     "title": "My profile",

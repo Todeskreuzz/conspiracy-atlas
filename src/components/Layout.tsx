@@ -4,7 +4,7 @@ import { useI18n } from '../i18n';
 import { LOCALES } from '../../shared/constants';
 import { setApiLocale } from '../api/client';
 import { GlobalSearch } from './GlobalSearch';
-import { AccountButton, AccountNavLink } from './AccountButton';
+import { AccountButton, AccountNavLink, AdminNavLink } from './AccountButton';
 
 export type NavItem = { to: string; key: string; /** Extra path prefixes (detail pages) that count as this section. */ match?: readonly string[]; cta?: boolean };
 export type NavEntry = NavItem | { group: string; items: readonly NavItem[] };
@@ -123,6 +123,7 @@ function MainNav({ open }: { open: boolean }) {
           <NavTab key={entry.to} item={entry} pathname={pathname} />
         ),
       )}
+      <AdminNavLink />
       <AccountNavLink />
     </nav>
   );
@@ -206,7 +207,6 @@ export function Layout({ children }: { children: ReactNode }) {
             <div className="btn-row">
               <Link to="/knowledge">{t('nav.knowledge')}</Link>
               <Link to="/about">{t('nav.about')}</Link>
-              <Link to="/admin">{t('nav.admin')}</Link>
             </div>
           </div>
         </footer>

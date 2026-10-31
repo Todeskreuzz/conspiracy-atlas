@@ -184,6 +184,7 @@ function DesignEditor({ initial, csrf, publicData }: { initial: OwnProfile; csrf
     createdAt: initial.user.createdAt,
     isOwner: true,
     isAdmin: !!publicData?.isAdmin,
+        rank: publicData?.rank ?? null,
     avatar,
     banner,
     profile: { ...p, bio },

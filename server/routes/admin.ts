@@ -15,7 +15,7 @@ import {
   sessionCookie,
   type AdminSession,
 } from '../auth';
-import { adminUserIds, setAdminUser } from '../users';
+import { adminUserIds, isOwnerUser, ownerUserIds, setAdminUser, setOwnerUser } from '../users';
 import {
   CATEGORY_SLUGS,
   ENTITY_TYPES,
@@ -74,7 +74,8 @@ adminRoutes.get('/session', async (c) => {
   const session = await loadSession(Db.from(c.env), c.env, c.req.raw);
   return c.json(
     session
-      ? { authenticated: true, available: true, csrfToken: session.csrfToken, username: session.username, viaAccount: !!session.viaAccount }
+      ? { authenticated: true, available: true, csrfToken: session.csrfToken, username: session.username, viaAccount: !!session.viaAccount,
+          canManageOwners: !session.viaAccount || (!!session.userId && (await isOwnerUser(Db.from(c.env), session.userId))) }
       : { authenticated: false, available: true },
   );
 });
@@ -514,10 +515,11 @@ adminRoutes.get('/users', async (c) => {
     limit,
     offset,
   );
-  const admins = new Set(await adminUserIds(db));
+  const [admins, owners] = await Promise.all([adminUserIds(db).then((l) => new Set(l)), ownerUserIds(db).then((l) => new Set(l))]);
   const items = rows.map((r) => ({
     id: Number(r.id),
     isAdmin: admins.has(Number(r.id)),
+    isOwner: owners.has(Number(r.id)),
     username: String(r.username),
     displayName: String(r.display_name),
     status: r.status as 'active' | 'locked',
@@ -529,6 +531,17 @@ adminRoutes.get('/users', async (c) => {
 });
 
 /**
+ * Owner accounts are protected: only the secret admin login or another owner may change an owner
+ * account or hand out / take away the owner rank. Account admins can manage everyone else.
+ */
+async function guardOwner(c: Ctx, db: Db, targetId: number, changesOwnerRank: boolean) {
+  const session = (c as AdminCtx).session;
+  if (!session?.viaAccount) return;
+  if (session.userId && (await isOwnerUser(db, session.userId))) return;
+  if (changesOwnerRank || (await isOwnerUser(db, targetId))) throw new ApiError(403, 'forbidden', 'Only the site owner can change owner accounts.');
+}
+
+/**
  * Locking hides the profile and its images and signs the account out everywhere; unlocking restores it.
  * allow_gif / disallow_gif switch animated GIF profile images on or off for one account.
  */
@@ -536,7 +549,8 @@ adminRoutes.post('/users/:id', async (c) => {
   const db = Db.from(c.env);
   const id = idParam(c);
   const body = await readJson(c, 2_000);
-  const action = oneOf(body.action, 'action', ['lock', 'unlock', 'allow_gif', 'disallow_gif', 'make_admin', 'remove_admin'] as const);
+  const action = oneOf(body.action, 'action', ['lock', 'unlock', 'allow_gif', 'disallow_gif', 'make_admin', 'remove_admin', 'make_owner', 'remove_owner'] as const);
+  await guardOwner(c, db, id, action === 'make_owner' || action === 'remove_owner');
   const r =
     action === 'lock' || action === 'unlock'
       ? await db.run("UPDATE users SET status = ?, updated_at = datetime('now') WHERE id = ?", action === 'lock' ? 'locked' : 'active', id)
@@ -544,6 +558,7 @@ adminRoutes.post('/users/:id', async (c) => {
         ? await db.run("UPDATE users SET allow_animated = ?, updated_at = datetime('now') WHERE id = ?", action === 'allow_gif' ? 1 : 0, id)
         : await db.run("UPDATE users SET updated_at = datetime('now') WHERE id = ?", id);
   if (r.changes && (action === 'make_admin' || action === 'remove_admin')) await setAdminUser(db, id, action === 'make_admin');
+  if (r.changes && (action === 'make_owner' || action === 'remove_owner')) await setOwnerUser(db, id, action === 'make_owner');
   if (!r.changes) throw notFound('Account');
   if (action === 'lock') await db.run('DELETE FROM user_sessions WHERE user_id = ?', id);
   await db.run('INSERT INTO moderation_actions (action, note, actor) VALUES (?, ?, ?)', `user_${action}:${id}`, optStr(body.note, 'note', 2000), actor(c));
@@ -553,6 +568,7 @@ adminRoutes.post('/users/:id', async (c) => {
 adminRoutes.delete('/users/:id', async (c) => {
   const db = Db.from(c.env);
   const id = idParam(c);
+  await guardOwner(c, db, id, false);
   // Profile images and sessions go with the account (ON DELETE CASCADE).
   const r = await db.run('DELETE FROM users WHERE id = ?', id);
   if (!r.changes) throw notFound('Account');

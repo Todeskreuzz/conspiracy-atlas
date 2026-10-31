@@ -9,6 +9,8 @@ export interface AdminSessionState {
   username: string | null;
   /** Signed in through an account with admin rights (signing out happens on the account page). */
   viaAccount?: boolean;
+  /** May hand out or take away the owner rank (secret admin login or an owner account). */
+  canManageOwners?: boolean;
   state?: string;
   message?: string | null;
 }
@@ -24,7 +26,7 @@ function publish(next: AdminSessionState) {
 }
 
 export function refreshAdminSession(): Promise<void> {
-  inflight ??= api<{ authenticated: boolean; available: boolean; csrfToken?: string; username?: string; viaAccount?: boolean; state?: string; message?: string }>('/admin/session', { localized: false })
+  inflight ??= api<{ authenticated: boolean; available: boolean; csrfToken?: string; username?: string; viaAccount?: boolean; canManageOwners?: boolean; state?: string; message?: string }>('/admin/session', { localized: false })
     .then((r) =>
       publish({
         loading: false,
@@ -33,6 +35,7 @@ export function refreshAdminSession(): Promise<void> {
         csrfToken: r.csrfToken ?? null,
         username: r.username ?? null,
         viaAccount: !!r.viaAccount,
+        canManageOwners: !!r.canManageOwners,
         state: r.state,
         message: r.message ?? null,
       }),

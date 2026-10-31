@@ -42,7 +42,7 @@ function LoginForm() {
     try {
       const r = await api<{ csrfToken: string; username: string }>('/admin/login', { method: 'POST', body: { username, password }, localized: false });
       setPassword('');
-      setAdminSession({ authenticated: true, available: true, csrfToken: r.csrfToken, username: r.username });
+      setAdminSession({ authenticated: true, available: true, csrfToken: r.csrfToken, username: r.username, viaAccount: false, canManageOwners: true });
     } catch (err) {
       setError(err instanceof ApiFailure ? err : null);
     } finally {
@@ -426,6 +426,7 @@ interface AdminUser {
   createdAt: string;
   allowAnimated: boolean;
   isAdmin: boolean;
+  isOwner: boolean;
   submissions: number;
 }
 interface AdminProfileImage {
@@ -440,7 +441,7 @@ interface AdminProfileImage {
   createdAt: string;
 }
 
-function Users({ a }: { a: Api }) {
+function Users({ a, canManageOwners }: { a: Api; canManageOwners: boolean }) {
   const { t, locale } = useI18n();
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
@@ -499,6 +500,7 @@ function Users({ a }: { a: Api }) {
                 <th>{t('account.fields.username')}</th>
                 <th>{t('account.fields.displayName')}</th>
                 <th>{t('admin.status')}</th>
+                <th>{t('admin.users.owner')}</th>
                 <th>{t('admin.users.admin')}</th>
                 <th>{t('admin.users.gif')}</th>
                 <th>{t('admin.users.joined')}</th>
@@ -515,9 +517,25 @@ function Users({ a }: { a: Api }) {
                   <td>{u.displayName}</td>
                   <td>{t(`admin.users.status.${u.status}`)}</td>
                   <td>
-                    <label className="checkbox">
+                    <label className="checkbox" title={canManageOwners ? undefined : t('admin.users.ownerOnly')}>
                       <input
                         type="checkbox"
+                        checked={u.isOwner}
+                        disabled={!canManageOwners}
+                        aria-label={t('admin.users.owner')}
+                        onChange={(e) => {
+                          if (e.target.checked ? window.confirm(t('admin.users.confirmOwner', { name: u.username })) : true) {
+                            void act(() => a.post(`/users/${u.id}`, { action: e.target.checked ? 'make_owner' : 'remove_owner' }));
+                          }
+                        }}
+                      />
+                    </label>
+                  </td>
+                  <td>
+                    <label className="checkbox" title={u.isOwner ? t('admin.users.adminOwner') : undefined}>
+                      <input
+                        type="checkbox"
+                        disabled={u.isOwner}
                         checked={u.isAdmin}
                         aria-label={t('admin.users.admin')}
                         onChange={(e) => {
@@ -1147,7 +1165,7 @@ export default function AdminPage() {
           {tab === 'moderation' && <Moderation a={adminApi(session.csrfToken)} />}
           {tab === 'notes' && <Notes a={adminApi(session.csrfToken)} />}
           {tab === 'reports' && <Reports a={adminApi(session.csrfToken)} />}
-          {tab === 'users' && <Users a={adminApi(session.csrfToken)} />}
+          {tab === 'users' && <Users a={adminApi(session.csrfToken)} canManageOwners={!!session.canManageOwners} />}
           {tab === 'archive' && <Archive a={adminApi(session.csrfToken)} />}
           {tab === 'services' && <Services a={adminApi(session.csrfToken)} />}
           {tab === 'backup' && <Backup />}

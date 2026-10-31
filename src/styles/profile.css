@@ -532,3 +532,18 @@
   text-transform: uppercase;
   vertical-align: middle;
 }
+.profile__badge--owner {
+  border-color: #b8892b;
+  color: #1b1714;
+  background: linear-gradient(135deg, #f3d27a, #b8892b);
+  font-weight: 700;
+}
+.profile__badge--owner::before {
+  content: '△ ';
+}
+
+/* Admin tab: only rendered for accounts with admin rights. */
+.main-nav .nav-admin {
+  color: var(--accent, #b3261e);
+  font-weight: 700;
+}

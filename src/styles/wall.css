@@ -1,22 +1,76 @@
-/* Investigation wall */
+/* Investigation wall: a framed cork board in a dark room under a desk lamp.
+   Panned layers (move and zoom with the graph via --wall-x/y/z set by InvestigationWall):
+     traces of earlier cases (src/wall/corkWear.ts), fine grain, cork granules, large-scale mottling.
+   Fixed layer (.wall__light): lamp pool, cool falloff and vignette over the whole scene.
+   Frame (.wall::after): a dark wooden frame with a bevel. */
 .wall {
   position: relative;
   overflow: hidden;
-  background: var(--cork-dark);
+  background: #120b06;
 }
 .wall:fullscreen {
   height: 100vh !important;
 }
 .wall__canvas {
+  --wall-x: 0px;
+  --wall-y: 0px;
+  --wall-z: 1;
+  --wall-wear: none;
   position: absolute;
   inset: 0;
-  /* cork board texture: layered gradients + fractal noise, panned with the graph */
-  background-color: var(--cork);
+  background-color: #9a683a;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.25 0 0 0 0 0.16 0 0 0 0 0.09 0 0 0 0.75 0'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23c)'/%3E%3C/svg%3E"),
-    radial-gradient(circle at 30% 20%, rgba(255, 210, 160, 0.08), transparent 60%);
-  background-size: 420px 420px, 100% 100%;
-  box-shadow: inset 0 0 160px rgba(0, 0, 0, 0.75);
+    var(--wall-wear),
+    /* fine grain: light and dark specks */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='g' x='0' y='0' width='1' height='1'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.95 0 0 0 0 0.78 0 0 0 0 0.55 0 0 0 3 -2.05'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23g)'/%3E%3C/svg%3E"),
+    /* cork granules */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='c' x='0' y='0' width='1' height='1'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.11 0 0 0 0 0.05 0 0 0 1.5 -0.3'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23c)'/%3E%3C/svg%3E"),
+    /* mottling: patches the sun and hands have darkened or bleached */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='m' x='0' y='0' width='1' height='1'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.00445' numOctaves='3' seed='14' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.08 0 0 0 0 0.03 0 0 0 1.7 -0.72'/%3E%3C/filter%3E%3Crect width='900' height='900' filter='url(%23m)'/%3E%3C/svg%3E");
+  background-size:
+    calc(1400px * var(--wall-z)) calc(1400px * var(--wall-z)),
+    calc(260px * var(--wall-z)) calc(260px * var(--wall-z)),
+    calc(420px * var(--wall-z)) calc(420px * var(--wall-z)),
+    calc(900px * var(--wall-z)) calc(900px * var(--wall-z));
+  background-position: var(--wall-x) var(--wall-y);
+}
+/* lamp light and vignette, fixed to the viewport of the wall; tints the cards too, so they sit in the same light */
+.wall__light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 55% at 42% 6%, rgba(255, 206, 140, 0.2), rgba(255, 196, 120, 0.06) 55%, transparent 75%),
+    radial-gradient(ellipse 120% 95% at 45% 30%, transparent 40%, rgba(14, 8, 3, 0.5) 80%, rgba(6, 3, 1, 0.85) 100%),
+    linear-gradient(180deg, transparent 70%, rgba(20, 26, 34, 0.18));
+  mix-blend-mode: multiply;
+}
+.wall__light::before {
+  /* the warm pool itself: screen so it lifts the cork instead of only tinting it */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 55% 50% at 42% 8%, rgba(255, 208, 145, 0.3), rgba(255, 200, 130, 0.08) 55%, transparent 75%);
+  mix-blend-mode: screen;
+}
+.wall::after {
+  /* wooden frame */
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* dark stained wood: a lit top edge, a bevel line and the board's shadow cast inward */
+  border: 10px solid #2a190b;
+  border-top-color: #34200f;
+  border-bottom-color: #1d1107;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 2px rgba(255, 220, 170, 0.07),
+    inset 0 16px 24px -10px rgba(0, 0, 0, 0.8),
+    inset 0 -10px 18px -10px rgba(0, 0, 0, 0.65),
+    inset 12px 0 20px -12px rgba(0, 0, 0, 0.65),
+    inset -12px 0 20px -12px rgba(0, 0, 0, 0.65);
+  z-index: 2;
 }
 .wall__cy {
   position: absolute;
@@ -24,9 +78,10 @@
 }
 .wall__topbar {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  z-index: 3;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -53,8 +108,9 @@
 }
 .wall__panel {
   position: absolute;
-  top: 58px;
-  right: 12px;
+  top: 66px;
+  right: 20px;
+  z-index: 3;
   width: 280px;
   max-height: calc(100% - 220px);
   overflow-y: auto;
@@ -131,8 +187,9 @@
 }
 .wall__detail {
   position: absolute;
-  left: 12px;
-  top: 58px;
+  left: 20px;
+  top: 66px;
+  z-index: 3;
   width: 320px;
   max-height: calc(100% - 120px);
   overflow-y: auto;
@@ -150,8 +207,9 @@
 }
 .wall__minimap {
   position: absolute;
-  right: 12px;
-  bottom: 44px;
+  right: 20px;
+  bottom: 50px;
+  z-index: 3;
   width: 200px;
   height: 130px;
   border: 1px solid var(--ink-600);
@@ -161,9 +219,10 @@
 }
 .wall__legend {
   position: absolute;
-  left: 12px;
-  right: 230px;
-  bottom: 10px;
+  left: 22px;
+  right: 238px;
+  bottom: 17px;
+  z-index: 3;
   display: flex;
   flex-wrap: wrap;
   gap: 4px 14px;
@@ -175,7 +234,7 @@
 .wall__banner {
   position: absolute;
   left: 50%;
-  top: 60px;
+  top: 66px;
   transform: translateX(-50%);
   background: var(--yellow);
   color: #1b1714;
@@ -187,7 +246,7 @@
 .wall__toast {
   position: absolute;
   left: 50%;
-  bottom: 60px;
+  bottom: 66px;
   transform: translateX(-50%);
   background: var(--paper);
   color: var(--paper-ink);
@@ -198,24 +257,25 @@
 }
 .wall__dirty {
   position: absolute;
-  right: 230px;
-  bottom: 44px;
+  right: 238px;
+  bottom: 50px;
+  z-index: 3;
   color: var(--yellow);
   font-size: 0.8rem;
 }
 @media (max-width: 760px) {
   .wall__panel {
-    left: 12px;
-    right: 12px;
+    left: 20px;
+    right: 20px;
     width: auto;
     max-height: 45%;
   }
   .wall__detail {
-    left: 12px;
-    right: 12px;
+    left: 20px;
+    right: 20px;
     width: auto;
     top: auto;
-    bottom: 12px;
+    bottom: 20px;
     max-height: 50%;
   }
   .wall__minimap,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import cytoscape, { type Core, type EdgeSingular, type NodeSingular, type StylesheetJson } from 'cytoscape';
 import type { Board, BoardEdge, BoardNode } from '../../shared/types';
@@ -23,6 +23,9 @@ import {
   type WallFilters,
 } from './model';
 import { Minimap } from './Minimap';
+import { buildCorkWear } from './corkWear';
+
+const CORK_WEAR = buildCorkWear();
 
 export interface WallEditor {
   /** Admin may create documented threads; private boards only allow "suggested". */
@@ -246,8 +249,10 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
       if (!el) return;
       const pan = cy.pan();
       const z = cy.zoom();
-      el.style.backgroundPosition = `${pan.x}px ${pan.y}px`;
-      el.style.backgroundSize = `${Math.max(60, 420 * z)}px ${Math.max(60, 420 * z)}px`;
+      // the cork layers read these in wall.css; zoom is clamped so huge tiles are never rasterised
+      el.style.setProperty('--wall-x', `${pan.x}px`);
+      el.style.setProperty('--wall-y', `${pan.y}px`);
+      el.style.setProperty('--wall-z', String(Math.min(2.5, Math.max(0.15, z))));
     };
     cy.on('select unselect', onSelect);
     cy.on('dbltap', 'node', onDbl);
@@ -468,9 +473,10 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
 
   return (
     <div className="wall" style={{ height }} data-testid="investigation-wall">
-      <div className="wall__canvas" ref={wrapRef}>
+      <div className="wall__canvas" ref={wrapRef} style={{ '--wall-wear': CORK_WEAR } as CSSProperties}>
         <div ref={cyRef} className="wall__cy" aria-label={t('wall.title')} role="application" />
       </div>
+      <div className="wall__light" aria-hidden="true" />
 
       {banner && <div className="wall__banner typewriter">{banner}</div>}
       {message && <div className="wall__toast">{message}</div>}

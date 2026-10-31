@@ -3,7 +3,8 @@
   "include": [
     "/api/*",
     "/theory/*",
-    "/sitemap.xml"
+    "/sitemap.xml",
+    "/googlee808fb02e2c3ca02.html"
   ],
   "exclude": []
 }

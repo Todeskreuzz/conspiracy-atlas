@@ -4,6 +4,7 @@ import { makeEnv } from './helpers/app';
 import { Db } from '../server/db';
 import { clip, injectOg, jsonLd, loadOg } from '../server/og';
 import { onRequestGet as sitemap } from '../functions/sitemap.xml';
+import { onRequestGet as verification } from '../functions/googlee808fb02e2c3ca02.html';
 import { onRequestGet } from '../functions/theory/[slug]';
 
 const INDEX = readFileSync('index.html', 'utf8');
@@ -82,5 +83,13 @@ describe('search engines', () => {
     const off = await (sitemap as any)({ request: new Request('https://x.test/sitemap.xml'), env: { ...env, DB: undefined } });
     expect(off.status).toBe(503);
     expect(await off.text()).toBe('Currently unavailable!');
+  });
+});
+
+describe('search console', () => {
+  it('serves the verification file byte for byte without a redirect', async () => {
+    const res = await (verification as any)({});
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('google-site-verification: googlee808fb02e2c3ca02.html');
   });
 });

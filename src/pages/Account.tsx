@@ -183,6 +183,7 @@ function DesignEditor({ initial, csrf, publicData }: { initial: OwnProfile; csrf
     displayName: displayName || initial.user.username,
     createdAt: initial.user.createdAt,
     isOwner: true,
+    isAdmin: !!publicData?.isAdmin,
     avatar,
     banner,
     profile: { ...p, bio },
@@ -580,6 +581,11 @@ export default function AccountPage() {
         <div className="kicker">{t('account.kicker')}</div>
         <h1>{t('profileEditor.title')}</h1>
         <p>{t('profileEditor.intro')}</p>
+        {account.user?.isAdmin && (
+          <Link to="/admin" className="btn btn--small">
+            {t('profileEditor.openAdmin')}
+          </Link>
+        )}
       </header>
       <div className="tabs" role="tablist">
         {(['design', 'submissions', 'security'] as const).map((k) => (

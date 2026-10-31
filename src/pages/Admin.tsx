@@ -425,6 +425,7 @@ interface AdminUser {
   status: 'active' | 'locked';
   createdAt: string;
   allowAnimated: boolean;
+  isAdmin: boolean;
   submissions: number;
 }
 interface AdminProfileImage {
@@ -498,6 +499,7 @@ function Users({ a }: { a: Api }) {
                 <th>{t('account.fields.username')}</th>
                 <th>{t('account.fields.displayName')}</th>
                 <th>{t('admin.status')}</th>
+                <th>{t('admin.users.admin')}</th>
                 <th>{t('admin.users.gif')}</th>
                 <th>{t('admin.users.joined')}</th>
                 <th>{t('admin.users.submissions')}</th>
@@ -516,7 +518,22 @@ function Users({ a }: { a: Api }) {
                     <label className="checkbox">
                       <input
                         type="checkbox"
-                        checked={u.allowAnimated}
+                        checked={u.isAdmin}
+                        aria-label={t('admin.users.admin')}
+                        onChange={(e) => {
+                          if (e.target.checked ? window.confirm(t('admin.users.confirmAdmin', { name: u.username })) : true) {
+                            void act(() => a.post(`/users/${u.id}`, { action: e.target.checked ? 'make_admin' : 'remove_admin' }));
+                          }
+                        }}
+                      />
+                    </label>
+                  </td>
+                  <td>
+                    <label className="checkbox" title={u.isAdmin ? t('admin.users.gifAdmin') : undefined}>
+                      <input
+                        type="checkbox"
+                        disabled={u.isAdmin}
+                        checked={u.allowAnimated || u.isAdmin}
                         aria-label={t('admin.users.gif')}
                         onChange={(e) => void act(() => a.post(`/users/${u.id}`, { action: e.target.checked ? 'allow_gif' : 'disallow_gif' }))}
                       />
@@ -1107,7 +1124,7 @@ export default function AdminPage() {
           <div className="kicker">{t('nav.admin')}</div>
           <h1>{t('admin.title')}</h1>
         </div>
-        {session.authenticated && (
+        {session.authenticated && !session.viaAccount && (
           <button className="btn btn--small" onClick={logout}>
             {t('admin.logout')} ({session.username})
           </button>

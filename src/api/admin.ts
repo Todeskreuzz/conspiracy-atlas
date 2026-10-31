@@ -7,6 +7,8 @@ export interface AdminSessionState {
   authenticated: boolean;
   csrfToken: string | null;
   username: string | null;
+  /** Signed in through an account with admin rights (signing out happens on the account page). */
+  viaAccount?: boolean;
   state?: string;
   message?: string | null;
 }
@@ -22,7 +24,7 @@ function publish(next: AdminSessionState) {
 }
 
 export function refreshAdminSession(): Promise<void> {
-  inflight ??= api<{ authenticated: boolean; available: boolean; csrfToken?: string; username?: string; state?: string; message?: string }>('/admin/session', { localized: false })
+  inflight ??= api<{ authenticated: boolean; available: boolean; csrfToken?: string; username?: string; viaAccount?: boolean; state?: string; message?: string }>('/admin/session', { localized: false })
     .then((r) =>
       publish({
         loading: false,
@@ -30,6 +32,7 @@ export function refreshAdminSession(): Promise<void> {
         authenticated: r.authenticated,
         csrfToken: r.csrfToken ?? null,
         username: r.username ?? null,
+        viaAccount: !!r.viaAccount,
         state: r.state,
         message: r.message ?? null,
       }),

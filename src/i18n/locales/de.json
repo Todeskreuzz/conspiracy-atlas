@@ -49,13 +49,13 @@
     "about": "Über",
     "admin": "Verwaltung",
     "saved": "Merkliste"
-  },  "navGroup": {
+  },
+  "navGroup": {
     "archive": "Archiv",
     "explore": "Karte & Zeit",
     "casework": "Ermitteln",
     "community": "Community"
   },
-
   "unavailable": {
     "germanNote": "Hinweis:",
     "states": {
@@ -590,8 +590,8 @@
       "rejected": "Abgelehnt"
     },
     "users": {
-      "imagesTitle": "Profilbilder zur Prüfung",
-      "imagesIntro": "Profil- und Bannerbilder bleiben privat, bis du sie freigibst. Ablehnen löscht das Bild.",
+      "imagesTitle": "Neueste Profil- und Bannerbilder",
+      "imagesIntro": "Profilbilder sind sofort öffentlich. Lösche hier alles Illegale; ein gesperrtes Konto blendet auch seine Bilder aus.",
       "listTitle": "Konten",
       "search": "Benutzername oder Name suchen",
       "joined": "Registriert",
@@ -603,7 +603,10 @@
       "lock": "Sperren",
       "unlock": "Entsperren",
       "delete": "Löschen",
-      "confirmDelete": "Konto @{name} mit Profil und Bildern endgültig löschen?"
+      "confirmDelete": "Konto @{name} mit Profil und Bildern endgültig löschen?",
+      "deleteImage": "Bild löschen",
+      "confirmDeleteImage": "Dieses Bild endgültig löschen?",
+      "gif": "Animierte GIFs"
     }
   },
   "search": {
@@ -794,8 +797,8 @@
     },
     "avatar": "Profilbild",
     "banner": "Bannerbild",
-    "avatarHelp": "Am besten quadratisch. Wird im Browser auf 400 px verkleinert und ist nach der Prüfung für andere sichtbar.",
-    "bannerHelp": "Am besten im Querformat. Wird im Browser verkleinert und ist nach der Prüfung für andere sichtbar.",
+    "avatarHelp": "Am besten quadratisch. Wird im Browser auf 400 px verkleinert und ist sofort öffentlich.",
+    "bannerHelp": "Am besten im Querformat. Wird im Browser verkleinert und ist sofort öffentlich.",
     "uploadImage": "Bild hochladen",
     "replaceImage": "Bild ersetzen",
     "removeImage": "Entfernen",
@@ -867,6 +870,9 @@
     "session": "Sitzung",
     "deleteAccount": "Konto löschen",
     "deleteHelp": "Löscht dein Konto, dein Profil und deine Bilder endgültig. Veröffentlichte Fallakten bleiben im Archiv.",
-    "typeUsername": "Gib zur Bestätigung deinen Benutzernamen ({name}) ein"
+    "typeUsername": "Gib zur Bestätigung deinen Benutzernamen ({name}) ein",
+    "gifAllowed": "Animierte GIFs bleiben unverändert (max. 1,5 MB).",
+    "gifStatic": "GIFs werden als Standbild gespeichert.",
+    "gifTooLarge": "Dieses GIF ist zu groß (max. {max} KB)."
   }
 }

@@ -137,6 +137,10 @@ works and places cases by the years of their linked events.
 Visitor accounts and profile pages (`/u/<username>`) need migration `0008_user_profiles.sql` (tables `users`,
 `user_sessions`, plus a `user_id` column on `images` and `community_submissions`); run `npm run db:migrate:remote`
 before deploying this version. Sign-up uses Turnstile; there is no e-mail service, so users reset a forgotten password
-with the recovery code shown once at sign-up. Profile images share the `IMAGE_STORAGE_LIMIT_MB` budget and stay private
-until an editor approves them under *Admin → Accounts*. The JSON backup includes `users` (password hashes only),
+with the recovery code shown once at sign-up. Profile images share the `IMAGE_STORAGE_LIMIT_MB` budget.
+
+Migration `0009_profile_images.sql` moves profile pictures and banners into their own table `profile_images`: they are
+public at once (no review) and editors delete anything illegal under *Admin → Accounts* (locking an account also hides
+its images). Animated GIFs (max. 1.5 MB, stored unchanged) are accepted only for accounts with the *Animated GIFs*
+switch in that list; everybody else's GIFs are saved as still images. Run `npm run db:migrate:remote` before deploying. The JSON backup includes `users` (password hashes only),
 not sessions. `FEATURE_ACCOUNTS = "false"` switches accounts off.

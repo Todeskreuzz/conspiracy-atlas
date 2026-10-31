@@ -45,7 +45,9 @@ export function imageStorageLimitBytes(env: Env): number {
 }
 
 export async function imageStorageUsed(db: Db): Promise<number> {
-  const r = await db.first<{ used: number }>('SELECT COALESCE(SUM(size), 0) AS used FROM images');
+  const r = await db.first<{ used: number }>(
+    'SELECT (SELECT COALESCE(SUM(size), 0) FROM images) + (SELECT COALESCE(SUM(size), 0) FROM profile_images) AS used',
+  );
   return Number(r?.used ?? 0);
 }
 
@@ -108,13 +110,14 @@ export function blobToBytes(value: unknown): Uint8Array {
 }
 
 /** Serves an image with strict headers; content is immutable, so browsers cache it for a year. */
-export function imageResponse(row: Row, cache: 'public' | 'private'): Response {
+export function imageResponse(row: Row, cache: 'public' | 'private' | 'short'): Response {
   const bytes = blobToBytes(row.data);
   return new Response(bytes, {
     headers: {
       'Content-Type': String(row.mime),
       'Content-Length': String(bytes.length),
-      'Cache-Control': cache === 'public' ? 'public, max-age=31536000, immutable' : 'private, no-store',
+      // Profile images can be removed by editors at any time, so browsers keep them only for an hour.
+      'Cache-Control': cache === 'public' ? 'public, max-age=31536000, immutable' : cache === 'short' ? 'public, max-age=3600' : 'private, no-store',
       'X-Content-Type-Options': 'nosniff',
       'Content-Security-Policy': "default-src 'none'; sandbox",
       'Content-Disposition': 'inline',

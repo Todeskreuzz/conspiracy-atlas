@@ -144,12 +144,10 @@ adminRoutes.get('/overview', async (c) => {
   const reports = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM reports WHERE status = 'open'");
   // Until migration 0006 is applied the table is missing; the overview must keep working.
   const notes = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM case_notes WHERE status = 'pending'").catch(() => null);
-  const profileImages = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM images WHERE user_id IS NOT NULL AND status = 'pending'").catch(() => null);
   return c.json({
     submissions: Object.fromEntries(rows.map((r) => [r.status, Number(r.n)])),
     openReports: Number(reports?.n ?? 0),
     pendingNotes: Number(notes?.n ?? 0),
-    pendingProfileImages: Number(profileImages?.n ?? 0),
   });
 });
 
@@ -213,8 +211,6 @@ adminRoutes.delete('/images/:id', async (c) => {
     db.stmt('DELETE FROM images WHERE public_id = ?', id),
     db.stmt('UPDATE theories SET image_path = NULL, image_credit = NULL WHERE image_path = ?', path),
     db.stmt('UPDATE board_nodes SET image_path = NULL WHERE image_path = ?', path),
-    db.stmt('UPDATE users SET avatar_image = NULL WHERE avatar_image = ?', id),
-    db.stmt('UPDATE users SET banner_image = NULL WHERE banner_image = ?', id),
   ]);
   return c.json({ ok: true });
 });
@@ -507,7 +503,7 @@ adminRoutes.get('/users', async (c) => {
   const search = optStr(q.q, 'q', 60);
   const rows = await db.all(
     `SELECT u.id, u.username, u.display_name, u.status, u.created_at,
-            (SELECT COUNT(*) FROM images i WHERE i.user_id = u.id AND i.status = 'pending') AS pending_images,
+            u.allow_animated,
             (SELECT COUNT(*) FROM community_submissions s WHERE s.user_id = u.id) AS submissions
      FROM users u WHERE (? IS NULL OR u.username LIKE ? OR u.display_name LIKE ?)
      ORDER BY u.created_at DESC, u.id DESC LIMIT ? OFFSET ?`,
@@ -523,19 +519,25 @@ adminRoutes.get('/users', async (c) => {
     displayName: String(r.display_name),
     status: r.status as 'active' | 'locked',
     createdAt: String(r.created_at),
-    pendingImages: Number(r.pending_images),
+    allowAnimated: Number(r.allow_animated) === 1,
     submissions: Number(r.submissions),
   }));
   return c.json(paged(items, page, pageSize));
 });
 
-/** Locking hides the profile and signs the account out everywhere; unlocking restores it. */
+/**
+ * Locking hides the profile and its images and signs the account out everywhere; unlocking restores it.
+ * allow_gif / disallow_gif switch animated GIF profile images on or off for one account.
+ */
 adminRoutes.post('/users/:id', async (c) => {
   const db = Db.from(c.env);
   const id = idParam(c);
   const body = await readJson(c, 2_000);
-  const action = oneOf(body.action, 'action', ['lock', 'unlock'] as const);
-  const r = await db.run("UPDATE users SET status = ?, updated_at = datetime('now') WHERE id = ?", action === 'lock' ? 'locked' : 'active', id);
+  const action = oneOf(body.action, 'action', ['lock', 'unlock', 'allow_gif', 'disallow_gif'] as const);
+  const r =
+    action === 'lock' || action === 'unlock'
+      ? await db.run("UPDATE users SET status = ?, updated_at = datetime('now') WHERE id = ?", action === 'lock' ? 'locked' : 'active', id)
+      : await db.run("UPDATE users SET allow_animated = ?, updated_at = datetime('now') WHERE id = ?", action === 'allow_gif' ? 1 : 0, id);
   if (!r.changes) throw notFound('Account');
   if (action === 'lock') await db.run('DELETE FROM user_sessions WHERE user_id = ?', id);
   await db.run('INSERT INTO moderation_actions (action, note, actor) VALUES (?, ?, ?)', `user_${action}:${id}`, optStr(body.note, 'note', 2000), actor(c));
@@ -545,46 +547,57 @@ adminRoutes.post('/users/:id', async (c) => {
 adminRoutes.delete('/users/:id', async (c) => {
   const db = Db.from(c.env);
   const id = idParam(c);
-  const results = await db.batch([db.stmt('DELETE FROM images WHERE user_id = ?', id), db.stmt('DELETE FROM users WHERE id = ?', id)]);
-  if (!Number(results[1]?.meta?.changes ?? 0)) throw notFound('Account');
+  // Profile images and sessions go with the account (ON DELETE CASCADE).
+  const r = await db.run('DELETE FROM users WHERE id = ?', id);
+  if (!r.changes) throw notFound('Account');
   await db.run('INSERT INTO moderation_actions (action, actor) VALUES (?, ?)', `user_delete:${id}`, actor(c));
   return c.json({ ok: true });
 });
 
+/** Newest profile pictures and banners. They are public at once; editors delete anything illegal afterwards. */
 adminRoutes.get('/profile-images', async (c) => {
+  const q = c.req.query();
+  const { page, pageSize, offset, limit } = pageParams(q, 60, 40);
   const rows = await Db.from(c.env).all(
-    `SELECT i.public_id, i.mime, i.width, i.height, i.size, i.alt, i.created_at, u.username, u.display_name
-     FROM images i JOIN users u ON u.id = i.user_id WHERE i.status = 'pending' ORDER BY i.created_at LIMIT 100`,
+    `SELECT p.public_id, p.slot, p.mime, p.width, p.height, p.size, p.created_at, u.id AS user_id, u.username, u.display_name, u.status
+     FROM profile_images p JOIN users u ON u.id = p.user_id ORDER BY p.created_at DESC, p.id DESC LIMIT ? OFFSET ?`,
+    limit,
+    offset,
   );
-  return c.json({
-    items: rows.map((r) => ({
-      ...mapImage(r, '/api/admin/images'),
-      slot: r.alt === 'banner' ? 'banner' : 'avatar',
-      username: String(r.username),
-      displayName: String(r.display_name),
-      createdAt: String(r.created_at),
-    })),
-  });
+  const items = rows.map((r) => ({
+    id: String(r.public_id),
+    url: `/api/admin/profile-images/${r.public_id}`,
+    slot: r.slot === 'banner' ? 'banner' : 'avatar',
+    mime: String(r.mime),
+    width: Number(r.width),
+    height: Number(r.height),
+    size: Number(r.size),
+    userId: Number(r.user_id),
+    username: String(r.username),
+    displayName: String(r.display_name),
+    userStatus: String(r.status),
+    createdAt: String(r.created_at),
+  }));
+  return c.json(paged(items, page, pageSize));
 });
 
-/** Approve makes the image public; reject deletes it and the profile falls back to its pattern / initials. */
-adminRoutes.post('/profile-images/:id', async (c) => {
+/** Editors see every profile image, also those of locked accounts. */
+adminRoutes.get('/profile-images/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!/^[0-9a-f]{24}$/.test(id)) throw notFound('Image');
+  const row = await Db.from(c.env).first('SELECT mime, data FROM profile_images WHERE public_id = ?', id);
+  if (!row) throw notFound('Image');
+  return imageResponse(row, 'private');
+});
+
+adminRoutes.delete('/profile-images/:id', async (c) => {
   const id = c.req.param('id');
   if (!/^[0-9a-f]{24}$/.test(id)) throw notFound('Image');
   const db = Db.from(c.env);
-  const body = await readJson(c, 2_000);
-  const action = oneOf(body.action, 'action', ['approve', 'reject'] as const);
-  const row = await db.first<{ user_id: number }>('SELECT user_id FROM images WHERE public_id = ? AND user_id IS NOT NULL', id);
+  const row = await db.first<{ user_id: number }>('SELECT user_id FROM profile_images WHERE public_id = ?', id);
   if (!row) throw notFound('Image');
-  if (action === 'approve') await db.run("UPDATE images SET status = 'approved' WHERE public_id = ?", id);
-  else {
-    await db.batch([
-      db.stmt('DELETE FROM images WHERE public_id = ?', id),
-      db.stmt('UPDATE users SET avatar_image = NULL WHERE avatar_image = ?', id),
-      db.stmt('UPDATE users SET banner_image = NULL WHERE banner_image = ?', id),
-    ]);
-  }
-  await db.run('INSERT INTO moderation_actions (action, actor) VALUES (?, ?)', `profile_image_${action}:${row.user_id}`, actor(c));
+  await db.run('DELETE FROM profile_images WHERE public_id = ?', id);
+  await db.run('INSERT INTO moderation_actions (action, actor) VALUES (?, ?)', `profile_image_delete:${row.user_id}`, actor(c));
   return c.json({ ok: true });
 });
 

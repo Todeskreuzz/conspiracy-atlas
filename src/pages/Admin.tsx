@@ -424,13 +424,18 @@ interface AdminUser {
   displayName: string;
   status: 'active' | 'locked';
   createdAt: string;
-  pendingImages: number;
+  allowAnimated: boolean;
   submissions: number;
 }
-interface PendingProfileImage extends PublicImage {
+interface AdminProfileImage {
+  id: string;
+  url: string;
   slot: 'avatar' | 'banner';
+  mime: string;
+  size: number;
+  userId: number;
   username: string;
-  displayName: string;
+  userStatus: string;
   createdAt: string;
 }
 
@@ -438,7 +443,8 @@ function Users({ a }: { a: Api }) {
   const { t, locale } = useI18n();
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
-  const images = useAsync(() => a.get<{ items: PendingProfileImage[] }>('/profile-images'), []);
+  const [imagePage, setImagePage] = useState(1);
+  const images = useAsync(() => a.get<Paged<AdminProfileImage>>(`/profile-images?page=${imagePage}`), [imagePage]);
   const users = useAsync(() => a.get<Paged<AdminUser>>(`/users?page=${page}&q=${encodeURIComponent(q)}`), [page, q]);
   const [error, setError] = useState<string | null>(null);
   const act = async (fn: () => Promise<unknown>) => {
@@ -455,29 +461,34 @@ function Users({ a }: { a: Api }) {
     <div data-testid="admin-users">
       <h3>{t('admin.users.imagesTitle')}</h3>
       <p className="muted small">{t('admin.users.imagesIntro')}</p>
+      {error && <p className="notice notice--error">{error}</p>}
       <LoadState loading={images.loading} error={images.error} onRetry={images.reload} />
       {images.data?.items.length === 0 && <p className="muted">{t('admin.noItems')}</p>}
       <div className="grid grid--cards">
         {images.data?.items.map((img) => (
           <div key={img.id} className="panel">
-            <img src={img.url} alt="" style={{ width: '100%', maxHeight: 220, objectFit: 'contain', background: '#000' }} />
+            <img src={img.url} alt="" loading="lazy" style={{ width: '100%', height: 160, objectFit: 'contain', background: '#000' }} />
             <div className="small muted">
-              {t(`profileEditor.${img.slot}`)} · <Link to={`/u/${img.username}`}>@{img.username}</Link> · {formatDate(img.createdAt, locale)}
+              {t(`profileEditor.${img.slot}`)}
+              {img.mime === 'image/gif' ? ' · GIF' : ''} · <Link to={`/u/${img.username}`}>@{img.username}</Link>
+              {img.userStatus === 'locked' ? ` · ${t('admin.users.status.locked')}` : ''} · {formatDate(img.createdAt, locale)}
             </div>
             <div className="btn-row">
-              <button className="btn btn--small btn--primary" onClick={() => void act(() => a.post(`/profile-images/${img.id}`, { action: 'approve' }))}>
-                {t('admin.approve')}
-              </button>
-              <button className="btn btn--small" onClick={() => void act(() => a.post(`/profile-images/${img.id}`, { action: 'reject' }))}>
-                {t('admin.reject')}
+              <button
+                className="btn btn--small btn--danger"
+                onClick={() => {
+                  if (window.confirm(t('admin.users.confirmDeleteImage'))) void act(() => a.del(`/profile-images/${img.id}`));
+                }}
+              >
+                {t('admin.users.deleteImage')}
               </button>
             </div>
           </div>
         ))}
       </div>
+      {images.data && <Pagination page={images.data.page} hasMore={images.data.hasMore} onPage={setImagePage} />}
       <h3 style={{ marginTop: 24 }}>{t('admin.users.listTitle')}</h3>
       <input type="search" placeholder={t('admin.users.search')} aria-label={t('admin.users.search')} value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} style={{ maxWidth: 320, marginBottom: 12 }} />
-      {error && <p className="notice notice--error">{error}</p>}
       <LoadState loading={users.loading} error={users.error} onRetry={users.reload} />
       {users.data && (
         <div className="table-wrap">
@@ -487,6 +498,7 @@ function Users({ a }: { a: Api }) {
                 <th>{t('account.fields.username')}</th>
                 <th>{t('account.fields.displayName')}</th>
                 <th>{t('admin.status')}</th>
+                <th>{t('admin.users.gif')}</th>
                 <th>{t('admin.users.joined')}</th>
                 <th>{t('admin.users.submissions')}</th>
                 <th />
@@ -500,6 +512,16 @@ function Users({ a }: { a: Api }) {
                   </td>
                   <td>{u.displayName}</td>
                   <td>{t(`admin.users.status.${u.status}`)}</td>
+                  <td>
+                    <label className="checkbox">
+                      <input
+                        type="checkbox"
+                        checked={u.allowAnimated}
+                        aria-label={t('admin.users.gif')}
+                        onChange={(e) => void act(() => a.post(`/users/${u.id}`, { action: e.target.checked ? 'allow_gif' : 'disallow_gif' }))}
+                      />
+                    </label>
+                  </td>
                   <td>{formatDate(u.createdAt, locale)}</td>
                   <td>{u.submissions}</td>
                   <td className="btn-row">

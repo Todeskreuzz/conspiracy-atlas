@@ -8,6 +8,8 @@ const PASSWORD = 'a long secret password';
 
 // A 1×1 PNG.
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+// A 1×1 GIF.
+const GIF = 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const image = () => ({ data: PNG, mime: 'image/png', width: 1, height: 1, alt: null });
 
 const original = turnstileFetch.impl;
@@ -156,33 +158,70 @@ describe('profile pages', () => {
     expect((await c.get('/api/users/night_owl')).status).toBe(200);
   });
 
-  it('keeps profile images private until an editor approves them', async () => {
+  it('publishes profile images at once and lets editors delete them', async () => {
     const env = await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'true' });
     const c = client(env);
     await register(c);
     const up = await c.put('/api/account/images/avatar', { image: image() });
     expect(up.status).toBe(201);
-    expect(up.json.avatar.status).toBe('pending');
-    const ownUrl = up.json.avatar.url as string;
-    expect((await c.get(ownUrl)).status).toBe(200);
-    expect((await client(env).get(ownUrl)).status).toBe(401);
-    expect((await client(env).get('/api/users/night_owl')).json.avatar).toBeNull();
-    const id = ownUrl.split('/').pop();
-    expect((await client(env).get(`/api/images/${id}`)).status).toBe(404);
-
-    const admin = client(env);
-    await admin.login();
-    const queue = (await admin.get('/api/admin/profile-images')).json.items;
-    expect(queue).toHaveLength(1);
-    expect(queue[0]).toMatchObject({ username: 'night_owl', slot: 'avatar' });
-    expect((await admin.post(`/api/admin/profile-images/${id}`, { action: 'approve' })).status).toBe(200);
-    const pub = await client(env).get('/api/users/night_owl');
-    expect(pub.json.avatar).toEqual({ url: `/api/images/${id}`, status: 'approved' });
+    const url = up.json.avatar.url as string;
+    expect(up.json.avatar.status).toBe('approved');
+    const anon = await client(env).get(url);
+    expect(anon.status).toBe(200);
+    expect(anon.headers.get('Cache-Control')).toBe('public, max-age=3600');
+    expect((await client(env).get('/api/users/night_owl')).json.avatar).toEqual({ url, status: 'approved' });
+    expect((await c.get('/api/account/me')).json.user.avatarUrl).toBe(url);
 
     // Replacing the avatar removes the old image.
     await c.put('/api/account/images/avatar', { image: image() });
-    expect((env.DB as any).raw.prepare('SELECT COUNT(*) AS n FROM images WHERE user_id IS NOT NULL').get().n).toBe(1);
+    expect((env.DB as any).raw.prepare('SELECT COUNT(*) AS n FROM profile_images').get().n).toBe(1);
     expect((await c.put('/api/account/images/banner', { image: { ...image(), mime: 'image/jpeg' } })).status).toBe(400);
+
+    const admin = client(env);
+    await admin.login();
+    const list = (await admin.get('/api/admin/profile-images')).json.items;
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ username: 'night_owl', slot: 'avatar' });
+    expect((await admin.get(list[0].url)).status).toBe(200);
+    expect((await admin.del(`/api/admin/profile-images/${list[0].id}`)).status).toBe(200);
+    expect((await client(env).get(`/api/images/${list[0].id}`)).status).toBe(404);
+    expect((await client(env).get('/api/users/night_owl')).json.avatar).toBeNull();
+  });
+
+  it('hides the images of locked accounts', async () => {
+    const env = await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'true' });
+    const c = client(env);
+    await register(c);
+    const url = (await c.put('/api/account/images/banner', { image: image() })).json.banner.url as string;
+    const admin = client(env);
+    await admin.login();
+    const user = (await admin.get('/api/admin/users')).json.items[0];
+    await admin.post(`/api/admin/users/${user.id}`, { action: 'lock' });
+    expect((await client(env).get(url)).status).toBe(404);
+  });
+
+  it('accepts animated GIFs only for accounts an editor allowed', async () => {
+    const env = await makeEnv({ FEATURE_COMMUNITY_UPLOADS: 'true' });
+    const c = client(env);
+    await register(c);
+    const gif = { data: GIF, mime: 'image/gif', width: 1, height: 1 };
+    const refused = await c.put('/api/account/images/avatar', { image: gif });
+    expect(refused.status).toBe(403);
+    expect(refused.json.error.code).toBe('gif_not_allowed');
+    expect((await c.get('/api/account/profile')).json.allowAnimated).toBe(false);
+
+    const admin = client(env);
+    await admin.login();
+    const user = (await admin.get('/api/admin/users')).json.items[0];
+    expect(user.allowAnimated).toBe(false);
+    await admin.post(`/api/admin/users/${user.id}`, { action: 'allow_gif' });
+    expect((await c.get('/api/account/profile')).json.allowAnimated).toBe(true);
+    const ok = await c.put('/api/account/images/banner', { image: gif });
+    expect(ok.status).toBe(201);
+    const served = await client(env).get(ok.json.banner.url);
+    expect(served.headers.get('Content-Type')).toBe('image/gif');
+    // A PNG declared as GIF is refused.
+    expect((await c.put('/api/account/images/avatar', { image: { ...gif, data: PNG } })).status).toBe(400);
   });
 
   it('shows "Currently unavailable!" for profile images when uploads are off', async () => {

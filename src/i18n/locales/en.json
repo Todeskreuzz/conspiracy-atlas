@@ -660,7 +660,8 @@
       "accounts": "accounts ({locked} locked, {images} new images in 7 days)",
       "review": "Review now",
       "open": "Open",
-      "all": "All sections"
+      "all": "All sections",
+      "urgent": "Urgent"
     },
     "reportStatus": {
       "open": "Open",
@@ -671,7 +672,10 @@
       "reason": "Reason",
       "details": "Details",
       "date": "Date"
-    }
+    },
+    "stamp": "Top secret",
+    "folderLabel": "Classified",
+    "fileNo": "File no. {n}"
   },
   "search": {
     "button": "Search",

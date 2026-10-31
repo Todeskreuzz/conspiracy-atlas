@@ -660,7 +660,8 @@
       "accounts": "Konten ({locked} gesperrt, {images} neue Bilder in 7 Tagen)",
       "review": "Jetzt prüfen",
       "open": "Öffnen",
-      "all": "Alle Bereiche"
+      "all": "Alle Bereiche",
+      "urgent": "Dringend"
     },
     "reportStatus": {
       "open": "Offen",
@@ -671,7 +672,10 @@
       "reason": "Grund",
       "details": "Details",
       "date": "Datum"
-    }
+    },
+    "stamp": "Streng geheim",
+    "folderLabel": "Verschlusssache",
+    "fileNo": "Akte Nr. {n}"
   },
   "search": {
     "button": "Suche",

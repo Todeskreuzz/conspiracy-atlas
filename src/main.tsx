@@ -15,6 +15,7 @@ import './styles/wall.css';
 import './styles/board.css';
 import './styles/tabs.css';
 import './styles/profile.css';
+import './styles/admin.css';
 import { App } from './App';
 import { armScrollReveal, installEffects, reloadOnStaleChunks } from './effects';
 

@@ -240,7 +240,10 @@ describe('profile pages', () => {
 
     const session = (await c.get('/api/admin/session')).json;
     expect(session).toMatchObject({ authenticated: true, viaAccount: true, username: '@night_owl' });
-    expect((await c.get('/api/admin/overview')).status).toBe(200);
+    const overview = await c.get('/api/admin/overview');
+    expect(overview.status).toBe(200);
+    expect(overview.json.accounts).toMatchObject({ total: 1, locked: 0 });
+    expect((await admin.get('/api/admin/users')).json.items[0]).toHaveProperty('avatarUrl', null);
     // Writes in the admin area use the account's CSRF token.
     expect((await c.post(`/api/admin/users/${user.id}`, { action: 'allow_gif' })).status).toBe(200);
     expect((await c.post(`/api/admin/users/${user.id}`, { action: 'allow_gif' }, { 'X-CSRF-Token': 'wrong' })).status).toBe(403);

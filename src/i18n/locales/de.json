@@ -510,13 +510,14 @@
     "password": "Passwort",
     "loginFailed": "Anmeldung fehlgeschlagen.",
     "tabs": {
-      "moderation": "Moderation",
+      "moderation": "Einreichungen",
       "reports": "Meldungen",
       "archive": "Archiv",
       "services": "Dienste & Grenzen",
       "backup": "Sicherung",
       "notes": "Leser-Hinweise",
-      "users": "Konten"
+      "users": "Konten",
+      "overview": "Übersicht"
     },
     "queue": "Warteschlange",
     "statuses": {
@@ -590,7 +591,7 @@
       "rejected": "Abgelehnt"
     },
     "users": {
-      "imagesTitle": "Neueste Profil- und Bannerbilder",
+      "imagesTitle": "Neueste Profilbilder und Banner",
       "imagesIntro": "Profilbilder sind sofort öffentlich. Lösche hier alles Illegale; ein gesperrtes Konto blendet auch seine Bilder aus.",
       "listTitle": "Konten",
       "search": "Benutzername oder Name suchen",
@@ -613,7 +614,63 @@
       "owner": "Großmeister (Inhaber)",
       "ownerOnly": "Nur der Inhaber oder der geheime Admin-Login kann diesen Rang vergeben.",
       "confirmOwner": "@{name} den Rang „Großmeister“ (Inhaber) geben? Inhaber haben alle Admin-Rechte.",
-      "adminOwner": "Der Großmeister hat immer Admin-Rechte."
+      "adminOwner": "Der Großmeister hat immer Admin-Rechte.",
+      "rank": "Rang",
+      "ranks": {
+        "member": "Mitglied",
+        "admin": "Admin",
+        "owner": "Großmeister"
+      },
+      "legendRank": "Mitglied ist normal. Admins können diesen Bereich öffnen. Der Großmeister ist der Inhaber und kann von Admins nicht verändert werden.",
+      "legendGif": "Erlaubt bewegte GIF-Profilbilder und -Banner. Admins dürfen das immer.",
+      "legendLock": "Ein gesperrtes Konto wird abgemeldet, sein Profil und seine Bilder sind unsichtbar. Entsperren macht alles wieder sichtbar.",
+      "count": "{n} Konten auf dieser Seite",
+      "submissionsN": "{n} Einreichungen",
+      "allowed": "Erlaubt",
+      "notAllowed": "Nicht erlaubt",
+      "gifAlways": "Immer (Admin)",
+      "showImages": "Bilder anzeigen",
+      "hideImages": "Bilder ausblenden"
+    },
+    "signedInAs": "Angemeldet als",
+    "groups": {
+      "review": "Prüfen",
+      "manage": "Verwalten",
+      "system": "System"
+    },
+    "sections": {
+      "overview": "Was gerade ansteht und wo du was findest.",
+      "moderation": "Theorien, die Besucher eingereicht haben. Wähle links eine Einreichung, lies sie und entscheide: freigeben, Änderungen anfordern oder ablehnen. Freigegebene Einreichungen kannst du danach veröffentlichen.",
+      "notes": "Quellen und Kommentare, die Besucher zu Fallakten ergänzt haben. Freigegebene Hinweise erscheinen auf der Fallseite, abgelehnte nicht.",
+      "reports": "Besucher melden hier Fehler oder problematische Inhalte. Prüfe die Stelle, korrigiere sie bei Bedarf und markiere die Meldung dann als erledigt oder verworfen.",
+      "users": "Alle registrierten Konten. Hier vergibst du Ränge, erlaubst GIF-Bilder, sperrst oder löschst Konten und entfernst illegale Profilbilder.",
+      "archive": "Die veröffentlichten Fallakten. Klicke auf einen Titel, um ihn zu bearbeiten, oder lege eine neue Theorie an.",
+      "services": "Zeigt, ob alle Cloudflare-Dienste laufen und wie viel vom Gratis-Limit verbraucht ist.",
+      "backup": "Lade eine komplette Sicherung der Datenbank herunter. Mach das regelmäßig und vor großen Änderungen."
+    },
+    "overview": {
+      "welcome": "Willkommen, {name}! Hier siehst du auf einen Blick, was zu tun ist.",
+      "todo": "Wartet auf dich",
+      "allClear": "Alles erledigt. Nichts wartet auf eine Prüfung.",
+      "queue": {
+        "moderation": "neue Einreichungen",
+        "notes": "Leser-Hinweise zu prüfen",
+        "reports": "offene Meldungen"
+      },
+      "accounts": "Konten ({locked} gesperrt, {images} neue Bilder in 7 Tagen)",
+      "review": "Jetzt prüfen",
+      "open": "Öffnen",
+      "all": "Alle Bereiche"
+    },
+    "reportStatus": {
+      "open": "Offen",
+      "resolved": "Erledigt",
+      "dismissed": "Verworfen"
+    },
+    "reportCols": {
+      "reason": "Grund",
+      "details": "Details",
+      "date": "Datum"
     }
   },
   "search": {

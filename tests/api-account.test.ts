@@ -257,6 +257,35 @@ describe('profile pages', () => {
     expect((await c.get('/api/account/profile')).json.allowAnimated).toBe(false);
   });
 
+  it('gives the owner the Grand Master rank, protected from account admins', async () => {
+    const env = await makeEnv();
+    const owner = client(env);
+    await register(owner, 'tim_owner');
+    const mod = client(env);
+    await register(mod, 'helper_mod');
+    const admin = client(env);
+    await admin.login();
+    const ids = Object.fromEntries((await admin.get('/api/admin/users')).json.items.map((u: { username: string; id: number }) => [u.username, u.id]));
+    expect((await admin.post(`/api/admin/users/${ids.tim_owner}`, { action: 'make_owner' })).status).toBe(200);
+    await admin.post(`/api/admin/users/${ids.helper_mod}`, { action: 'make_admin' });
+
+    const listed = (await admin.get('/api/admin/users')).json.items.find((u: { id: number }) => u.id === ids.tim_owner);
+    expect(listed).toMatchObject({ isOwner: true, isAdmin: true });
+    expect((await client(env).get('/api/users/tim_owner')).json).toMatchObject({ rank: 'owner', isAdmin: true });
+    expect((await client(env).get('/api/users/helper_mod')).json.rank).toBe('admin');
+    expect((await owner.get('/api/account/me')).json.user).toMatchObject({ rank: 'owner', isAdmin: true });
+
+    // The owner opens the admin area with the normal login and may manage owners.
+    expect((await owner.get('/api/admin/session')).json).toMatchObject({ authenticated: true, canManageOwners: true });
+    // An account admin can neither touch the owner nor hand out the rank.
+    expect((await mod.get('/api/admin/session')).json.canManageOwners).toBe(false);
+    expect((await mod.post(`/api/admin/users/${ids.tim_owner}`, { action: 'lock' })).status).toBe(403);
+    expect((await mod.post(`/api/admin/users/${ids.tim_owner}`, { action: 'remove_owner' })).status).toBe(403);
+    expect((await mod.del(`/api/admin/users/${ids.tim_owner}`)).status).toBe(403);
+    expect((await mod.post(`/api/admin/users/${ids.helper_mod}`, { action: 'make_owner' })).status).toBe(403);
+    expect((await owner.post(`/api/admin/users/${ids.helper_mod}`, { action: 'lock' })).status).toBe(200);
+  });
+
   it('shows "Currently unavailable!" for profile images when uploads are off', async () => {
     const c = client(await makeEnv());
     await register(c);

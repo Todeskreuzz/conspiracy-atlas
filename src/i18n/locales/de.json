@@ -609,7 +609,11 @@
       "gif": "Animierte GIFs",
       "admin": "Admin",
       "confirmAdmin": "@{name} Admin-Rechte geben? Das Konto kann dann mit seinem normalen Login den Admin-Bereich öffnen.",
-      "gifAdmin": "Admins dürfen immer animierte GIFs verwenden."
+      "gifAdmin": "Admins dürfen immer animierte GIFs verwenden.",
+      "owner": "Großmeister (Inhaber)",
+      "ownerOnly": "Nur der Inhaber oder der geheime Admin-Login kann diesen Rang vergeben.",
+      "confirmOwner": "@{name} den Rang „Großmeister“ (Inhaber) geben? Inhaber haben alle Admin-Rechte.",
+      "adminOwner": "Der Großmeister hat immer Admin-Rechte."
     }
   },
   "search": {
@@ -783,7 +787,9 @@
     "notFoundText": "Dieses Profil gibt es nicht oder es ist privat.",
     "ownerHint": "So sehen andere dein Profil.",
     "edit": "Profil bearbeiten",
-    "adminBadge": "Admin"
+    "adminBadge": "Admin",
+    "ownerBadge": "Großmeister",
+    "ownerBadgeTitle": "Gründer und Inhaber des Atlas"
   },
   "profileEditor": {
     "title": "Mein Profil",

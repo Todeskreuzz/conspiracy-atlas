@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { useT } from '../i18n';
 import { useAccount } from '../api/account';
 import { useFeature } from '../api/status';
@@ -39,5 +39,17 @@ export function AccountNavLink() {
     <Link to={account.user ? `/u/${account.user.username}` : '/login'} className="nav-tab nav-account">
       {account.user ? `${t('account.myProfile')} (${account.user.displayName})` : t('account.signIn')}
     </Link>
+  );
+}
+
+/** Admin tab in the main navigation; only accounts with admin rights see it. */
+export function AdminNavLink() {
+  const t = useT();
+  const account = useAccount();
+  if (!account.user?.isAdmin) return null;
+  return (
+    <NavLink to="/admin" viewTransition className={({ isActive }) => `nav-tab nav-admin${isActive ? ' active' : ''}`} data-testid="nav-admin">
+      {t('nav.admin')}
+    </NavLink>
   );
 }

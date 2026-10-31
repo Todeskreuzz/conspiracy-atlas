@@ -27,7 +27,7 @@ import {
   clearUserCookie,
   createUserSession,
   canUseAnimated,
-  isAdminUser,
+  userRank,
   loadUserSession,
   normalizeRecoveryCode,
   recoveryCode,
@@ -69,7 +69,12 @@ function mapAccountUser(r: Row): AccountUser {
 async function sessionJson(db: Db, userId: number, csrfToken: string) {
   const row = await db.first(`${USER_SELECT} WHERE u.id = ?`, userId);
   if (!row) throw notFound('Account');
-  return { authenticated: true, available: true, csrfToken, user: { ...mapAccountUser(row), isAdmin: await isAdminUser(db, userId) } };
+  return { authenticated: true, available: true, csrfToken, user: { ...mapAccountUser(row), ...(await rankFields(db, userId)) } };
+}
+
+async function rankFields(db: Db, userId: number) {
+  const rank = await userRank(db, userId);
+  return { isAdmin: rank !== null, rank };
 }
 
 function guard(c: Ctx) {
@@ -371,7 +376,7 @@ accountRoutes.get('/users/:username', async (c) => {
     displayName: String(row.display_name),
     createdAt: String(row.created_at),
     isOwner,
-    isAdmin: await isAdminUser(db, Number(row.id)),
+    ...(await rankFields(db, Number(row.id))),
     avatar: imageInfo(row.avatar_id),
     banner: imageInfo(row.banner_id),
     profile,

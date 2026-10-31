@@ -85,9 +85,11 @@ export async function requireUser(db: Db, req: Request): Promise<UserSession> {
  * the secret admin login keeps working independently of it.
  */
 export const ADMIN_USERS_KEY = 'admin_user_ids';
+/** Site owners ("Grand Master" rank). Owners always have admin rights as well. */
+export const OWNER_USERS_KEY = 'owner_user_ids';
 
-export async function adminUserIds(db: Db): Promise<number[]> {
-  const row = await db.first<{ value: string }>('SELECT value FROM settings WHERE key = ?', ADMIN_USERS_KEY);
+async function idList(db: Db, key: string): Promise<number[]> {
+  const row = await db.first<{ value: string }>('SELECT value FROM settings WHERE key = ?', key);
   try {
     const list = JSON.parse(row?.value ?? '[]');
     return Array.isArray(list) ? list.filter((n): n is number => Number.isInteger(n) && n > 0) : [];
@@ -96,19 +98,41 @@ export async function adminUserIds(db: Db): Promise<number[]> {
   }
 }
 
+async function setInList(db: Db, key: string, userId: number, on: boolean): Promise<void> {
+  const ids = new Set(await idList(db, key));
+  if (on) ids.add(userId);
+  else ids.delete(userId);
+  await db.run(
+    "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')",
+    key,
+    JSON.stringify([...ids].sort((a, b) => a - b)),
+  );
+}
+
+export const ownerUserIds = (db: Db) => idList(db, OWNER_USERS_KEY);
+
+/** Accounts with admin rights, owners included. */
+export async function adminUserIds(db: Db): Promise<number[]> {
+  const [admins, owners] = await Promise.all([idList(db, ADMIN_USERS_KEY), ownerUserIds(db)]);
+  return [...new Set([...admins, ...owners])];
+}
+
 export async function isAdminUser(db: Db, userId: number): Promise<boolean> {
   return (await adminUserIds(db)).includes(userId);
 }
 
-export async function setAdminUser(db: Db, userId: number, admin: boolean): Promise<void> {
-  const ids = new Set(await adminUserIds(db));
-  if (admin) ids.add(userId);
-  else ids.delete(userId);
-  await db.run(
-    "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')",
-    ADMIN_USERS_KEY,
-    JSON.stringify([...ids].sort((a, b) => a - b)),
-  );
+export async function isOwnerUser(db: Db, userId: number): Promise<boolean> {
+  return (await ownerUserIds(db)).includes(userId);
+}
+
+export const setAdminUser = (db: Db, userId: number, admin: boolean) => setInList(db, ADMIN_USERS_KEY, userId, admin);
+export const setOwnerUser = (db: Db, userId: number, owner: boolean) => setInList(db, OWNER_USERS_KEY, userId, owner);
+
+export type UserRank = 'owner' | 'admin' | null;
+
+export async function userRank(db: Db, userId: number): Promise<UserRank> {
+  const [admins, owners] = await Promise.all([idList(db, ADMIN_USERS_KEY), ownerUserIds(db)]);
+  return owners.includes(userId) ? 'owner' : admins.includes(userId) ? 'admin' : null;
 }
 
 /** Admins may always use animated GIFs; other accounts only with the per-account switch. */

@@ -13,6 +13,8 @@ export interface AdminSession {
   username: string;
   /** Signed in through a visitor account that has admin rights (not the secret admin login). */
   viaAccount?: boolean;
+  /** Account id when viaAccount is set. */
+  userId?: number;
 }
 
 export function readCookie(req: Request, name: string): string | null {
@@ -66,7 +68,7 @@ export async function loadSession(db: Db, env: Env, req: Request): Promise<Admin
   // A signed-in visitor account with admin rights works as well (its own session and CSRF token).
   const user = await loadUserSession(db, req);
   if (user && (await isAdminUser(db, user.userId))) {
-    return { idHash: user.idHash, csrfToken: user.csrfToken, username: `@${user.username}`, viaAccount: true };
+    return { idHash: user.idHash, csrfToken: user.csrfToken, username: `@${user.username}`, viaAccount: true, userId: user.userId };
   }
   return null;
 }

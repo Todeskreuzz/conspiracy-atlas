@@ -189,7 +189,11 @@ export interface AccountUser {
   createdAt: string;
   /** Account with admin rights (opens the admin area with its normal login). */
   isAdmin?: boolean;
+  rank?: UserRank;
 }
+
+/** Visible account rank: owner ("Grand Master") or admin; null for everyone else. */
+export type UserRank = 'owner' | 'admin' | null;
 
 export interface ProfileImageInfo {
   url: string;
@@ -211,6 +215,7 @@ export interface PublicProfile {
   createdAt: string;
   isOwner: boolean;
   isAdmin: boolean;
+  rank: UserRank;
   avatar: ProfileImageInfo | null;
   banner: ProfileImageInfo | null;
   profile: ProfileSettings;

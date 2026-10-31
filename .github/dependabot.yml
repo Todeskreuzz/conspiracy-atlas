@@ -1,0 +1,21 @@
+# Dependabot opens pull requests for security fixes and outdated dependencies.
+# Free on GitHub. Updates are grouped and monthly to keep the noise low; security
+# updates (enable "Dependabot security updates" in the repository settings) come
+# immediately. Every Dependabot PR runs the normal CI without any secrets.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']

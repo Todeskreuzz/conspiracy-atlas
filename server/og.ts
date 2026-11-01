@@ -2,6 +2,7 @@
 // JavaScript, so the Pages Function for /theory/* puts the case's title, summary and photo into the static index.html.
 import type { Db } from './db';
 import type { Locale } from '../shared/constants';
+import { localeAlternates } from '../shared/localePath';
 
 export const SITE_NAME = 'The Conspiracy Atlas';
 /** Fallback preview image (PNG: most platforms ignore SVG previews). */
@@ -27,15 +28,8 @@ export function clip(text: string, max = 200): string {
   return t.length > max ? `${t.slice(0, max - 1).replace(/\s+\S*$/, '')}…` : t;
 }
 
-/** Same page in every language: English is the plain URL, other languages add ?lang=. */
-export function localeUrls(origin: string, path: string): { locale: Locale | 'x-default'; url: string }[] {
-  const base = `${origin}${path}`;
-  return [
-    { locale: 'en', url: base },
-    { locale: 'de', url: `${base}?lang=de` },
-    { locale: 'x-default', url: base },
-  ];
-}
+/** Same page in every language: English is the plain URL, other languages are prefixed (/de/...). */
+export const localeUrls = localeAlternates;
 
 const isoDate = (sqlTime: string | undefined) => (sqlTime ? `${sqlTime.replace(' ', 'T').slice(0, 19)}Z` : undefined);
 

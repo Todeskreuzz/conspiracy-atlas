@@ -6,14 +6,17 @@ import { clip, injectOg, jsonLd, loadOg } from '../server/og';
 import { onRequestGet as sitemap } from '../functions/sitemap.xml';
 import { onRequestGet as verification } from '../functions/googlee808fb02e2c3ca02.html';
 import { onRequestGet } from '../functions/theory/[slug]';
+import { onRequestGet as onRequestGetDe } from '../functions/de/theory/[slug]';
 
 const INDEX = readFileSync('index.html', 'utf8');
 
 async function callFunction(path: string, env: Record<string, unknown>) {
   const assets = { fetch: async () => new Response(INDEX, { headers: { 'content-type': 'text/html' } }) };
   const request = new Request(`https://conspiracy-atlas.pages.dev${path}`);
-  const slug = new URL(request.url).pathname.split('/').pop()!;
-  return (onRequestGet as any)({ request, env: { ...env, ASSETS: assets }, params: { slug } }) as Promise<Response>;
+  const { pathname } = new URL(request.url);
+  const slug = pathname.split('/').pop()!;
+  const handler = pathname.startsWith('/de/') ? onRequestGetDe : onRequestGet;
+  return (handler as any)({ request, env: { ...env, ASSETS: assets }, params: { slug } }) as Promise<Response>;
 }
 
 describe('link previews', () => {
@@ -26,7 +29,7 @@ describe('link previews', () => {
     expect(og!.description.length).toBeLessThanOrEqual(200);
     const de = await loadOg(Db.from(env), 'moon-landing-conspiracy-theory', 'de', 'https://x.test');
     expect(de?.title).toBe('Verschwörungstheorie zur Mondlandung');
-    expect(de?.url).toBe('https://x.test/theory/moon-landing-conspiracy-theory?lang=de');
+    expect(de?.url).toBe('https://x.test/de/theory/moon-landing-conspiracy-theory');
     expect(await loadOg(Db.from(env), 'does-not-exist', 'en', 'https://x.test')).toBeNull();
   });
 
@@ -57,11 +60,15 @@ describe('link previews', () => {
 describe('search engines', () => {
   it('adds hreflang links, the page language and escaped structured data to case pages', async () => {
     const env = await makeEnv();
-    const html = await (await callFunction('/theory/cointelpro?lang=de', env as any)).text();
+    const html = await (await callFunction('/de/theory/cointelpro', env as any)).text();
     expect(html).toContain('<html lang="de">');
     expect(html).toContain('<link rel="alternate" hreflang="en" href="https://conspiracy-atlas.pages.dev/theory/cointelpro" />');
-    expect(html).toContain('<link rel="alternate" hreflang="de" href="https://conspiracy-atlas.pages.dev/theory/cointelpro?lang=de" />');
-    expect(html).toContain('<link rel="canonical" href="https://conspiracy-atlas.pages.dev/theory/cointelpro?lang=de" />');
+    expect(html).toContain('<link rel="alternate" hreflang="de" href="https://conspiracy-atlas.pages.dev/de/theory/cointelpro" />');
+    expect(html).toContain('<link rel="alternate" hreflang="x-default" href="https://conspiracy-atlas.pages.dev/theory/cointelpro" />');
+    expect(html).toContain('<link rel="canonical" href="https://conspiracy-atlas.pages.dev/de/theory/cointelpro" />');
+    const en = await (await callFunction('/theory/cointelpro', env as any)).text();
+    expect(en).toContain('<html lang="en">');
+    expect(en).toContain('<link rel="canonical" href="https://conspiracy-atlas.pages.dev/theory/cointelpro" />');
     const ld = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/)![1]!);
     expect(ld['@type']).toBe('Article');
     expect(ld.inLanguage).toBe('de');
@@ -76,13 +83,33 @@ describe('search engines', () => {
     const xml = await res.text();
     expect(res.headers.get('content-type')).toContain('application/xml');
     expect(xml).toContain('<loc>https://conspiracy-atlas.pages.dev/theory/area-51</loc>');
-    expect(xml).toContain('hreflang="de" href="https://conspiracy-atlas.pages.dev/theory/area-51?lang=de"');
+    expect(xml).toContain('hreflang="de" href="https://conspiracy-atlas.pages.dev/de/theory/area-51"');
+    expect(xml).toContain('<loc>https://conspiracy-atlas.pages.dev/de/theory/area-51</loc>');
+    expect(xml).toContain('<loc>https://conspiracy-atlas.pages.dev/de</loc>');
+    expect(xml).not.toContain('?lang=');
     expect(xml).toContain('<loc>https://conspiracy-atlas.pages.dev/timeline</loc>');
     expect(xml).not.toContain('/admin');
     expect(xml).toMatch(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
     const off = await (sitemap as any)({ request: new Request('https://x.test/sitemap.xml'), env: { ...env, DB: undefined } });
     expect(off.status).toBe(503);
     expect(await off.text()).toBe('Currently unavailable!');
+  });
+});
+
+describe('language URLs', () => {
+  it('moves old ?lang= case links permanently to the language URL', async () => {
+    const env = await makeEnv();
+    const old = await callFunction('/theory/cointelpro?lang=de', env as any);
+    expect(old.status).toBe(301);
+    expect(old.headers.get('location')).toBe('https://conspiracy-atlas.pages.dev/de/theory/cointelpro');
+    const back = await callFunction('/de/theory/cointelpro?lang=en', env as any);
+    expect(back.headers.get('location')).toBe('https://conspiracy-atlas.pages.dev/theory/cointelpro');
+  });
+
+  it('serves German case pages through their own Function route', () => {
+    const routes = JSON.parse(readFileSync('public/_routes.json', 'utf8'));
+    expect(routes.include).toContain('/de/theory/*');
+    expect(readFileSync('public/robots.txt', 'utf8')).toContain('Disallow: /de/admin');
   });
 });
 

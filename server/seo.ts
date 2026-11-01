@@ -1,12 +1,13 @@
 // Sitemap for search engines: every public page and every published case, each with its English and German URL.
 import type { Db } from './db';
 import { localeUrls } from './og';
+import { LOCALES } from '../shared/constants';
 
 /** Overview pages worth indexing (no admin, saved items or forms). */
 export const SITEMAP_PAGES = ['/', '/archive', '/wall', '/timeline', '/map', '/organizations', '/events', '/investigations', '/community', '/knowledge', '/experts', '/about'];
 
-/** The sitemap protocol allows 50,000 URLs per file. */
-const MAX_URLS = 50000;
+/** The sitemap protocol allows 50,000 URLs per file; every page is listed once per language. */
+const MAX_URLS = Math.floor(50000 / LOCALES.length);
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]!);
 
@@ -15,11 +16,15 @@ interface Entry {
   lastmod?: string;
 }
 
+/** One <url> per language version, each listing all versions (as the sitemap hreflang rules require). */
 function urlXml(origin: string, e: Entry): string {
   const links = localeUrls(origin, e.path);
   const lastmod = e.lastmod ? `<lastmod>${esc(e.lastmod.slice(0, 10))}</lastmod>` : '';
   const alt = links.map((l) => `<xhtml:link rel="alternate" hreflang="${l.locale}" href="${esc(l.url)}"/>`).join('');
-  return `<url><loc>${esc(links[0]!.url)}</loc>${lastmod}${alt}</url>`;
+  return links
+    .filter((l) => l.locale !== 'x-default')
+    .map((l) => `<url><loc>${esc(l.url)}</loc>${lastmod}${alt}</url>`)
+    .join('\n');
 }
 
 export async function buildSitemap(db: Db, origin: string): Promise<string> {

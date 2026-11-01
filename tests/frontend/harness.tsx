@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from '../../src/App';
+import { LocaleRouter } from '../../src/i18n/LocaleRouter';
 import { createApp } from '../../server/app';
 import type { Env } from '../../server/env';
 
@@ -9,6 +10,23 @@ import type { Env } from '../../server/env';
  * Pass env = null to simulate an unreachable backend.
  */
 export function renderApp(path: string, env: Env | null) {
+  const calls = routeFetch(env);
+  const utils = render(
+    <MemoryRouter initialEntries={[path]}>
+      <App />
+    </MemoryRouter>,
+  );
+  return { ...utils, calls };
+}
+
+/** Renders the real browser root (language prefix as router base) at a URL of the jsdom window. */
+export function renderRoot(url: string, env: Env | null) {
+  window.history.replaceState(null, '', url);
+  const calls = routeFetch(env);
+  return { ...render(<LocaleRouter />), calls };
+}
+
+function routeFetch(env: Env | null): string[] {
   const api = createApp();
   const calls: string[] = [];
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -20,10 +38,5 @@ export function renderApp(path: string, env: Env | null) {
     headers.set('Origin', 'http://localhost');
     return api.request(`http://localhost${url.pathname}${url.search}`, { ...init, headers }, env);
   }) as typeof fetch;
-  const utils = render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
-  );
-  return { ...utils, calls };
+  return calls;
 }

@@ -160,10 +160,10 @@ describe('frontend', () => {
     renderApp('/', await makeEnv());
     const nav = screen.getByRole('navigation', { name: 'Main' });
     expect(within(nav).getByText('Theory Archive')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'DE' }));
+    fireEvent.click(screen.getByRole('link', { name: 'DE' }));
     expect(within(nav).getByText('Theoriearchiv')).toBeInTheDocument();
     expect(localStorage.getItem('ca.locale')).toBe('de');
-    fireEvent.click(screen.getByRole('button', { name: 'EN' }));
+    fireEvent.click(screen.getByRole('link', { name: 'EN' }));
     expect(within(nav).getByText('Theory Archive')).toBeInTheDocument();
   });
 

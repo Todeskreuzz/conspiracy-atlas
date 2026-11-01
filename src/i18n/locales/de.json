@@ -4,6 +4,7 @@
     "tagline": "Ein interaktives globales Archiv für Theorien, Geheimnisse und Zusammenhänge.",
     "skip": "Zum Inhalt springen",
     "language": "Sprache",
+    "languageName": { "en": "English", "de": "Deutsch" },
     "menu": "Menü",
     "loading": "Wird geladen …",
     "retry": "Erneut versuchen",

@@ -6,6 +6,7 @@ import { api, ApiFailure } from '../api/client';
 import { useFeature } from '../api/status';
 import { LoadState, Unavailable } from '../components/Unavailable';
 import { ProfileView } from '../components/ProfileView';
+import { ReportForm } from '../components/ReportForm';
 import type { PublicProfile } from '../../shared/profile';
 
 export default function ProfilePage() {
@@ -48,6 +49,11 @@ export default function ProfilePage() {
             </div>
           )}
           <ProfileView data={data} />
+          {!data.isOwner && data.id && (
+            <div className="profile-report">
+              <ReportForm targetType="profile" targetId={data.id} compact />
+            </div>
+          )}
         </>
       )}
     </div>

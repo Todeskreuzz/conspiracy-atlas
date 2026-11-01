@@ -1269,3 +1269,33 @@ table.data th {
 .case-note p {
   margin: 6px 0;
 }
+
+/* Reporting: small "Report" link under notes, comments and profiles. */
+.report-link {
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  font: inherit;
+  font-size: 0.8rem;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+}
+.report-link:hover,
+.report-link:focus-visible {
+  opacity: 1;
+  text-decoration: underline;
+}
+.case-note__actions {
+  margin-top: 2px;
+}
+.profile-report {
+  margin: 16px 0 0;
+  text-align: right;
+}
+.profile-report .panel {
+  text-align: left;
+}
+.report-form--compact h4 {
+  font-size: 0.95rem;
+}

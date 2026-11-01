@@ -5,11 +5,12 @@ import { Db } from '../db';
 import { requireFeature } from '../features';
 import { rateLimit, verifyTurnstile, assertSameOrigin } from '../security';
 import { validateSubmission } from '../../shared/submission';
-import { ANONYMOUS_NAME, REPORT_REASONS } from '../../shared/constants';
+import { ANONYMOUS_NAME, LEGACY_REPORT_TARGET_TYPES, REPORT_REASONS, REPORT_TARGET_TYPES } from '../../shared/constants';
 import { int, oneOf, optStr, reqStr, url } from '../../shared/validation';
 import type { Row } from '../db';
 import type { CaseNote } from '../../shared/types';
-import { ApiError, notFound } from '../errors';
+import { ApiError, UnavailableError, notFound } from '../errors';
+import { autoHideIfNeeded, describeTarget, moderationSchemaReady, reporterHash } from '../moderation';
 import { assertImageQuota, imageInsertStatements, imageResponse, parseImages } from '../images';
 import { IMAGE_LIMITS } from '../../shared/images';
 import { loadUserSession } from '../users';
@@ -92,19 +93,41 @@ communityRoutes.post('/submissions', async (c) => {
   return c.json({ id: row.id, status: 'pending_review', authorName: isAnon ? ANONYMOUS_NAME : input.displayName, images: images.length }, 201);
 });
 
-/** Visitors can report content for moderation. */
+/**
+ * Visitors can report content for moderation. Each visitor counts once per item; community content that
+ * REPORT_AUTO_HIDE_THRESHOLD different visitors report is hidden until an editor looks at it.
+ */
 communityRoutes.post('/reports', async (c) => {
   assertSameOrigin(c.req.raw);
   requireFeature(c.env, 'reports');
   const body = await readJson(c, 10_000);
-  const targetType = oneOf(body.targetType, 'targetType', ['theory', 'submission', 'event', 'organization', 'source'] as const);
+  const targetType = oneOf(body.targetType, 'targetType', REPORT_TARGET_TYPES);
   const targetId = int(body.targetId, 'targetId', { min: 1 }) as number;
   const reason = oneOf(body.reason, 'reason', REPORT_REASONS);
   const details = optStr(body.details, 'details', 2000);
   await verifyTurnstile(c.env, typeof body.turnstileToken === 'string' ? body.turnstileToken : null, turnstileFetch.impl);
   const db = Db.from(c.env);
   await rateLimit(db, c.env, c.req.raw, 'report', 10, 3600);
-  await db.run('INSERT INTO reports (target_type, target_id, reason, details) VALUES (?, ?, ?, ?)', targetType, targetId, reason, details);
+  const target = await describeTarget(db, targetType, targetId);
+  if (!target.exists) throw notFound('Reported item');
+
+  if (!(await moderationSchemaReady(db))) {
+    // Before migration 0010 only the original target types can be stored.
+    if (!(LEGACY_REPORT_TARGET_TYPES as readonly string[]).includes(targetType)) throw new UnavailableError('reports', 'not_activated');
+    await db.run('INSERT INTO reports (target_type, target_id, reason, details) VALUES (?, ?, ?, ?)', targetType, targetId, reason, details);
+    return c.json({ ok: true }, 201);
+  }
+  const hash = await reporterHash(c.env, c.req.raw, targetType, targetId);
+  // A repeated report of the same item by the same visitor is accepted silently but not counted twice.
+  await db.run(
+    'INSERT OR IGNORE INTO reports (target_type, target_id, reason, details, reporter_hash) VALUES (?, ?, ?, ?, ?)',
+    targetType,
+    targetId,
+    reason,
+    details,
+    hash,
+  );
+  await autoHideIfNeeded(db, targetType, targetId, target);
   return c.json({ ok: true }, 201);
 });
 

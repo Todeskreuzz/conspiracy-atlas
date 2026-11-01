@@ -85,6 +85,14 @@ export type EvidenceRelation = (typeof EVIDENCE_RELATIONS)[number];
 export const REPORT_REASONS = ['misinformation', 'missing_source', 'copyright', 'harassment', 'spam', 'other'] as const;
 export type ReportReason = (typeof REPORT_REASONS)[number];
 
+/** What visitors can report. case_note, comment and profile need migration 0010. */
+export const REPORT_TARGET_TYPES = ['theory', 'submission', 'event', 'organization', 'source', 'case_note', 'comment', 'profile'] as const;
+export type ReportTargetType = (typeof REPORT_TARGET_TYPES)[number];
+/** Targets that existed before migration 0010 (the old CHECK constraint accepts only these). */
+export const LEGACY_REPORT_TARGET_TYPES = ['theory', 'submission', 'event', 'organization', 'source'] as const;
+/** Community content is hidden automatically once this many different visitors have reported it. */
+export const REPORT_AUTO_HIDE_THRESHOLD = 3;
+
 export const INVESTIGATION_NOTE_KINDS = [
   'note',
   'hypothesis',

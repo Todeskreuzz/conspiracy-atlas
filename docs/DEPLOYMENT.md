@@ -144,3 +144,10 @@ public at once (no review) and editors delete anything illegal under *Admin → 
 its images). Animated GIFs (max. 1.5 MB, stored unchanged) are accepted only for accounts with the *Animated GIFs*
 switch in that list; everybody else's GIFs are saved as still images. Run `npm run db:migrate:remote` before deploying. The JSON backup includes `users` (password hashes only),
 not sessions. `FEATURE_ACCOUNTS = "false"` switches accounts off.
+
+Migration `0010_moderation.sql` extends reports to community notes, comments and profiles. Each visitor counts once per
+item (only a salted per-item hash is stored, never the IP address), and community content is hidden automatically
+once three different visitors have reported it. *Admin → Reports* groups reports per item and can hide, restore, lock
+the author's account or dismiss them; the moderation log lists the latest decisions. Run `npm run db:migrate:remote`
+before deploying. Until the migration is applied, reports of case files keep working and the new report buttons show
+"Currently unavailable!".

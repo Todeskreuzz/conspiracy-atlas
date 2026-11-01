@@ -6,6 +6,7 @@ import { useFeature } from '../api/status';
 import type { CaseNote } from '../../shared/types';
 import { TurnstileWidget } from './Turnstile';
 import { Unavailable } from './Unavailable';
+import { ReportForm } from './ReportForm';
 
 /** Community notes on a case: approved comments and sources, plus a form that sends new ones to moderation. */
 export function CaseNotes({ slug }: { slug: string }) {
@@ -55,6 +56,9 @@ export function CaseNotes({ slug }: { slug: string }) {
                 {n.sourceTitle || n.sourceUrl} ↗
               </a>
             )}
+            <div className="case-note__actions">
+              <ReportForm targetType="case_note" targetId={n.id} compact />
+            </div>
           </li>
         ))}
       </ul>

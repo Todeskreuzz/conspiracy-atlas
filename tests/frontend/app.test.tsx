@@ -192,6 +192,16 @@ describe('frontend', () => {
     expect(screen.getByTestId('upload-input')).toBeDisabled();
   });
 
+  it('offers a report link under each community note', async () => {
+    const env = await makeEnv();
+    (env.DB as any).raw.exec("INSERT INTO case_notes (id, theory_id, kind, body, status) VALUES (71, (SELECT id FROM theories WHERE slug = 'watergate'), 'comment', 'A visible community note.', 'approved')");
+    renderApp('/theory/watergate', env);
+    const notes = await screen.findByTestId('case-notes', {}, { timeout: 5000 });
+    await within(notes).findByText('A visible community note.', {}, { timeout: 5000 });
+    fireEvent.click(within(notes).getByRole('button', { name: 'Report Community note' }));
+    expect(await within(notes).findByRole('heading', { name: 'Report Community note' })).toBeInTheDocument();
+  });
+
   it('admin login is unavailable without configuration', async () => {
     renderApp('/admin', await makeEnv({ ADMIN_PASSWORD_HASH: undefined }));
     const notice = await screen.findByTestId('unavailable', {}, { timeout: 5000 });

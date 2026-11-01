@@ -95,6 +95,17 @@ describe('frontend', () => {
     expect(screen.getAllByTestId('theory-card')).toHaveLength(1);
   });
 
+  it('shows the donation page with the exact crypto addresses, a QR code each and a nav link', async () => {
+    renderApp('/donate', await makeEnv());
+    expect(await screen.findByTestId('donate-address-btc', {}, { timeout: 5000 })).toHaveTextContent(/^bc1qvd4qdrtp6vp34y2tp5nntaxh8s7gdtcl6cleg0$/);
+    expect(screen.getByTestId('donate-address-eth')).toHaveTextContent(/^0x65Bc22A06395f366433FA9B79CD9E356d161f09B$/);
+    expect(screen.getByTestId('donate-address-sol')).toHaveTextContent(/^EE34aTZx8UtMoEaLY5vJtkH1nLPkKyGVtZ3QMwBrfNPW$/);
+    expect(screen.getAllByRole('img', { name: /QR code/ })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: 'Copy address' })).toHaveLength(3);
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(within(nav).getByText('Support')).toHaveClass('active');
+  });
+
   it('lists the ratings of all cases under Expert opinions', async () => {
     renderApp('/experts', await makeEnv());
     const list = await screen.findByTestId('expert-list', {}, { timeout: 5000 });

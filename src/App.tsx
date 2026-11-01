@@ -29,6 +29,7 @@ const SavedPage = lazy(() => import('./pages/Saved'));
 const LoginPage = lazy(() => import('./pages/Login'));
 const AccountPage = lazy(() => import('./pages/Account'));
 const ProfilePage = lazy(() => import('./pages/Profile'));
+const DonatePage = lazy(() => import('./pages/Donate'));
 
 function ScrollTop() {
   const { pathname } = useLocation();
@@ -77,6 +78,7 @@ export function AppRoutes() {
           <Route path="/account" element={<AccountPage />} />
           <Route path="/u/:username" element={<ProfilePage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/donate" element={<DonatePage />} />
           <Route path="/admin/*" element={<AdminPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

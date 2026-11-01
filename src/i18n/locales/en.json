@@ -48,7 +48,8 @@
     "experts": "Expert opinions",
     "about": "About",
     "admin": "Admin",
-    "saved": "Saved cases"
+    "saved": "Saved cases",
+    "donate": "Support"
   },
   "navGroup": {
     "archive": "Archive",
@@ -756,7 +757,8 @@
     "submit": "Submit a theory or a source to the archive.",
     "knowledge": "How to read the archive: evidence ratings, source types and how to check a claim yourself.",
     "experts": "What scientists, historians and investigators say about the best-known conspiracy theories.",
-    "about": "About The Conspiracy Atlas: what the archive is, how cases are rated and where the sources come from."
+    "about": "About The Conspiracy Atlas: what the archive is, how cases are rated and where the sources come from.",
+    "donate": "Support The Conspiracy Atlas: donate in Bitcoin, Ethereum or Solana."
   },
   "tabStamp": {
     "archive": "Registry",
@@ -768,7 +770,8 @@
     "knowledge": "Reference",
     "experts": "Assessment",
     "about": "Memorandum",
-    "submit": "Form CA-7"
+    "submit": "Form CA-7",
+    "donate": "Tip jar"
   },
   "account": {
     "kicker": "Your account",
@@ -946,5 +949,15 @@
     "gifStatic": "GIFs are saved as a still image.",
     "gifTooLarge": "This GIF is too large (max. {max} KB).",
     "openAdmin": "Open admin area"
+  },
+  "donate": {
+    "title": "Support the archive",
+    "intro": "The Conspiracy Atlas is free and ad-free. If you like the archive, you can support the work on it with cryptocurrency. I accept crypto only: Bitcoin, Ethereum or Solana.",
+    "network": "Network",
+    "copy": "Copy address",
+    "copied": "Copied",
+    "copyFailed": "Copy failed, please select it",
+    "qrLabel": "QR code of the {coin} address",
+    "note": "Please only send the matching coin over the stated network to its address. Crypto transfers cannot be reversed, so double-check the address before sending. Thank you for your support!"
   }
 }

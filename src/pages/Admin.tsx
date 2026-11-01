@@ -16,7 +16,7 @@ import {
   type EvidenceStatus,
   type SubmissionStatus,
 } from '../../shared/constants';
-import type { AdminCaseNote, ModerationLogEntry, Paged, ReportGroup, Source, TheoryDetail, TheorySummary } from '../../shared/types';
+import type { AdminCaseNote, AdminComment, ModerationLogEntry, Paged, ReportGroup, Source, TheoryDetail, TheorySummary } from '../../shared/types';
 import type { RichNode } from '../../shared/richtext';
 import { LoadState, Unavailable } from '../components/Unavailable';
 import { RichText } from '../components/RichText';
@@ -1237,9 +1237,77 @@ function Backup() {
   );
 }
 
+
+// ----------------------------------------------------------------------------------- comments
+
+function Comments({ a }: { a: Api }) {
+  const { t, locale } = useI18n();
+  const [status, setStatus] = useState<AdminComment['status']>('visible');
+  const [page, setPage] = useState(1);
+  const list = useAsync(() => a.get<Paged<AdminComment>>(`/comments?status=${status}&page=${page}`), [status, page]);
+  const setTo = async (id: number, s: 'visible' | 'hidden') => {
+    await a.post(`/comments/${id}`, { status: s });
+    list.reload();
+  };
+  const remove = async (id: number) => {
+    await a.del(`/comments/${id}`);
+    list.reload();
+  };
+  return (
+    <div data-testid="admin-comments">
+      <div className="adm-toolbar">
+        <label className="adm-control">
+          <span>{t('admin.status')}</span>
+          <select
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as typeof status);
+              setPage(1);
+            }}
+          >
+            {(['visible', 'hidden', 'deleted'] as const).map((s) => (
+              <option key={s} value={s}>
+                {t(`admin.commentStatus.${s}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <LoadState loading={list.loading} error={list.error} onRetry={list.reload} />
+      {list.data?.items.length === 0 && <p className="muted">{t('admin.noItems')}</p>}
+      {list.data?.items.map((cm) => (
+        <div key={cm.id} className="panel" style={{ marginBottom: 10 }}>
+          <div className="small muted">
+            #{cm.id} {cm.parentId && <span className="tag">{t('admin.commentReply')}</span>} · <Link to={`/theory/${cm.theory.slug}`}>{cm.theory.title}</Link> ·{' '}
+            {cm.author ? <Link to={`/u/${cm.author.username}`}>@{cm.author.username}</Link> : '—'} · {formatDate(cm.createdAt, locale)} ·{' '}
+            {t('admin.commentScore', { n: cm.score })}
+          </div>
+          <p style={{ whiteSpace: 'pre-wrap' }}>{cm.body}</p>
+          <div className="btn-row">
+            {cm.status === 'visible' && (
+              <button className="btn btn--small" onClick={() => setTo(cm.id, 'hidden')}>
+                {t('admin.commentHide')}
+              </button>
+            )}
+            {cm.status === 'hidden' && (
+              <button className="btn btn--small btn--primary" onClick={() => setTo(cm.id, 'visible')}>
+                {t('admin.commentShow')}
+              </button>
+            )}
+            <button className="btn btn--small btn--ghost" onClick={() => remove(cm.id)}>
+              {t('admin.commentDelete')}
+            </button>
+          </div>
+        </div>
+      ))}
+      {list.data && (page > 1 || list.data.hasMore) && <Pagination page={page} hasMore={list.data.hasMore} onPage={setPage} />}
+    </div>
+  );
+}
+
 // ----------------------------------------------------------------------------------- page
 
-type SectionKey = 'overview' | 'moderation' | 'notes' | 'reports' | 'users' | 'archive' | 'services' | 'backup';
+type SectionKey = 'overview' | 'moderation' | 'notes' | 'comments' | 'reports' | 'users' | 'archive' | 'services' | 'backup';
 interface Overview {
   submissions: Record<string, number>;
   openReports: number;
@@ -1249,7 +1317,7 @@ interface Overview {
 
 const SECTION_GROUPS: readonly { group: string; items: readonly SectionKey[] }[] = [
   { group: 'start', items: ['overview'] },
-  { group: 'review', items: ['moderation', 'notes', 'reports'] },
+  { group: 'review', items: ['moderation', 'notes', 'comments', 'reports'] },
   { group: 'manage', items: ['users', 'archive'] },
   { group: 'system', items: ['services', 'backup'] },
 ];
@@ -1258,6 +1326,7 @@ const SECTION_ICONS: Record<SectionKey, string> = {
   overview: '⌂',
   moderation: '✉',
   notes: '✎',
+  comments: '❝',
   reports: '⚑',
   users: '☺',
   archive: '▤',
@@ -1413,6 +1482,7 @@ export default function AdminPage() {
             {tab === 'overview' && <OverviewPanel data={overview.data} onOpen={setTab} who={session.username} />}
             {tab === 'moderation' && <Moderation a={adminApi(session.csrfToken)} />}
             {tab === 'notes' && <Notes a={adminApi(session.csrfToken)} />}
+            {tab === 'comments' && <Comments a={adminApi(session.csrfToken)} />}
             {tab === 'reports' && <Reports a={adminApi(session.csrfToken)} />}
             {tab === 'users' && <Users a={adminApi(session.csrfToken)} canManageOwners={!!session.canManageOwners} />}
             {tab === 'archive' && <Archive a={adminApi(session.csrfToken)} />}

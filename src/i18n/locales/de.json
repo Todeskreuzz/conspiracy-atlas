@@ -533,7 +533,8 @@
       "backup": "Sicherung",
       "notes": "Leser-Hinweise",
       "users": "Konten",
-      "overview": "Übersicht"
+      "overview": "Übersicht",
+      "comments": "Kommentare"
     },
     "queue": "Warteschlange",
     "statuses": {
@@ -662,7 +663,8 @@
       "users": "Alle registrierten Konten. Hier vergibst du Ränge, erlaubst GIF-Bilder, sperrst oder löschst Konten und entfernst illegale Profilbilder.",
       "archive": "Die veröffentlichten Fallakten. Klicke auf einen Titel, um ihn zu bearbeiten, oder lege eine neue Theorie an.",
       "services": "Zeigt, ob alle Cloudflare-Dienste laufen und wie viel vom Gratis-Limit verbraucht ist.",
-      "backup": "Lade eine komplette Sicherung der Datenbank herunter. Mach das regelmäßig und vor großen Änderungen."
+      "backup": "Lade eine komplette Sicherung der Datenbank herunter. Mach das regelmäßig und vor großen Änderungen.",
+      "comments": "Kommentare von Konten erscheinen sofort. Blende aus, was gegen die Regeln verstößt; ausgeblendete Kommentare lassen sich wiederherstellen."
     },
     "overview": {
       "welcome": "Willkommen, {name}! Hier siehst du auf einen Blick, was zu tun ist.",
@@ -705,7 +707,17 @@
       "lockUser": "Konto des Autors sperren",
       "dismissAll": "Meldungen verwerfen",
       "log": "Moderationsprotokoll (letzte 50)"
-    }
+    },
+    "commentStatus": {
+      "visible": "Sichtbar",
+      "hidden": "Ausgeblendet",
+      "deleted": "Vom Verfasser gelöscht"
+    },
+    "commentHide": "Ausblenden",
+    "commentShow": "Wieder einblenden",
+    "commentDelete": "Endgültig löschen",
+    "commentReply": "Antwort",
+    "commentScore": "Wertung {n}"
   },
   "search": {
     "button": "Suche",
@@ -871,7 +883,8 @@
     "stats": {
       "since": "Mitglied seit",
       "submissions": "Veröffentlichte Fallakten",
-      "favorites": "Lieblingsfälle"
+      "favorites": "Lieblingsfälle",
+      "comments": "Kommentare"
     },
     "pendingImage": "Wartet auf Prüfung – vorerst siehst nur du dieses Bild.",
     "privateStamp": "Privat",
@@ -882,7 +895,8 @@
     "edit": "Profil bearbeiten",
     "adminBadge": "Admin",
     "ownerBadge": "Großmeister",
-    "ownerBadgeTitle": "Gründer und Inhaber des Atlas"
+    "ownerBadgeTitle": "Gründer und Inhaber des Atlas",
+    "recentComments": "Letzte Kommentare"
   },
   "profileEditor": {
     "title": "Mein Profil",
@@ -988,5 +1002,35 @@
     "copyFailed": "Kopieren nicht möglich, bitte markieren",
     "qrLabel": "QR-Code der {coin}-Adresse",
     "note": "Bitte sende nur die jeweils passende Währung über das angegebene Netzwerk an die passende Adresse. Krypto-Überweisungen lassen sich nicht rückgängig machen; prüfe die Adresse vor dem Senden. Danke für deine Unterstützung!"
+  },
+  "discussion": {
+    "title": "Diskussion",
+    "intro": "Kommentare aus der Community. Sie sind Meinungen, keine geprüften Fakten. Bitte fair und beim Thema bleiben.",
+    "caseVote": "Deine Bewertung:",
+    "commentVote": "Kommentar bewerten",
+    "voteUp": "Daumen hoch",
+    "voteDown": "Daumen runter",
+    "signIn": "Anmelden und mitdiskutieren",
+    "signInHint": "Für Kommentare und Bewertungen brauchst du ein kostenloses Konto.",
+    "signInToVote": "Zum Bewerten bitte anmelden",
+    "ownComment": "Eigene Kommentare kannst du nicht bewerten",
+    "placeholder": "Schreib einen Kommentar …",
+    "replyPlaceholder": "Schreib eine Antwort …",
+    "post": "Absenden",
+    "save": "Speichern",
+    "reply": "Antworten",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "deleteConfirm": "Diesen Kommentar löschen?",
+    "deleteYes": "Ja, löschen",
+    "deleted": "Dieser Kommentar wurde vom Verfasser gelöscht.",
+    "edited": "bearbeitet",
+    "empty": "Noch keine Kommentare. Fang die Diskussion an!",
+    "sort": "Kommentare sortieren",
+    "sorts": {
+      "top": "Beste zuerst",
+      "new": "Neueste zuerst"
+    },
+    "chars": "{count} / {max}"
   }
 }

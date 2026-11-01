@@ -38,8 +38,9 @@ import { addEdge, addNode, deleteEdge, deleteNode, savePositions } from '../boar
 import { BACKUP_TABLES, toCsv } from '../backup';
 import { IMAGE_LIMITS } from '../../shared/images';
 import { mapCaseNote } from './community';
-import type { AdminCaseNote, ModerationLogEntry, ReportGroup } from '../../shared/types';
+import type { AdminCaseNote, AdminComment, ModerationLogEntry, ReportGroup } from '../../shared/types';
 import { describeTarget, hideTarget, lockUser, restoreTarget } from '../moderation';
+import { COMMENT_AUTHOR_COLUMNS, COMMENT_AUTHOR_JOIN, mapAuthor } from './comments';
 import { IMAGE_PATH_RE, assertImageQuota, imageInsertStatements, imageResponse, imageStorageLimitBytes, imageStorageUsed, mapImage, parseImages } from '../images';
 
 export const adminRoutes = new Hono<AppEnv>();
@@ -583,6 +584,62 @@ adminRoutes.post('/notes/:id', async (c) => {
 adminRoutes.delete('/notes/:id', async (c) => {
   const r = await Db.from(c.env).run('DELETE FROM case_notes WHERE id = ?', idParam(c));
   if (!r.changes) throw notFound('Note');
+  return c.json({ ok: true });
+});
+
+// ---------------------------------------------------------------------------
+// Comments from accounts (published at once; editors can hide or delete them)
+// ---------------------------------------------------------------------------
+
+const COMMENT_STATUSES = ['visible', 'hidden', 'deleted'] as const;
+
+adminRoutes.get('/comments', async (c) => {
+  const db = Db.from(c.env);
+  const q = c.req.query();
+  const { page, pageSize, offset, limit } = pageParams(q);
+  const status = optOneOf(q.status, 'status', COMMENT_STATUSES) ?? 'visible';
+  const rows = await db.all(
+    `SELECT c.id, c.parent_id, c.body, c.status, c.created_at, c.edited_at, ${COMMENT_AUTHOR_COLUMNS},
+            t.id AS theory_id, t.slug AS theory_slug, t.title AS theory_title,
+            (SELECT COALESCE(SUM(v.value), 0) FROM comment_votes v WHERE v.comment_id = c.id) AS score
+     FROM comments c JOIN theories t ON t.id = c.theory_id ${COMMENT_AUTHOR_JOIN}
+     WHERE c.status = ? ORDER BY c.created_at DESC, c.id DESC LIMIT ? OFFSET ?`,
+    status,
+    limit,
+    offset,
+  );
+  const items: AdminComment[] = rows.map((r) => ({
+    id: Number(r.id),
+    body: String(r.body),
+    status: r.status as AdminComment['status'],
+    createdAt: String(r.created_at),
+    editedAt: (r.edited_at as string) ?? null,
+    parentId: r.parent_id == null ? null : Number(r.parent_id),
+    author: mapAuthor(r),
+    theory: { id: Number(r.theory_id), slug: String(r.theory_slug), title: String(r.theory_title) },
+    score: Number(r.score ?? 0),
+  }));
+  return c.json(paged(items, page, pageSize));
+});
+
+adminRoutes.post('/comments/:id', async (c) => {
+  const db = Db.from(c.env);
+  const id = idParam(c);
+  const body = await readJson(c, 5_000);
+  const status = oneOf(body.status, 'status', ['visible', 'hidden'] as const);
+  const note = optStr(body.note, 'note', 2000);
+  const r = await db.run("UPDATE comments SET status = ? WHERE id = ? AND status != 'deleted'", status, id);
+  if (!r.changes) throw notFound('Comment');
+  await db.run('INSERT INTO moderation_actions (action, note, actor) VALUES (?, ?, ?)', `comment_${status}:${id}`, note, actor(c));
+  return c.json({ ok: true });
+});
+
+adminRoutes.delete('/comments/:id', async (c) => {
+  const db = Db.from(c.env);
+  const id = idParam(c);
+  const r = await db.run('DELETE FROM comments WHERE id = ?', id);
+  if (!r.changes) throw notFound('Comment');
+  await db.run('INSERT INTO moderation_actions (action, note, actor) VALUES (?, ?, ?)', `comment_deleted:${id}`, null, actor(c));
   return c.json({ ok: true });
 });
 
@@ -1201,7 +1258,14 @@ adminRoutes.get('/export', async (c) => {
     return c.body(toCsv(rows));
   }
   const data: Record<string, Row[]> = {};
-  for (const table of BACKUP_TABLES) data[table] = await db.all(`SELECT * FROM ${table} LIMIT 100000`);
+  for (const table of BACKUP_TABLES) {
+    // Tables of a migration that is not applied yet are skipped instead of failing the whole export.
+    const rows = await db.all(`SELECT * FROM ${table} LIMIT 100000`).catch((e) => {
+      if (e instanceof ApiError && e.state === 'not_configured') return null;
+      throw e;
+    });
+    if (rows) data[table] = rows;
+  }
   c.header('Content-Disposition', `attachment; filename="conspiracy-atlas-backup-${stamp}.json"`);
   return c.json({ format: 'conspiracy-atlas-backup', version: 1, createdAt: new Date().toISOString(), tables: data });
 });

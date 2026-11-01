@@ -533,7 +533,8 @@
       "backup": "Backup",
       "notes": "Reader notes",
       "users": "Accounts",
-      "overview": "Overview"
+      "overview": "Overview",
+      "comments": "Comments"
     },
     "queue": "Queue",
     "statuses": {
@@ -662,7 +663,8 @@
       "users": "All registered accounts. Assign ranks, allow GIF images, lock or delete accounts and remove illegal profile images here.",
       "archive": "The published case files. Click a title to edit it, or create a new theory.",
       "services": "Shows whether all Cloudflare services are running and how much of the free limit is used.",
-      "backup": "Download a complete backup of the database. Do this regularly and before big changes."
+      "backup": "Download a complete backup of the database. Do this regularly and before big changes.",
+      "comments": "Comments from accounts appear at once. Hide anything that breaks the rules; hidden comments can be restored."
     },
     "overview": {
       "welcome": "Welcome, {name}! Here is what needs doing at a glance.",
@@ -705,7 +707,17 @@
       "lockUser": "Lock author account",
       "dismissAll": "Dismiss reports",
       "log": "Moderation log (latest 50)"
-    }
+    },
+    "commentStatus": {
+      "visible": "Visible",
+      "hidden": "Hidden",
+      "deleted": "Deleted by author"
+    },
+    "commentHide": "Hide",
+    "commentShow": "Show again",
+    "commentDelete": "Delete permanently",
+    "commentReply": "Reply",
+    "commentScore": "Score {n}"
   },
   "search": {
     "button": "Search",
@@ -871,7 +883,8 @@
     "stats": {
       "since": "Member since",
       "submissions": "Published case files",
-      "favorites": "Favourites"
+      "favorites": "Favourites",
+      "comments": "Comments"
     },
     "pendingImage": "Waiting for review – only you can see this image for now.",
     "privateStamp": "Private",
@@ -882,7 +895,8 @@
     "edit": "Edit profile",
     "adminBadge": "Admin",
     "ownerBadge": "Grand Master",
-    "ownerBadgeTitle": "Founder and owner of the Atlas"
+    "ownerBadgeTitle": "Founder and owner of the Atlas",
+    "recentComments": "Latest comments"
   },
   "profileEditor": {
     "title": "My profile",
@@ -988,5 +1002,35 @@
     "copyFailed": "Copy failed, please select it",
     "qrLabel": "QR code of the {coin} address",
     "note": "Please only send the matching coin over the stated network to its address. Crypto transfers cannot be reversed, so double-check the address before sending. Thank you for your support!"
+  },
+  "discussion": {
+    "title": "Discussion",
+    "intro": "Comments from members of the community. They are opinions, not verified facts. Be fair and stay on topic.",
+    "caseVote": "Your rating:",
+    "commentVote": "Rate this comment",
+    "voteUp": "Thumbs up",
+    "voteDown": "Thumbs down",
+    "signIn": "Sign in to join the discussion",
+    "signInHint": "Commenting and voting need a free account.",
+    "signInToVote": "Sign in to vote",
+    "ownComment": "You cannot vote on your own comment",
+    "placeholder": "Write a comment…",
+    "replyPlaceholder": "Write a reply…",
+    "post": "Post",
+    "save": "Save",
+    "reply": "Reply",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this comment?",
+    "deleteYes": "Yes, delete",
+    "deleted": "This comment was deleted by its author.",
+    "edited": "edited",
+    "empty": "No comments yet. Start the discussion!",
+    "sort": "Sort comments",
+    "sorts": {
+      "top": "Best rated",
+      "new": "Newest"
+    },
+    "chars": "{count} / {max}"
   }
 }

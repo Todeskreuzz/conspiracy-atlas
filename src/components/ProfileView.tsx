@@ -53,15 +53,35 @@ export function ProfileView({ data, preview }: Props) {
         <p className="profile__empty">{t('profile.empty.favorites')}</p>
       ) : null,
     submissions: () =>
-      data.submissions.length ? (
-        <ul className="profile__list">
-          {data.submissions.map((s) => (
-            <li key={s.id}>
-              {s.theorySlug ? <Link to={`/theory/${s.theorySlug}`}>{s.title}</Link> : s.title}
-              <span className="muted small"> · {formatDate(s.createdAt, locale)}</span>
-            </li>
-          ))}
-        </ul>
+      data.submissions.length || data.recentComments?.length ? (
+        <>
+          {data.submissions.length > 0 && (
+            <ul className="profile__list">
+              {data.submissions.map((s) => (
+                <li key={s.id}>
+                  {s.theorySlug ? <Link to={`/theory/${s.theorySlug}`}>{s.title}</Link> : s.title}
+                  <span className="muted small"> · {formatDate(s.createdAt, locale)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {!!data.recentComments?.length && (
+            <>
+              <h3 className="profile__subhead">{t('profile.recentComments')}</h3>
+              <ul className="profile__list profile__comments">
+                {data.recentComments.map((c) => (
+                  <li key={c.id}>
+                    <q>{c.excerpt}</q>
+                    <span className="muted small">
+                      {' '}
+                      · <Link to={`/theory/${c.theorySlug}`}>{c.theoryTitle}</Link> · {formatDate(c.createdAt, locale)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </>
       ) : showOwnerHints ? (
         <p className="profile__empty">{t('profile.empty.submissions')}</p>
       ) : null,
@@ -93,6 +113,12 @@ export function ProfileView({ data, preview }: Props) {
           <dt>{t('profile.stats.favorites')}</dt>
           <dd>{data.stats.favorites}</dd>
         </div>
+        {data.stats.comments !== undefined && (
+          <div>
+            <dt>{t('profile.stats.comments')}</dt>
+            <dd>{data.stats.comments}</dd>
+          </div>
+        )}
       </dl>
     ),
   };

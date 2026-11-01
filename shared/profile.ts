@@ -223,5 +223,15 @@ export interface PublicProfile {
   profile: ProfileSettings;
   favorites: import('./types').TheorySummary[];
   submissions: ProfileSubmission[];
-  stats: { publishedSubmissions: number; favorites: number };
+  stats: { publishedSubmissions: number; favorites: number; comments?: number };
+  /** Latest visible comments of the account (newest first). */
+  recentComments?: ProfileComment[];
+}
+
+export interface ProfileComment {
+  id: number;
+  excerpt: string;
+  createdAt: string;
+  theorySlug: string;
+  theoryTitle: string;
 }

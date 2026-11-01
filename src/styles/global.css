@@ -268,7 +268,9 @@ main {
   border-radius: 4px;
   overflow: hidden;
 }
-.lang-switch button {
+.lang-switch a {
+  display: inline-block;
+  text-decoration: none;
   background: transparent;
   border: 0;
   color: var(--ink-300);
@@ -277,7 +279,7 @@ main {
   font-size: 0.8rem;
   cursor: pointer;
 }
-.lang-switch button[aria-pressed='true'] {
+.lang-switch a[aria-current='true'] {
   background: var(--ink-700);
   color: #fff;
 }

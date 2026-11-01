@@ -6,6 +6,7 @@
     "tagline": "An Interactive Global Archive of Theories, Mysteries & Connections.",
     "skip": "Skip to content",
     "language": "Language",
+    "languageName": { "en": "English", "de": "Deutsch" },
     "menu": "Menu",
     "loading": "Loading…",
     "retry": "Try again",

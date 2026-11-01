@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { I18nProvider, useT } from './i18n';
+import type { Locale } from '../shared/constants';
 import { StatusProvider } from './api/status';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -87,9 +88,9 @@ export function AppRoutes() {
   );
 }
 
-export function App() {
+export function App({ locale, onLocaleChange }: { locale?: Locale; onLocaleChange?: (l: Locale) => void } = {}) {
   return (
-    <I18nProvider>
+    <I18nProvider initial={locale} onLocaleChange={onLocaleChange}>
       <StatusProvider>
         <ScrollTop />
         <PageMeta />

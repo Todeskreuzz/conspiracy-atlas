@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { LOCALES } from '../../shared/constants';
+import { localePath } from '../../shared/localePath';
 import { setApiLocale } from '../api/client';
 import { GlobalSearch } from './GlobalSearch';
 import { AccountButton, AccountNavLink, AdminNavLink } from './AccountButton';
@@ -148,14 +149,28 @@ export function BrandMark() {
   );
 }
 
+/** Real links to the other language's URL (crawlable), switching in place when clicked. */
 export function LanguageSwitch() {
   const { locale, setLocale, t } = useI18n();
+  const { pathname, search, hash } = useLocation();
   return (
     <div className="lang-switch" role="group" aria-label={t('app.language')}>
       {LOCALES.map((l) => (
-        <button key={l} type="button" aria-pressed={locale === l} onClick={() => setLocale(l)} lang={l}>
+        <a
+          key={l}
+          href={localePath(l, pathname) + search + hash}
+          hrefLang={l}
+          lang={l}
+          aria-current={locale === l ? 'true' : undefined}
+          title={t(`app.languageName.${l}`)}
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+            e.preventDefault();
+            if (l !== locale) setLocale(l);
+          }}
+        >
           {l.toUpperCase()}
-        </button>
+        </a>
       ))}
     </div>
   );

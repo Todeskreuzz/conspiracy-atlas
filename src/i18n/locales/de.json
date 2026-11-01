@@ -48,7 +48,8 @@
     "experts": "Experten-Meinungen",
     "about": "Über",
     "admin": "Verwaltung",
-    "saved": "Merkliste"
+    "saved": "Merkliste",
+    "donate": "Unterstützen"
   },
   "navGroup": {
     "archive": "Archiv",
@@ -756,7 +757,8 @@
     "submit": "Eine Theorie oder Quelle für das Archiv einreichen.",
     "knowledge": "So liest du das Archiv: Bewertungen der Beweislage, Quellenarten und wie du eine Behauptung selbst prüfst.",
     "experts": "Was Wissenschaftler, Historiker und Ermittler zu den bekanntesten Verschwörungstheorien sagen.",
-    "about": "Über The Conspiracy Atlas: was das Archiv ist, wie Fälle bewertet werden und woher die Quellen stammen."
+    "about": "Über The Conspiracy Atlas: was das Archiv ist, wie Fälle bewertet werden und woher die Quellen stammen.",
+    "donate": "The Conspiracy Atlas unterstützen: Spenden in Bitcoin, Ethereum oder Solana."
   },
   "tabStamp": {
     "archive": "Registratur",
@@ -768,7 +770,8 @@
     "knowledge": "Nachschlagen",
     "experts": "Gutachten",
     "about": "Memorandum",
-    "submit": "Formular CA-7"
+    "submit": "Formular CA-7",
+    "donate": "Spendenkasse"
   },
   "account": {
     "kicker": "Dein Konto",
@@ -946,5 +949,15 @@
     "gifStatic": "GIFs werden als Standbild gespeichert.",
     "gifTooLarge": "Dieses GIF ist zu groß (max. {max} KB).",
     "openAdmin": "Admin-Bereich öffnen"
+  },
+  "donate": {
+    "title": "Unterstütze das Archiv",
+    "intro": "The Conspiracy Atlas ist werbefrei und kostenlos. Wenn dir das Archiv gefällt, kannst du die Arbeit daran mit Kryptowährung unterstützen. Ich nehme ausschließlich Krypto an: Bitcoin, Ethereum oder Solana.",
+    "network": "Netzwerk",
+    "copy": "Adresse kopieren",
+    "copied": "Kopiert",
+    "copyFailed": "Kopieren nicht möglich, bitte markieren",
+    "qrLabel": "QR-Code der {coin}-Adresse",
+    "note": "Bitte sende nur die jeweils passende Währung über das angegebene Netzwerk an die passende Adresse. Krypto-Überweisungen lassen sich nicht rückgängig machen; prüfe die Adresse vor dem Senden. Danke für deine Unterstützung!"
   }
 }

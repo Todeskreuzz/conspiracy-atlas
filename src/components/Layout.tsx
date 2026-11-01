@@ -42,6 +42,7 @@ export const NAV: readonly NavEntry[] = [
   },
   { group: 'community', items: [{ to: '/community', key: 'nav.community' }] },
   { to: '/about', key: 'nav.about' },
+  { to: '/donate', key: 'nav.donate' },
   { to: '/submit', key: 'nav.submit', cta: true },
 ];
 
@@ -133,7 +134,7 @@ function MainNav({ open }: { open: boolean }) {
 }
 
 /** Sections whose page header carries a stamp (text in i18n under tabStamp). */
-export const TAB_STAMPS = ['archive', 'events', 'organizations', 'saved', 'investigations', 'community', 'knowledge', 'experts', 'about', 'submit'] as const;
+export const TAB_STAMPS = ['archive', 'events', 'organizations', 'saved', 'investigations', 'community', 'knowledge', 'experts', 'about', 'donate', 'submit'] as const;
 
 export function BrandMark() {
   return (
@@ -210,6 +211,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <div className="btn-row">
               <Link to="/knowledge">{t('nav.knowledge')}</Link>
               <Link to="/about">{t('nav.about')}</Link>
+              <Link to="/donate">{t('nav.donate')}</Link>
             </div>
           </div>
         </footer>

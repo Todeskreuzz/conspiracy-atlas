@@ -372,6 +372,7 @@ accountRoutes.get('/users/:username', async (c) => {
     row.id,
   );
   const result: PublicProfile = {
+    id: Number(row.id),
     username: String(row.username),
     displayName: String(row.display_name),
     createdAt: String(row.created_at),

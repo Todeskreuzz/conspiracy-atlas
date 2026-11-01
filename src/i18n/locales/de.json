@@ -474,6 +474,18 @@
       "harassment": "Belästigung oder persönlicher Angriff",
       "spam": "Spam",
       "other": "Sonstiges"
+    },
+    "short": "Melden",
+    "titleFor": "{what} melden",
+    "targets": {
+      "theory": "Fallakte",
+      "submission": "Einreichung",
+      "event": "Ereignis",
+      "organization": "Organisation",
+      "source": "Quelle",
+      "case_note": "Community-Beitrag",
+      "comment": "Kommentar",
+      "profile": "Profil"
     }
   },
   "knowledge": {
@@ -678,7 +690,21 @@
     },
     "stamp": "Streng geheim",
     "folderLabel": "Verschlusssache",
-    "fileNo": "Akte Nr. {n}"
+    "fileNo": "Akte Nr. {n}",
+    "reports": {
+      "intro": "Meldungen sind pro Beitrag zusammengefasst. Community-Inhalte werden automatisch ausgeblendet, sobald {n} verschiedene Besucher sie gemeldet haben. Hier kannst du sie wieder einblenden.",
+      "gone": "Beitrag existiert nicht mehr",
+      "count": "{n} Meldungen",
+      "hidden": "Ausgeblendet",
+      "locked": "Gesperrt",
+      "hide": "Inhalt ausblenden",
+      "restore": "Wieder einblenden",
+      "lockProfile": "Konto sperren",
+      "unlockProfile": "Konto entsperren",
+      "lockUser": "Konto des Autors sperren",
+      "dismissAll": "Meldungen verwerfen",
+      "log": "Moderationsprotokoll (letzte 50)"
+    }
   },
   "search": {
     "button": "Suche",

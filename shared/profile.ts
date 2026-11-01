@@ -210,6 +210,8 @@ export interface ProfileSubmission {
 }
 
 export interface PublicProfile {
+  /** Account id (used to report a profile). */
+  id?: number;
   username: string;
   displayName: string;
   createdAt: string;

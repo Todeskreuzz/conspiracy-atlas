@@ -32,6 +32,7 @@ export const NAV: readonly NavEntry[] = [
     items: [
       { to: '/timeline', key: 'nav.timeline' },
       { to: '/map', key: 'nav.map' },
+      { to: '/quiz', key: 'nav.quiz' },
     ],
   },
   {

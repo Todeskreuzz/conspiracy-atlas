@@ -223,7 +223,7 @@ export interface PublicProfile {
   profile: ProfileSettings;
   favorites: import('./types').TheorySummary[];
   submissions: ProfileSubmission[];
-  stats: { publishedSubmissions: number; favorites: number; comments?: number };
+  stats: { publishedSubmissions: number; favorites: number; comments?: number; quiz?: { answered: number; correct: number; points: number } };
   /** Latest visible comments of the account (newest first). */
   recentComments?: ProfileComment[];
 }

@@ -44,6 +44,7 @@
     "events": "Historical Events",
     "timeline": "Timeline",
     "map": "World Map",
+    "quiz": "Quiz: true or invented?",
     "investigations": "Investigations",
     "community": "Community theories",
     "submit": "Submit a Theory",
@@ -719,6 +720,22 @@
     "commentReply": "Reply",
     "commentScore": "Score {n}"
   },
+  "quiz": {
+    "title": "Quiz: true or invented?",
+    "intro": "A documented historical event is shown with a year. Decide whether the year is right. Every correct answer gives {points} points on your profile.",
+    "signIn": "Sign in to play",
+    "signInHint": "Your points are saved on your account.",
+    "score": "{points} points · {correct} of {answered} correct",
+    "statement": "The event “{title}” took place in {year}.",
+    "true": "True",
+    "false": "Invented",
+    "correct": "Correct! +{points} points.",
+    "wrong": "Wrong.",
+    "realYear": "The event took place in {year}.",
+    "explore": "Open the event",
+    "next": "Next question",
+    "done": "You have answered every question available for now. Come back later for new events."
+  },
   "search": {
     "button": "Search",
     "label": "Search the archive",
@@ -731,7 +748,8 @@
       "theories": "Case files",
       "people": "People",
       "organizations": "Organizations",
-      "events": "Events"
+      "events": "Events",
+      "locations": "Places on the map"
     }
   },
   "experts": {
@@ -884,7 +902,9 @@
       "since": "Member since",
       "submissions": "Published case files",
       "favorites": "Favourites",
-      "comments": "Comments"
+      "comments": "Comments",
+      "quiz": "Quiz",
+      "quizScore": "{points} points · {correct} of {answered} correct"
     },
     "pendingImage": "Waiting for review – only you can see this image for now.",
     "privateStamp": "Private",

@@ -358,9 +358,9 @@ publicRoutes.get('/shared-threads', async (c) => {
 publicRoutes.get('/search', async (c) => {
   const db = Db.from(c.env);
   const q = (c.req.query('q') ?? '').trim().slice(0, 100);
-  if (q.length < 2) return c.json({ theories: [], events: [], organizations: [], people: [] });
+  if (q.length < 2) return c.json({ theories: [], events: [], organizations: [], people: [], locations: [] });
   const like = likeEscape(q);
-  const [theories, events, organizations, people] = await Promise.all([
+  const [theories, events, organizations, people, locations] = await Promise.all([
     db.all(
       `${THEORY_SUMMARY_SELECT} WHERE t.is_published = 1 AND (t.title LIKE ?1 ESCAPE '\\' OR t.subtitle LIKE ?1 ESCAPE '\\' OR t.summary LIKE ?1 ESCAPE '\\')
        ORDER BY (t.title LIKE ?1 ESCAPE '\\') DESC, t.title LIMIT 8`,
@@ -381,7 +381,12 @@ publicRoutes.get('/search', async (c) => {
        ORDER BY (name LIKE ?1 ESCAPE '\\') DESC, name LIMIT 8`,
       like,
     ),
+    db.all(
+      `SELECT id, slug, name, country_code FROM locations WHERE name LIKE ?1 ESCAPE '\\' OR description LIKE ?1 ESCAPE '\\'
+       ORDER BY (name LIKE ?1 ESCAPE '\\') DESC, name LIMIT 8`,
+      like,
+    ),
   ]);
   publicCache(c, 60);
-  return c.json({ theories: theories.map(mapTheorySummary), events, organizations, people });
+  return c.json({ theories: theories.map(mapTheorySummary), events, organizations, people, locations });
 });

@@ -11,6 +11,7 @@ import { adminRoutes } from './routes/admin';
 import { importRoutes } from './routes/importer';
 import { accountRoutes } from './routes/account';
 import { commentRoutes } from './routes/comments';
+import { quizRoutes } from './routes/quiz';
 
 export type { AppEnv, Ctx } from './http';
 
@@ -32,6 +33,7 @@ export function createApp() {
   app.route('/', importRoutes);
   app.route('/', accountRoutes);
   app.route('/', commentRoutes);
+  app.route('/', quizRoutes);
   app.route('/admin', adminRoutes);
 
   app.notFound((c) => c.json({ error: { code: 'not_found', message: 'Endpoint not found' } }, 404));

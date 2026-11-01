@@ -10,16 +10,17 @@ interface SearchResponse {
   people: Array<{ slug: string; name: string; role: string | null }>;
   organizations: Array<{ slug: string; name: string; kind: string }>;
   events: Array<{ slug: string; title: string; start_year: number | null }>;
+  locations: Array<{ id: number; name: string; country_code: string | null }>;
 }
 interface Hit {
   key: string;
-  group: 'theories' | 'people' | 'organizations' | 'events';
+  group: 'theories' | 'people' | 'organizations' | 'events' | 'locations';
   title: string;
   meta: string | null;
   to: string;
 }
 
-const GROUPS = ['theories', 'people', 'organizations', 'events'] as const;
+const GROUPS = ['theories', 'people', 'organizations', 'events', 'locations'] as const;
 
 function toHits(r: SearchResponse, t: (k: string) => string): Hit[] {
   return [
@@ -27,6 +28,7 @@ function toHits(r: SearchResponse, t: (k: string) => string): Hit[] {
     ...r.people.map((x) => ({ key: `p-${x.slug}`, group: 'people' as const, title: x.name, meta: x.role, to: `/people/${x.slug}` })),
     ...r.organizations.map((x) => ({ key: `o-${x.slug}`, group: 'organizations' as const, title: x.name, meta: null, to: `/organizations/${x.slug}` })),
     ...r.events.map((x) => ({ key: `e-${x.slug}`, group: 'events' as const, title: x.title, meta: x.start_year ? String(x.start_year) : null, to: `/events/${x.slug}` })),
+    ...r.locations.map((x) => ({ key: `l-${x.id}`, group: 'locations' as const, title: x.name, meta: x.country_code, to: '/map' })),
   ];
 }
 

@@ -44,6 +44,7 @@
     "events": "Historische Ereignisse",
     "timeline": "Zeitstrahl",
     "map": "Weltkarte",
+    "quiz": "Quiz: wahr oder erfunden?",
     "investigations": "Recherchen",
     "community": "Community-Theorien",
     "submit": "Theorie einreichen",
@@ -719,6 +720,22 @@
     "commentReply": "Antwort",
     "commentScore": "Wertung {n}"
   },
+  "quiz": {
+    "title": "Quiz: wahr oder erfunden?",
+    "intro": "Ein belegtes historisches Ereignis wird mit einer Jahreszahl gezeigt. Entscheide, ob die Jahreszahl stimmt. Jede richtige Antwort bringt {points} Punkte auf dein Profil.",
+    "signIn": "Anmelden und mitspielen",
+    "signInHint": "Deine Punkte werden in deinem Konto gespeichert.",
+    "score": "{points} Punkte · {correct} von {answered} richtig",
+    "statement": "Das Ereignis „{title}“ fand im Jahr {year} statt.",
+    "true": "Wahr",
+    "false": "Erfunden",
+    "correct": "Richtig! +{points} Punkte.",
+    "wrong": "Falsch.",
+    "realYear": "Das Ereignis fand im Jahr {year} statt.",
+    "explore": "Ereignis öffnen",
+    "next": "Nächste Frage",
+    "done": "Du hast alle verfügbaren Fragen beantwortet. Schau später wieder vorbei, dann gibt es neue Ereignisse."
+  },
   "search": {
     "button": "Suche",
     "label": "Archiv durchsuchen",
@@ -731,7 +748,8 @@
       "theories": "Fallakten",
       "people": "Personen",
       "organizations": "Organisationen",
-      "events": "Ereignisse"
+      "events": "Ereignisse",
+      "locations": "Orte auf der Karte"
     }
   },
   "experts": {
@@ -884,7 +902,9 @@
       "since": "Mitglied seit",
       "submissions": "Veröffentlichte Fallakten",
       "favorites": "Lieblingsfälle",
-      "comments": "Kommentare"
+      "comments": "Kommentare",
+      "quiz": "Quiz",
+      "quizScore": "{points} Punkte · {correct} von {answered} richtig"
     },
     "pendingImage": "Wartet auf Prüfung – vorerst siehst nur du dieses Bild.",
     "privateStamp": "Privat",

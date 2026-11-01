@@ -119,6 +119,12 @@ export function ProfileView({ data, preview }: Props) {
             <dd>{data.stats.comments}</dd>
           </div>
         )}
+        {data.stats.quiz && data.stats.quiz.answered > 0 && (
+          <div>
+            <dt>{t('profile.stats.quiz')}</dt>
+            <dd>{t('profile.stats.quizScore', { points: data.stats.quiz.points, correct: data.stats.quiz.correct, answered: data.stats.quiz.answered })}</dd>
+          </div>
+        )}
       </dl>
     ),
   };

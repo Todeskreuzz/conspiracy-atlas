@@ -1,5 +1,7 @@
 {
   "app": {
+    "rss": "RSS-Feed",
+    "rssTitle": "Neue Akten und den Fall des Tages in jedem Feed-Reader abonnieren",
     "name": "The Conspiracy Atlas",
     "tagline": "Ein interaktives globales Archiv für Theorien, Geheimnisse und Zusammenhänge.",
     "skip": "Zum Inhalt springen",

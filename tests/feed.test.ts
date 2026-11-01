@@ -34,7 +34,9 @@ describe('RSS feed', () => {
     const de = await buildFeed(db, 'https://x.test', 'de', new Date('2026-11-01T12:00:00Z'));
     expect(de).toContain('<language>de</language>');
     expect(pick(de)).toMatch(/^Fall des Tages: /);
-    expect(de).toMatch(/<link>https:\/\/x.test\/theory\/[^<]+\?lang=de<\/link>/);
+    expect(de).toMatch(/<link>https:\/\/x.test\/de\/theory\/[^<?]+<\/link>/);
+    expect(de).toContain('<link>https://x.test/de</link>');
+    expect(de).toContain('<atom:link href="https://x.test/feed.xml?lang=de"');
   });
 
   it('formats SQLite times as RFC 822 dates and says unavailable without a database', async () => {

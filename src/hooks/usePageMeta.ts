@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n';
+import { localeAlternates } from '../../shared/localePath';
 
 const SITE = 'The Conspiracy Atlas';
 
@@ -34,11 +35,10 @@ export function usePageMeta(title: string | null | undefined, description?: stri
     if (title === undefined) return;
     document.title = title ? `${title} – ${SITE}` : SITE;
     setMeta('description', (description ?? t('app.tagline')).replace(/\s+/g, ' ').trim().slice(0, 200));
-    const en = `${window.location.origin}${pathname}`;
-    const de = `${en}?lang=de`;
-    setLink('link[rel="canonical"]', { rel: 'canonical', href: locale === 'de' ? de : en });
-    setLink('link[rel="alternate"][hreflang="en"]', { rel: 'alternate', hreflang: 'en', href: en });
-    setLink('link[rel="alternate"][hreflang="de"]', { rel: 'alternate', hreflang: 'de', href: de });
-    setLink('link[rel="alternate"][hreflang="x-default"]', { rel: 'alternate', hreflang: 'x-default', href: en });
+    // pathname comes from the router, so it has no language prefix.
+    for (const alt of localeAlternates(window.location.origin, pathname)) {
+      setLink(`link[rel="alternate"][hreflang="${alt.locale}"]`, { rel: 'alternate', hreflang: alt.locale, href: alt.url });
+      if (alt.locale === locale) setLink('link[rel="canonical"]', { rel: 'canonical', href: alt.url });
+    }
   }, [title, description, locale, t, pathname]);
 }

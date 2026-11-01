@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import en from './locales/en.json';
 import de from './locales/de.json';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '../../shared/constants';
+import { localeFromPath } from '../../shared/localePath';
 
 // Central translation registry. To add a language: add a JSON file with the same keys,
 // register it here and extend LOCALES in shared/constants.ts.
@@ -12,7 +13,7 @@ type Leaves<T, P extends string = ''> = {
 }[keyof T & string];
 export type TKey = Leaves<typeof en>;
 
-const STORAGE_KEY = 'ca.locale';
+export const STORAGE_KEY = 'ca.locale';
 
 function lookup(dict: unknown, key: string): string | undefined {
   let cur: unknown = dict;
@@ -28,16 +29,23 @@ export function translate(locale: Locale, key: string, vars?: Record<string, str
   return vars ? raw.replace(/\{(\w+)\}/g, (_, v) => (vars[v] !== undefined ? String(vars[v]) : `{${v}}`)) : raw;
 }
 
+/** The language of the current URL: /de/... is German, plain paths are English (see shared/localePath.ts). */
 export function detectLocale(): Locale {
   try {
-    const fromUrl = new URLSearchParams(window.location.search).get('lang');
-    if (fromUrl && (LOCALES as readonly string[]).includes(fromUrl)) return fromUrl as Locale;
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored && (LOCALES as readonly string[]).includes(stored)) return stored as Locale;
+    return localeFromPath(window.location.pathname);
   } catch {
-    /* storage unavailable */
+    return DEFAULT_LOCALE;
   }
-  return DEFAULT_LOCALE;
+}
+
+/** The language the visitor last chose with the switcher, if any. */
+export function storedLocale(): Locale | null {
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    return stored && (LOCALES as readonly string[]).includes(stored) ? (stored as Locale) : null;
+  } catch {
+    return null;
+  }
 }
 
 interface I18nValue {
@@ -52,16 +60,24 @@ const I18nContext = createContext<I18nValue>({
   t: (key, vars) => translate(DEFAULT_LOCALE, key, vars),
 });
 
-export function I18nProvider({ children, initial }: { children: ReactNode; initial?: Locale }) {
+/**
+ * onLocaleChange: set by the app root, which moves to the URL of the other language (src/i18n/LocaleRouter.tsx).
+ * Without it (tests) the language only changes in memory.
+ */
+export function I18nProvider({ children, initial, onLocaleChange }: { children: ReactNode; initial?: Locale; onLocaleChange?: (l: Locale) => void }) {
   const [locale, setLocaleState] = useState<Locale>(initial ?? detectLocale());
-  const setLocale = useCallback((l: Locale) => {
-    setLocaleState(l);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, l);
-    } catch {
-      /* ignore */
-    }
-  }, []);
+  const setLocale = useCallback(
+    (l: Locale) => {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, l);
+      } catch {
+        /* ignore */
+      }
+      if (onLocaleChange) onLocaleChange(l);
+      else setLocaleState(l);
+    },
+    [onLocaleChange],
+  );
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);

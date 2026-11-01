@@ -1,10 +1,11 @@
-// RSS 2.0 feed: today's case of the day plus the newest published cases, in English or German (?lang=de).
+// RSS 2.0 feed: today's case of the day plus the newest published cases, in English or German (/feed.xml?lang=de).
 // Feed readers poll it, so people come back without a newsletter service or any stored e-mail addresses.
 import type { Db } from './db';
 import type { Locale } from '../shared/constants';
 import { THEORY_FIELDS, THEORY_SUMMARY_SELECT, mapTheorySummary, translate } from './repo';
 import { caseOfTheDayIndex } from './routes/public';
 import { SITE_NAME, clip } from './og';
+import { localePath } from '../shared/localePath';
 
 /** How many new cases the feed lists besides the case of the day. */
 export const FEED_SIZE = 20;
@@ -45,8 +46,9 @@ function itemXml(i: Item): string {
 }
 
 export async function buildFeed(db: Db, origin: string, locale: Locale, now = new Date()): Promise<string> {
+  // The feed itself is /feed.xml(?lang=de); the pages it links to use the language URLs (/de/...).
   const q = locale === 'en' ? '' : `?lang=${locale}`;
-  const caseUrl = (slug: string) => `${origin}/theory/${encodeURIComponent(slug)}${q}`;
+  const caseUrl = (slug: string) => `${origin}${localePath(locale, `/theory/${encodeURIComponent(slug)}`)}`;
   const day = now.toISOString().slice(0, 10);
 
   const count = await db.first<{ n: number }>('SELECT COUNT(*) AS n FROM theories WHERE is_published = 1');
@@ -80,7 +82,7 @@ export async function buildFeed(db: Db, origin: string, locale: Locale, now = ne
     '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
     '<channel>',
     `<title>${esc(SITE_NAME)}</title>`,
-    `<link>${esc(`${origin}/${q}`)}</link>`,
+    `<link>${esc(`${origin}${localePath(locale, '/')}`)}</link>`,
     `<atom:link href="${esc(`${origin}/feed.xml${q}`)}" rel="self" type="application/rss+xml"/>`,
     `<description>${esc(text.description)}</description>`,
     `<language>${locale}</language>`,

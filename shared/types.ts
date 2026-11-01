@@ -343,3 +343,52 @@ export interface ModerationLogEntry {
   actor: string;
   createdAt: string;
 }
+
+/** Discussion under a case file or community theory (signed-in accounts only). */
+export type VoteValue = -1 | 0 | 1;
+
+export interface VoteTally {
+  up: number;
+  down: number;
+  /** The signed-in visitor's own vote (0 = none or signed out). */
+  myVote: VoteValue;
+}
+
+export interface CommentAuthor {
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+export interface DiscussionComment {
+  id: number;
+  parentId: number | null;
+  /** Empty for comments the author deleted (kept only as a placeholder above replies). */
+  body: string;
+  deleted: boolean;
+  language: 'en' | 'de';
+  createdAt: string;
+  editedAt: string | null;
+  author: CommentAuthor | null;
+  votes: VoteTally;
+  mine: boolean;
+  replies: DiscussionComment[];
+}
+
+export interface Discussion {
+  votes: VoteTally;
+  comments: DiscussionComment[];
+  total: number;
+}
+
+export interface AdminComment {
+  id: number;
+  body: string;
+  status: 'visible' | 'hidden' | 'deleted';
+  createdAt: string;
+  editedAt: string | null;
+  parentId: number | null;
+  author: CommentAuthor | null;
+  theory: { id: number; slug: string; title: string };
+  score: number;
+}

@@ -567,3 +567,12 @@
     padding-top: 2px;
   }
 }
+.profile__subhead {
+  font-size: 0.95rem;
+  margin: 14px 0 6px;
+  color: var(--pf-muted);
+}
+.profile__comments q {
+  font-style: italic;
+  overflow-wrap: anywhere;
+}

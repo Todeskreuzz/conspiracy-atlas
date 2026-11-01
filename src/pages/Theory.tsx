@@ -13,6 +13,7 @@ import { ImageGallery } from '../components/ImageGallery';
 import { SaveButton } from '../components/SaveButton';
 import { ShareButton } from '../components/ShareButton';
 import { CaseNotes } from '../components/CaseNotes';
+import { Discussion } from '../components/Discussion';
 
 export function entityPath(type: string, slug: string | null): string | null {
   if (!slug) return null;
@@ -252,6 +253,7 @@ export function TheoryPage() {
           </div>
         </aside>
       </div>
+      <Discussion slug={th.slug} />
       <CaseNotes slug={th.slug} />
     </div>
   );

@@ -102,6 +102,7 @@ export function accountApi(csrfToken: string | null) {
     get: <T>(path: string, signal?: AbortSignal) => api<T>(path, { signal, localized: false }),
     put: <T>(path: string, body: unknown) => api<T>(path, { method: 'PUT', body, headers, localized: false }),
     post: <T>(path: string, body: unknown) => api<T>(path, { method: 'POST', body, headers, localized: false }),
+    patch: <T>(path: string, body: unknown) => api<T>(path, { method: 'PATCH', body, headers, localized: false }),
     del: <T>(path: string, body?: unknown) => api<T>(path, { method: 'DELETE', body: body ?? {}, headers, localized: false }),
   };
 }

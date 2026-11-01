@@ -18,6 +18,7 @@ import {
   validatePassword,
   validateProfile,
   type AccountUser,
+  type ProfileComment,
   type ProfileImageInfo,
   type ProfileSubmission,
   type PublicProfile,
@@ -371,6 +372,27 @@ accountRoutes.get('/users/:username', async (c) => {
      WHERE s.user_id = ? AND s.status = 'published' AND s.display_mode = 'named' ORDER BY s.created_at DESC LIMIT 50`,
     row.id,
   );
+  // Comments exist from migration 0011 on; before that the profile simply shows none.
+  const commentRows = await db
+    .all(
+      `SELECT c.id, c.body, c.created_at, t.slug AS theory_slug, t.title AS theory_title,
+              (SELECT COUNT(*) FROM comments x JOIN theories xt ON xt.id = x.theory_id AND xt.is_published = 1
+               WHERE x.user_id = c.user_id AND x.status = 'visible') AS total
+       FROM comments c JOIN theories t ON t.id = c.theory_id AND t.is_published = 1
+       WHERE c.user_id = ? AND c.status = 'visible' ORDER BY c.created_at DESC, c.id DESC LIMIT 5`,
+      row.id,
+    )
+    .catch(() => [] as Row[]);
+  const recentComments: ProfileComment[] = commentRows.map((r) => {
+    const body = String(r.body);
+    return {
+      id: Number(r.id),
+      excerpt: body.length > 160 ? `${body.slice(0, 157).trimEnd()}…` : body,
+      createdAt: String(r.created_at),
+      theorySlug: String(r.theory_slug),
+      theoryTitle: String(r.theory_title),
+    };
+  });
   const result: PublicProfile = {
     id: Number(row.id),
     username: String(row.username),
@@ -383,7 +405,8 @@ accountRoutes.get('/users/:username', async (c) => {
     profile,
     favorites,
     submissions: submissionRows.map(mapProfileSubmission),
-    stats: { publishedSubmissions: submissionRows.length, favorites: favorites.length },
+    stats: { publishedSubmissions: submissionRows.length, favorites: favorites.length, comments: Number(commentRows[0]?.total ?? 0) },
+    recentComments,
   };
   c.header('Cache-Control', 'private, no-store');
   return c.json(result);

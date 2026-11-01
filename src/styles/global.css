@@ -1298,6 +1298,8 @@ table.data th {
 }
 .report-form--compact h4 {
   font-size: 0.95rem;
+}
+
 /* Discussion (comments and votes from accounts) */
 .discussion {
   margin-top: 28px;

@@ -1,5 +1,7 @@
 {
   "app": {
+    "rss": "RSS feed",
+    "rssTitle": "Subscribe to new cases and the case of the day in any feed reader",
     "name": "The Conspiracy Atlas",
     "tagline": "An Interactive Global Archive of Theories, Mysteries & Connections.",
     "skip": "Skip to content",

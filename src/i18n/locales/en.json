@@ -1,5 +1,7 @@
 {
   "app": {
+    "rss": "RSS feed",
+    "rssTitle": "Subscribe to new cases and the case of the day in any feed reader",
     "name": "The Conspiracy Atlas",
     "tagline": "An Interactive Global Archive of Theories, Mysteries & Connections.",
     "skip": "Skip to content",
@@ -473,6 +475,18 @@
       "harassment": "Harassment or personal attack",
       "spam": "Spam",
       "other": "Other"
+    },
+    "short": "Report",
+    "titleFor": "Report {what}",
+    "targets": {
+      "theory": "Case file",
+      "submission": "Submission",
+      "event": "Event",
+      "organization": "Organization",
+      "source": "Source",
+      "case_note": "Community note",
+      "comment": "Comment",
+      "profile": "Profile"
     }
   },
   "knowledge": {
@@ -677,7 +691,21 @@
     },
     "stamp": "Top secret",
     "folderLabel": "Classified",
-    "fileNo": "File no. {n}"
+    "fileNo": "File no. {n}",
+    "reports": {
+      "intro": "Reports are grouped per item. Community content is hidden automatically once {n} different visitors have reported it; you can restore it here.",
+      "gone": "Item no longer exists",
+      "count": "{n} reports",
+      "hidden": "Hidden",
+      "locked": "Locked",
+      "hide": "Hide content",
+      "restore": "Show again",
+      "lockProfile": "Lock account",
+      "unlockProfile": "Unlock account",
+      "lockUser": "Lock author account",
+      "dismissAll": "Dismiss reports",
+      "log": "Moderation log (latest 50)"
+    }
   },
   "search": {
     "button": "Search",

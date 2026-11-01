@@ -79,7 +79,7 @@ describe('moderation workflow', () => {
     await visitor.post('/api/reports', { targetType: 'theory', targetId: 1, reason: 'spam', turnstileToken: 't' });
     const list = await admin.get('/api/admin/reports');
     expect(list.json.items).toHaveLength(1);
-    const r = await admin.post(`/api/admin/reports/${list.json.items[0].id}`, { status: 'resolved' });
+    const r = await admin.post(`/api/admin/reports/${list.json.items[0].reports[0].id}`, { status: 'resolved' });
     expect(r.status).toBe(200);
   });
 });

@@ -24,6 +24,7 @@ import {
   LOCALES,
   RELATION_KINDS,
   RELATION_VERIFICATIONS,
+  REPORT_TARGET_TYPES,
   SOURCE_TYPES,
   SUBMISSION_STATUSES,
   type SubmissionStatus,
@@ -37,7 +38,8 @@ import { addEdge, addNode, deleteEdge, deleteNode, savePositions } from '../boar
 import { BACKUP_TABLES, toCsv } from '../backup';
 import { IMAGE_LIMITS } from '../../shared/images';
 import { mapCaseNote } from './community';
-import type { AdminCaseNote } from '../../shared/types';
+import type { AdminCaseNote, ModerationLogEntry, ReportGroup } from '../../shared/types';
+import { describeTarget, hideTarget, lockUser, restoreTarget } from '../moderation';
 import { IMAGE_PATH_RE, assertImageQuota, imageInsertStatements, imageResponse, imageStorageLimitBytes, imageStorageUsed, mapImage, parseImages } from '../images';
 
 export const adminRoutes = new Hono<AppEnv>();
@@ -143,7 +145,7 @@ const SUBMISSION_SELECT = `
 adminRoutes.get('/overview', async (c) => {
   const db = Db.from(c.env);
   const rows = await db.all('SELECT status, COUNT(*) AS n FROM community_submissions GROUP BY status');
-  const reports = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM reports WHERE status = 'open'");
+  const reports = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM (SELECT DISTINCT target_type, target_id FROM reports WHERE status = 'open')");
   // Until migration 0006 is applied the table is missing; the overview must keep working.
   const notes = await db.first<{ n: number }>("SELECT COUNT(*) AS n FROM case_notes WHERE status = 'pending'").catch(() => null);
   // Accounts exist from migration 0008/0009 on; before that the dashboard just shows zero.
@@ -438,13 +440,94 @@ async function publishSubmission(db: Db, row: Row): Promise<string> {
 // Reports
 // ---------------------------------------------------------------------------
 
+/** Reports grouped by the reported item, with what the item is and whether it is hidden. */
 adminRoutes.get('/reports', async (c) => {
   const db = Db.from(c.env);
   const q = c.req.query();
-  const { page, pageSize, offset, limit } = pageParams(q);
   const status = optOneOf(q.status, 'status', ['open', 'resolved', 'dismissed'] as const) ?? 'open';
-  const rows = await db.all('SELECT * FROM reports WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', status, limit, offset);
-  return c.json(paged(rows, page, pageSize));
+  // Raw reports are capped; one item reported hundreds of times still shows up as one group.
+  const rows = await db.all(
+    'SELECT id, target_type, target_id, reason, details, created_at FROM reports WHERE status = ? ORDER BY created_at DESC, id DESC LIMIT 500',
+    status,
+  );
+  const groups = new Map<string, ReportGroup>();
+  for (const r of rows) {
+    const key = `${r.target_type}:${r.target_id}`;
+    let g = groups.get(key);
+    if (!g) {
+      g = {
+        targetType: String(r.target_type),
+        targetId: Number(r.target_id),
+        count: 0,
+        reasons: {},
+        firstAt: String(r.created_at),
+        lastAt: String(r.created_at),
+        reports: [],
+        target: { exists: false, title: '', excerpt: null, url: null, community: false, hideable: false, hidden: false, user: null },
+      };
+      groups.set(key, g);
+    }
+    g.count++;
+    g.reasons[String(r.reason)] = (g.reasons[String(r.reason)] ?? 0) + 1;
+    g.firstAt = String(r.created_at);
+    g.reports.push({ id: Number(r.id), reason: String(r.reason), details: (r.details as string) ?? null, createdAt: String(r.created_at) });
+  }
+  // Most reported first, then most recent.
+  const items = [...groups.values()].sort((a, b) => b.count - a.count || b.lastAt.localeCompare(a.lastAt)).slice(0, 100);
+  for (const g of items) g.target = await describeTarget(db, g.targetType, g.targetId);
+  return c.json({ items, total: groups.size });
+});
+
+/**
+ * One decision for all open reports of an item:
+ * hide (and close the reports), restore, lock_user (the account behind it), dismiss or resolve.
+ */
+adminRoutes.post('/reports/target', async (c) => {
+  const db = Db.from(c.env);
+  const body = await readJson(c, 5_000);
+  const targetType = oneOf(body.targetType, 'targetType', REPORT_TARGET_TYPES);
+  const targetId = int(body.targetId, 'targetId', { min: 1 }) as number;
+  const action = oneOf(body.action, 'action', ['hide', 'restore', 'lock_user', 'dismiss', 'resolve'] as const);
+  const note = optStr(body.note, 'note', 2000);
+  const target = await describeTarget(db, targetType, targetId);
+  let changed = false;
+  if (action === 'hide' || action === 'restore') {
+    if (!target.exists) throw notFound('Reported item');
+    if (!target.hideable) throw new ApiError(400, 'invalid', 'This item cannot be hidden here', undefined, 'action');
+    if (targetType === 'profile') await guardOwner(c, db, targetId, false);
+    changed = action === 'hide' ? await hideTarget(db, targetType, targetId, 'manual') : await restoreTarget(db, targetType, targetId);
+  }
+  if (action === 'lock_user') {
+    if (!target.user) throw new ApiError(400, 'invalid', 'No account is linked to this item', undefined, 'action');
+    await guardOwner(c, db, target.user.id, false);
+    changed = await lockUser(db, target.user.id);
+  }
+  // Restoring keeps the reports as they are; every other decision closes the open ones.
+  const status = action === 'dismiss' || action === 'restore' ? 'dismissed' : 'resolved';
+  const closed = action === 'restore'
+    ? { changes: 0 }
+    : await db.run(
+        "UPDATE reports SET status = ?, resolved_at = datetime('now') WHERE target_type = ? AND target_id = ? AND status = 'open'",
+        status,
+        targetType,
+        targetId,
+      );
+  await db.run('INSERT INTO moderation_actions (action, note, actor) VALUES (?, ?, ?)', `report_${action}:${targetType}:${targetId}`, note, actor(c));
+  return c.json({ ok: true, changed, closedReports: closed.changes });
+});
+
+/** Latest moderation decisions (newest first). */
+adminRoutes.get('/moderation-log', async (c) => {
+  const db = Db.from(c.env);
+  const rows = await db.all('SELECT id, action, note, actor, created_at FROM moderation_actions ORDER BY created_at DESC, id DESC LIMIT 50');
+  const items: ModerationLogEntry[] = rows.map((r) => ({
+    id: Number(r.id),
+    action: String(r.action),
+    note: (r.note as string) ?? null,
+    actor: String(r.actor),
+    createdAt: String(r.created_at),
+  }));
+  return c.json({ items });
 });
 
 adminRoutes.post('/reports/:id', async (c) => {

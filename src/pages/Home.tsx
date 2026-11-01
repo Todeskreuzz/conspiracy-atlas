@@ -70,7 +70,12 @@ function CaseOfTheDay() {
     <section className="section container" data-testid="case-of-the-day">
       <div className="section-title">
         <h2>{t('home.caseOfTheDay')}</h2>
-        <span className="mono muted small">{day}</span>
+        <span className="mono muted small">
+          {day} ·{' '}
+          <a href={locale === 'de' ? '/feed.xml?lang=de' : '/feed.xml'} title={t('app.rssTitle')} data-testid="rss-link">
+            {t('app.rss')}
+          </a>
+        </span>
       </div>
       <article className="case-of-day paper">
         <span className="pin" aria-hidden="true" />

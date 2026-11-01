@@ -6,6 +6,7 @@ import { api, ApiFailure } from '../api/client';
 import { adminApi, refreshAdminSession, setAdminSession, useAdminSession } from '../api/admin';
 import { BACKUP_TABLES } from '../../shared/backup-core.mjs';
 import {
+  REPORT_AUTO_HIDE_THRESHOLD,
   CATEGORY_SLUGS,
   EVIDENCE_RELATIONS,
   EVIDENCE_STATUSES,
@@ -15,7 +16,7 @@ import {
   type EvidenceStatus,
   type SubmissionStatus,
 } from '../../shared/constants';
-import type { AdminCaseNote, Paged, Source, TheoryDetail, TheorySummary } from '../../shared/types';
+import type { AdminCaseNote, ModerationLogEntry, Paged, ReportGroup, Source, TheoryDetail, TheorySummary } from '../../shared/types';
 import type { RichNode } from '../../shared/richtext';
 import { LoadState, Unavailable } from '../components/Unavailable';
 import { RichText } from '../components/RichText';
@@ -305,16 +306,31 @@ function Moderation({ a }: { a: Api }) {
 
 // ----------------------------------------------------------------------------------- reports
 
+type ReportAction = 'hide' | 'restore' | 'lock_user' | 'dismiss' | 'resolve';
+
 function Reports({ a }: { a: Api }) {
   const { t, locale } = useI18n();
   const [status, setStatus] = useState<'open' | 'resolved' | 'dismissed'>('open');
-  const list = useAsync(() => a.get<Paged<Record<string, string | number>>>(`/reports?status=${status}`), [status]);
-  const resolve = async (id: number, s: 'resolved' | 'dismissed') => {
-    await a.post(`/reports/${id}`, { status: s });
-    list.reload();
+  const list = useAsync(() => a.get<{ items: ReportGroup[]; total: number }>(`/reports?status=${status}`), [status]);
+  const log = useAsync(() => a.get<{ items: ModerationLogEntry[] }>('/moderation-log'), []);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<ApiFailure | null>(null);
+  const decide = async (g: ReportGroup, action: ReportAction) => {
+    setBusy(`${g.targetType}:${g.targetId}`);
+    setError(null);
+    try {
+      await a.post('/reports/target', { targetType: g.targetType, targetId: g.targetId, action });
+      list.reload();
+      log.reload();
+    } catch (e) {
+      setError(e instanceof ApiFailure ? e : null);
+    } finally {
+      setBusy(null);
+    }
   };
   return (
-    <div>
+    <div data-testid="admin-reports">
+      <p className="muted small">{t('admin.reports.intro', { n: REPORT_AUTO_HIDE_THRESHOLD })}</p>
       <div className="adm-toolbar">
         <label className="adm-control">
           <span>{t('admin.status')}</span>
@@ -328,48 +344,100 @@ function Reports({ a }: { a: Api }) {
         </label>
       </div>
       <LoadState loading={list.loading} error={list.error} onRetry={list.reload} />
+      {error && <p className="notice notice--error">{error.message}</p>}
       {list.data?.items.length === 0 && <p className="muted">{t('admin.noItems')}</p>}
-      <div className="table-wrap">
-        <table className="data">
-          {!!list.data?.items.length && (
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>{t('admin.target')}</th>
-                <th>{t('admin.reportCols.reason')}</th>
-                <th>{t('admin.reportCols.details')}</th>
-                <th>{t('admin.reportCols.date')}</th>
-                <th />
-              </tr>
-            </thead>
-          )}
-          <tbody>
-            {list.data?.items.map((r) => (
-              <tr key={r.id}>
-                <td className="mono">#{r.id}</td>
-                <td>
-                  {r.target_type} #{r.target_id}
-                </td>
-                <td>{t(`report.reasons.${r.reason}`)}</td>
-                <td>{r.details}</td>
-                <td>{formatDate(String(r.created_at), locale)}</td>
-                <td>
-                  {status === 'open' && (
-                    <div className="btn-row">
-                      <button className="btn btn--small" onClick={() => resolve(Number(r.id), 'resolved')}>
-                        {t('admin.resolve')}
-                      </button>
-                      <button className="btn btn--small btn--ghost" onClick={() => resolve(Number(r.id), 'dismissed')}>
-                        {t('admin.dismiss')}
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {list.data?.items.map((g) => {
+        const key = `${g.targetType}:${g.targetId}`;
+        const tg = g.target;
+        return (
+          <article key={key} className="panel report-group" style={{ marginBottom: 10 }} data-testid="report-group">
+            <div className="report-group__head">
+              <span className="tag">{t(`report.targets.${g.targetType}`)}</span>
+              <strong>
+                {!tg.exists ? (
+                  t('admin.reports.gone')
+                ) : tg.url?.startsWith('/') ? (
+                  <Link to={tg.url}>{tg.title}</Link>
+                ) : tg.url ? (
+                  <a href={tg.url} target="_blank" rel="nofollow noopener noreferrer">
+                    {tg.title}
+                  </a>
+                ) : (
+                  tg.title
+                )}
+              </strong>
+              <span className="report-group__count" title={t('admin.reports.count', { n: g.count })}>
+                ⚑ {g.count}
+              </span>
+              {tg.hidden && <span className="tag tag--warn">{g.targetType === 'profile' ? t('admin.reports.locked') : t('admin.reports.hidden')}</span>}
+            </div>
+            {tg.excerpt && <blockquote className="report-group__excerpt">{tg.excerpt}</blockquote>}
+            <div className="small muted">
+              {Object.entries(g.reasons)
+                .map(([r, n]) => `${t(`report.reasons.${r}`)}${n > 1 ? ` ×${n}` : ''}`)
+                .join(' · ')}
+              {tg.user && (
+                <>
+                  {' · '}
+                  <Link to={`/u/${tg.user.username}`}>@{tg.user.username}</Link>
+                  {tg.user.locked && ` (${t('admin.reports.locked')})`}
+                </>
+              )}
+              {' · '}
+              {formatDate(g.lastAt, locale)}
+            </div>
+            {g.reports.some((r) => r.details) && (
+              <ul className="report-group__details small">
+                {g.reports
+                  .filter((r) => r.details)
+                  .slice(0, 5)
+                  .map((r) => (
+                    <li key={r.id}>„{r.details}“</li>
+                  ))}
+              </ul>
+            )}
+            <div className="btn-row" style={{ marginTop: 8 }}>
+              {tg.hideable && !tg.hidden && status === 'open' && (
+                <button className="btn btn--small btn--primary" disabled={busy === key} onClick={() => decide(g, 'hide')}>
+                  {g.targetType === 'profile' ? t('admin.reports.lockProfile') : t('admin.reports.hide')}
+                </button>
+              )}
+              {tg.hideable && tg.hidden && (
+                <button className="btn btn--small" disabled={busy === key} onClick={() => decide(g, 'restore')}>
+                  {g.targetType === 'profile' ? t('admin.reports.unlockProfile') : t('admin.reports.restore')}
+                </button>
+              )}
+              {tg.user && !tg.user.locked && g.targetType !== 'profile' && status === 'open' && (
+                <button className="btn btn--small" disabled={busy === key} onClick={() => decide(g, 'lock_user')}>
+                  {t('admin.reports.lockUser')}
+                </button>
+              )}
+              {status === 'open' && (
+                <>
+                  <button className="btn btn--small" disabled={busy === key} onClick={() => decide(g, 'resolve')}>
+                    {t('admin.resolve')}
+                  </button>
+                  <button className="btn btn--small btn--ghost" disabled={busy === key} onClick={() => decide(g, 'dismiss')}>
+                    {t('admin.reports.dismissAll')}
+                  </button>
+                </>
+              )}
+            </div>
+          </article>
+        );
+      })}
+      <details className="panel" style={{ marginTop: 16 }}>
+        <summary>{t('admin.reports.log')}</summary>
+        {log.data?.items.length === 0 && <p className="muted small">{t('admin.noItems')}</p>}
+        <ul className="list-plain small">
+          {log.data?.items.map((e) => (
+            <li key={e.id}>
+              <span className="mono">{formatDate(e.createdAt, locale)}</span> · {e.actor} · <span className="mono">{e.action}</span>
+              {e.note && ` · ${e.note}`}
+            </li>
+          ))}
+        </ul>
+      </details>
     </div>
   );
 }

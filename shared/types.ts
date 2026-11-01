@@ -305,3 +305,41 @@ export interface AdminCaseNote extends CaseNote {
   moderatorNote: string | null;
   theory: { id: number; slug: string; title: string };
 }
+
+/** What a report points at, as shown in the moderation view. */
+export interface ReportTarget {
+  /** False when the reported item no longer exists. */
+  exists: boolean;
+  title: string;
+  /** Short text of the reported item (comment, note, summary). */
+  excerpt: string | null;
+  /** Public page of the item, if any. */
+  url: string | null;
+  /** Community content (can be hidden automatically). */
+  community: boolean;
+  /** Whether the item can be hidden / restored from the moderation view. */
+  hideable: boolean;
+  hidden: boolean;
+  /** Account behind the item, if known (for locking). */
+  user: { id: number; username: string; locked: boolean } | null;
+}
+
+/** All reports of one item, grouped for the moderation view. */
+export interface ReportGroup {
+  targetType: string;
+  targetId: number;
+  count: number;
+  reasons: Record<string, number>;
+  firstAt: string;
+  lastAt: string;
+  reports: { id: number; reason: string; details: string | null; createdAt: string }[];
+  target: ReportTarget;
+}
+
+export interface ModerationLogEntry {
+  id: number;
+  action: string;
+  note: string | null;
+  actor: string;
+  createdAt: string;
+}

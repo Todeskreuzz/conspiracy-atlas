@@ -9,6 +9,7 @@ import { hashPassword, randomToken, sha256Hex, toHex, timingSafeEqual, verifyPas
 import { THEORY_FIELDS, THEORY_SUMMARY_SELECT, mapTheorySummary, translate } from '../repo';
 import { assertImageQuota } from '../images';
 import { turnstileFetch } from './community';
+import { quizStats } from './quiz';
 import { ANIMATED_IMAGE_MAX_BYTES, IMAGE_LIMITS, PROFILE_IMAGE_MIME_TYPES, base64ToBytes, isGif, sniffImageMime } from '../../shared/images';
 import {
   PROFILE_IMAGE_SLOTS,
@@ -405,7 +406,12 @@ accountRoutes.get('/users/:username', async (c) => {
     profile,
     favorites,
     submissions: submissionRows.map(mapProfileSubmission),
-    stats: { publishedSubmissions: submissionRows.length, favorites: favorites.length, comments: Number(commentRows[0]?.total ?? 0) },
+    stats: {
+      publishedSubmissions: submissionRows.length,
+      favorites: favorites.length,
+      comments: Number(commentRows[0]?.total ?? 0),
+      quiz: await quizStats(db, Number(row.id)),
+    },
     recentComments,
   };
   c.header('Cache-Control', 'private, no-store');

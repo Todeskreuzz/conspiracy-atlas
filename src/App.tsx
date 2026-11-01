@@ -31,6 +31,7 @@ const LoginPage = lazy(() => import('./pages/Login'));
 const AccountPage = lazy(() => import('./pages/Account'));
 const ProfilePage = lazy(() => import('./pages/Profile'));
 const DonatePage = lazy(() => import('./pages/Donate'));
+const QuizPage = lazy(() => import('./pages/Quiz'));
 
 function ScrollTop() {
   const { pathname } = useLocation();
@@ -75,6 +76,7 @@ export function AppRoutes() {
           <Route path="/experts" element={<ExpertsPage />} />
           <Route path="/experts/:slug" element={<ExpertCasePage />} />
           <Route path="/saved" element={<SavedPage />} />
+          <Route path="/quiz" element={<QuizPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/u/:username" element={<ProfilePage />} />

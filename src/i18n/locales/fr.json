@@ -537,7 +537,8 @@
       "users": "Comptes",
       "overview": "Vue d'ensemble",
       "comments": "Commentaires",
-      "reddit": "Reddit"
+      "reddit": "Reddit",
+      "x": "X"
     },
     "queue": "File",
     "statuses": {
@@ -669,7 +670,8 @@
       "services": "Indique si tous les services Cloudflare fonctionnent et quelle part du quota gratuit est utilisée.",
       "backup": "Téléchargez une sauvegarde complète de la base. Faites-le régulièrement et avant de grands changements.",
       "comments": "Les commentaires des comptes apparaissent tout de suite. Masquez ce qui enfreint les règles ; les commentaires masqués peuvent être rétablis.",
-      "reddit": "Brouillons de billets en anglais pour le subreddit du site. Copiez le titre et le texte, ouvrez Reddit, puis marquez le brouillon comme publié pour qu'il ne soit plus proposé."
+      "reddit": "Brouillons de billets en anglais pour le subreddit du site. Copiez le titre et le texte, ouvrez Reddit, puis marquez le brouillon comme publié pour qu'il ne soit plus proposé.",
+      "x": "Billets en anglais pour le compte X du site. Une accroche sans lien, une réponse qui porte le lien, et la même accroche avec le lien dans le billet."
     },
     "overview": {
       "welcome": "Bienvenue, {name} ! Voici ce qu'il y a à faire d'un coup d'œil.",
@@ -749,6 +751,33 @@
       "marked": "Marqué comme publié. Il ne sera plus proposé.",
       "restored": "Remis dans la file.",
       "postedTitle": "Déjà publié",
+      "undo": "Remettre dans la file"
+    },
+    "x": {
+      "intro": "{n} billets pour @{handle}. L'accroche laisse le lien pour une réponse, parce que X montre plus souvent ces billets. La version avec lien sert quand vous voulez la carte d'aperçu.",
+      "why": "Le même classement et le même dossier du jour (UTC) que l'onglet Reddit. Ce qui est publié sur X est enregistré à part. Un lien compte pour 23 caractères.",
+      "invalidHandle": "X_HANDLE n'est pas un identifiant valide, ces brouillons utilisent donc @{handle}.",
+      "forbidden": "Seul le propriétaire du site voit les brouillons X.",
+      "migrationRequired": "Une table X manque. Dans une copie à jour du dépôt, lancez : npm run db:migrate:remote",
+      "empty": "Aucun dossier publié n'attend.",
+      "draftN": "Billet {n}",
+      "caseKicker": "Dossier du jour · {day}",
+      "casePosted": "Publié pour cette date.",
+      "hook": "Accroche (sans lien)",
+      "reply": "Réponse (avec lien)",
+      "withLink": "Billet avec lien",
+      "copyPost": "Copier le billet",
+      "copyReply": "Copier la réponse",
+      "copyWithLink": "Copier avec le lien",
+      "copied": "Copié",
+      "copyFailed": "Copie impossible. Sélectionnez le texte et copiez-le à la main.",
+      "openX": "Ouvrir sur X",
+      "openXLink": "Ouvrir sur X avec le lien",
+      "openCase": "Ouvrir le dossier",
+      "markPosted": "Marquer comme publié",
+      "marked": "Marqué comme publié sur X. Il ne sera plus proposé.",
+      "restored": "Remis dans la file.",
+      "postedTitle": "Déjà publié sur X",
       "undo": "Remettre dans la file"
     }
   },

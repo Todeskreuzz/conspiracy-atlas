@@ -16,3 +16,5 @@ SESSION_SECRET=
 
 # Owner-only Reddit drafts. Public name, not a secret. Defaults to ConspiracyAtlas.
 # REDDIT_SUBREDDIT=ConspiracyAtlas
+# Owner-only X drafts. Public handle, not a secret. Defaults to ConspAtlas.
+# X_HANDLE=ConspAtlas

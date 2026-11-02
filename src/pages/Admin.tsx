@@ -29,6 +29,7 @@ import { ImageGallery } from '../components/ImageGallery';
 import { Avatar } from '../components/ProfileView';
 import { ImageUploader, toUploads, type PickedImage } from '../components/ImageUploader';
 import { RedditDrafts } from '../components/RedditDrafts';
+import { XDrafts } from '../components/XDrafts';
 import type { PublicImage } from '../../shared/images';
 
 type Api = ReturnType<typeof adminApi>;
@@ -1309,7 +1310,7 @@ function Comments({ a }: { a: Api }) {
 
 // ----------------------------------------------------------------------------------- page
 
-type SectionKey = 'overview' | 'moderation' | 'notes' | 'comments' | 'reports' | 'users' | 'archive' | 'services' | 'backup' | 'reddit';
+type SectionKey = 'overview' | 'moderation' | 'notes' | 'comments' | 'reports' | 'users' | 'archive' | 'services' | 'backup' | 'reddit' | 'x';
 interface Overview {
   submissions: Record<string, number>;
   openReports: number;
@@ -1319,7 +1320,7 @@ interface Overview {
 
 const SECTION_GROUPS: readonly { group: string; items: readonly SectionKey[] }[] = [
   { group: 'start', items: ['overview'] },
-  { group: 'publish', items: ['reddit'] },
+  { group: 'publish', items: ['reddit', 'x'] },
   { group: 'review', items: ['moderation', 'notes', 'comments', 'reports'] },
   { group: 'manage', items: ['users', 'archive'] },
   { group: 'system', items: ['services', 'backup'] },
@@ -1335,6 +1336,7 @@ const SECTION_ICONS: Record<SectionKey, string> = {
   services: '⚙',
   backup: '⇩',
   reddit: '↗',
+  x: 'x',
 };
 
 /** Open work per section; only the review sections have a queue. */
@@ -1398,7 +1400,7 @@ export default function AdminPage() {
   const session = useAdminSession();
   const [params, setParams] = useSearchParams();
   const owner = !!session.canManageOwners;
-  const groups = SECTION_GROUPS.map((g) => ({ ...g, items: g.items.filter((k) => k !== 'reddit' || owner) })).filter((g) => g.items.length > 0);
+  const groups = SECTION_GROUPS.map((g) => ({ ...g, items: g.items.filter((k) => (k !== 'reddit' && k !== 'x') || owner) })).filter((g) => g.items.length > 0);
   const visibleKeys = groups.flatMap((g) => g.items);
   const requested = params.get('tab') as SectionKey | null;
   const tab: SectionKey = requested && visibleKeys.includes(requested) ? requested : 'overview';
@@ -1502,6 +1504,7 @@ export default function AdminPage() {
             )}
             {tab === 'overview' && <OverviewPanel data={overview.data} onOpen={setTab} who={session.username} keys={visibleKeys} />}
             {tab === 'reddit' && owner && <RedditDrafts a={adminApi(session.csrfToken)} />}
+            {tab === 'x' && owner && <XDrafts a={adminApi(session.csrfToken)} />}
             {tab === 'moderation' && <Moderation a={adminApi(session.csrfToken)} />}
             {tab === 'notes' && <Notes a={adminApi(session.csrfToken)} />}
             {tab === 'comments' && <Comments a={adminApi(session.csrfToken)} />}

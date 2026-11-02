@@ -537,7 +537,8 @@
       "users": "Accounts",
       "overview": "Overview",
       "comments": "Comments",
-      "reddit": "Reddit"
+      "reddit": "Reddit",
+      "x": "X"
     },
     "queue": "Queue",
     "statuses": {
@@ -669,7 +670,8 @@
       "services": "Shows whether all Cloudflare services are running and how much of the free limit is used.",
       "backup": "Download a complete backup of the database. Do this regularly and before big changes.",
       "comments": "Comments from accounts appear at once. Hide anything that breaks the rules; hidden comments can be restored.",
-      "reddit": "English post drafts for the site's subreddit. Copy a title and a text, open Reddit, then mark the draft as posted so it is not offered again."
+      "reddit": "English post drafts for the site's subreddit. Copy a title and a text, open Reddit, then mark the draft as posted so it is not offered again.",
+      "x": "English posts for the site's X account. A hook without the link, a reply that carries it, and the same hook with the link in the post."
     },
     "overview": {
       "welcome": "Welcome, {name}! Here is what needs doing at a glance.",
@@ -749,6 +751,33 @@
       "marked": "Marked as posted. It will not be suggested again.",
       "restored": "Put back into the queue.",
       "postedTitle": "Already posted",
+      "undo": "Put back in the queue"
+    },
+    "x": {
+      "intro": "{n} posts for @{handle}. The hook leaves the link for a reply, because X shows those more often. The with-link post is there when you want the preview card.",
+      "why": "Same ranking and the same UTC case of the day as the Reddit tab. Posted on X is stored separately, so a Reddit post does not remove it here. A link counts as 23 characters.",
+      "invalidHandle": "X_HANDLE is not a valid handle, so these drafts use @{handle}.",
+      "forbidden": "Only the site owner can see X drafts.",
+      "migrationRequired": "An X table is missing. From an up-to-date checkout run: npm run db:migrate:remote",
+      "empty": "No published cases are waiting.",
+      "draftN": "Post {n}",
+      "caseKicker": "Case of the Day · {day}",
+      "casePosted": "Posted for this date.",
+      "hook": "Hook (no link)",
+      "reply": "Reply (with link)",
+      "withLink": "Post with link",
+      "copyPost": "Copy post",
+      "copyReply": "Copy reply",
+      "copyWithLink": "Copy with link",
+      "copied": "Copied",
+      "copyFailed": "Could not copy. Select the text and copy it by hand.",
+      "openX": "Open on X",
+      "openXLink": "Open on X with link",
+      "openCase": "Open case file",
+      "markPosted": "Mark as posted",
+      "marked": "Marked as posted on X. It will not be suggested again.",
+      "restored": "Put back into the queue.",
+      "postedTitle": "Already posted on X",
       "undo": "Put back in the queue"
     }
   },

@@ -537,7 +537,8 @@
       "users": "Cuentas",
       "overview": "Resumen",
       "comments": "Comentarios",
-      "reddit": "Reddit"
+      "reddit": "Reddit",
+      "x": "X"
     },
     "queue": "Cola",
     "statuses": {
@@ -669,7 +670,8 @@
       "services": "Muestra si todos los servicios de Cloudflare funcionan y cuánto del límite gratuito se ha usado.",
       "backup": "Descarga una copia completa de la base. Hazlo con regularidad y antes de cambios grandes.",
       "comments": "Los comentarios de las cuentas aparecen al momento. Oculta lo que incumpla las reglas; los comentarios ocultos se pueden restaurar.",
-      "reddit": "Borradores de publicaciones en inglés para el subreddit del sitio. Copia el título y el texto, abre Reddit y marca el borrador como publicado para que no vuelva a ofrecerse."
+      "reddit": "Borradores de publicaciones en inglés para el subreddit del sitio. Copia el título y el texto, abre Reddit y marca el borrador como publicado para que no vuelva a ofrecerse.",
+      "x": "Publicaciones en inglés para la cuenta de X del sitio. Un gancho sin enlace, una respuesta que lleva el enlace y el mismo gancho con el enlace en la publicación."
     },
     "overview": {
       "welcome": "¡Bienvenido, {name}! Esto es lo que hay que hacer de un vistazo.",
@@ -749,6 +751,33 @@
       "marked": "Marcado como publicado. No se volverá a proponer.",
       "restored": "Devuelto a la cola.",
       "postedTitle": "Ya publicado",
+      "undo": "Devolver a la cola"
+    },
+    "x": {
+      "intro": "{n} publicaciones para @{handle}. El gancho deja el enlace para una respuesta, porque X muestra más a menudo esas publicaciones. La versión con enlace sirve cuando quieres la tarjeta de vista previa.",
+      "why": "El mismo orden y el mismo expediente del día (UTC) que la pestaña de Reddit. Lo publicado en X se guarda aparte. Un enlace cuenta como 23 caracteres.",
+      "invalidHandle": "X_HANDLE no es un identificador válido, así que estos borradores usan @{handle}.",
+      "forbidden": "Solo el propietario del sitio ve los borradores de X.",
+      "migrationRequired": "Falta una tabla de X. En una copia actualizada del repositorio, ejecuta: npm run db:migrate:remote",
+      "empty": "Ningún expediente publicado está en espera.",
+      "draftN": "Publicación {n}",
+      "caseKicker": "Expediente del día · {day}",
+      "casePosted": "Publicado para esta fecha.",
+      "hook": "Gancho (sin enlace)",
+      "reply": "Respuesta (con enlace)",
+      "withLink": "Publicación con enlace",
+      "copyPost": "Copiar publicación",
+      "copyReply": "Copiar respuesta",
+      "copyWithLink": "Copiar con enlace",
+      "copied": "Copiado",
+      "copyFailed": "No se pudo copiar. Selecciona el texto y cópialo a mano.",
+      "openX": "Abrir en X",
+      "openXLink": "Abrir en X con enlace",
+      "openCase": "Abrir expediente",
+      "markPosted": "Marcar como publicado",
+      "marked": "Marcado como publicado en X. No se volverá a proponer.",
+      "restored": "Devuelto a la cola.",
+      "postedTitle": "Ya publicado en X",
       "undo": "Devolver a la cola"
     }
   },

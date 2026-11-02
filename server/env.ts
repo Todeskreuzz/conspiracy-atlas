@@ -39,6 +39,9 @@ export interface Env {
    * Defaults to ConspiracyAtlas when unset or invalid.
    */
   REDDIT_SUBREDDIT?: string;
+
+  /** X account for the owner-only draft queue (public handle, not a secret). Defaults to ConspAtlas. */
+  X_HANDLE?: string;
 }
 
 export function flag(value: string | undefined, fallback = false): boolean {

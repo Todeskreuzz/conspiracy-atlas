@@ -26,6 +26,8 @@ export const ALLOWED_HOSTS = [
   'query.wikidata.org', 'en.wikipedia.org', 'de.wikipedia.org', 'upload.wikimedia.org', 'thumb.wikimedia.org', 'commons.wikimedia.org', 'conspiracy-atlas.pages.dev',
   // Link the owner opens by hand (Reddit's submit form). The server never fetches it.
   'www.reddit.com',
+  // Link the owner opens by hand (X's compose box). The server never fetches it.
+  'x.com',
 ];
 /** Hosts of paid / usage-billed products that must never appear in code. */
 export const FORBIDDEN_PATTERNS = [

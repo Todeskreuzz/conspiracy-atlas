@@ -13,7 +13,7 @@ describe('RSS feed', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('application/rss+xml');
     const xml = await res.text();
-    expect(xml).toMatch(/^<\?xml version="1.0" encoding="UTF-8"\?>\n<rss version="2.0"/);
+    expect(xml).toMatch(/^<\?xml version="1.0" encoding="UTF-8"\?>\n<\?xml-stylesheet type="text\/xsl" href="\/feed.xsl"\?>\n<rss version="2.0"/);
     expect(xml).toContain('<atom:link href="https://conspiracy-atlas.pages.dev/feed.xml" rel="self"');
     const items = xml.match(/<item>.*?<\/item>/g)!;
     expect(items.length).toBeGreaterThan(2);

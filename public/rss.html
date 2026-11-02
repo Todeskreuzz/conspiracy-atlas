@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RSS – The Conspiracy Atlas</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>
+      body { margin: 0; background: #f4efe6; color: #2a2521; font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+      main { max-width: 760px; margin: 0 auto; padding: 32px 20px 56px; }
+      h1 { font-size: 1.9rem; margin: 0 0 4px; }
+      .lead { color: #5b5249; margin: 0 0 22px; }
+      .box { background: #fffdf8; border: 1px solid #d8cdbb; border-left: 4px solid #c9372c; border-radius: 6px; padding: 16px 18px; margin-bottom: 28px; }
+      .box p { margin: 0 0 10px; }
+      code { display: block; word-break: break-all; background: #efe8db; padding: 8px 10px; border-radius: 4px; font-size: 0.9rem; }
+      h2 { font-size: 1.15rem; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #5b5249; }
+      ul.items { list-style: none; margin: 0; padding: 0; }
+      li.item { background: #fffdf8; border: 1px solid #d8cdbb; border-radius: 6px; padding: 14px 16px; margin-bottom: 12px; }
+      li.item.daily { border-left: 4px solid #c9372c; }
+      .date { font-size: 0.85rem; color: #7a6f63; margin-bottom: 4px; }
+      .title { font-weight: 700; font-size: 1.05rem; }
+      .title a { color: #2a2521; text-decoration: none; }
+      .title a:hover { text-decoration: underline; }
+      .desc { margin: 6px 0 0; color: #3d3630; }
+      .status { color: #7a6f63; }
+      footer { margin-top: 32px; font-size: 0.9rem; color: #7a6f63; }
+      footer a { color: #c9372c; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1 id="site-title">The Conspiracy Atlas</h1>
+      <p class="lead" id="site-description"></p>
+
+      <section class="box">
+        <p data-t="intro"></p>
+        <code id="feed-url"></code>
+      </section>
+
+      <h2 data-t="latest"></h2>
+      <p class="status" id="status" role="status"></p>
+      <ul class="items" id="items"></ul>
+
+      <footer>
+        <a id="site-link" href="/"></a>
+        &nbsp;·&nbsp;
+        <a id="raw-link" href="/feed.xml"></a>
+      </footer>
+    </main>
+    <script src="/rss.js"></script>
+  </body>
+</html>

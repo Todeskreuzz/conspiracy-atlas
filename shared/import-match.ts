@@ -221,8 +221,13 @@ function pairKey(a: number, b: number): string {
   return a < b ? `${a}:${b}` : `${b}:${a}`;
 }
 
-/** Groups cases that already share a QID, a normalised title, a Wikipedia URL, or a near-identical title. Never deletes anything. */
-export function findDuplicateGroups(entries: DuplicateEntry[]): DuplicateGroup[] {
+/**
+ * Groups cases that already share a QID, a normalised title, a Wikipedia URL, or a near-identical title.
+ * Pairs passed in `linkedIds` are already related on purpose, so a fuzzy title match between them is not reported.
+ * Never deletes anything.
+ */
+export function findDuplicateGroups(entries: DuplicateEntry[], linkedIds: Array<[number, number]> = []): DuplicateGroup[] {
+  const linked = new Set(linkedIds.map(([a, b]) => pairKey(a, b)));
   const byId = new Map(entries.map((e) => [e.id, e]));
   const groups: DuplicateGroup[] = [];
   const exactPairs = new Set<string>();
@@ -284,7 +289,8 @@ export function findDuplicateGroups(entries: DuplicateEntry[]): DuplicateGroup[]
     for (let j = i + 1; j < list.length; j++) {
       const a = list[i];
       const b = list[j];
-      if (exactPairs.has(pairKey(a.id, b.id))) continue;
+      const pk = pairKey(a.id, b.id);
+      if (exactPairs.has(pk) || linked.has(pk)) continue;
       const keysA = [...new Set(a.titles.map(matchKey).filter((k) => k.length >= 3))];
       const keysB = [...new Set(b.titles.map(matchKey).filter((k) => k.length >= 3))];
       let score = 0;

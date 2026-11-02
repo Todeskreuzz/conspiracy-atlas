@@ -1,7 +1,10 @@
 // Read-only report of cases that look like duplicates. It never updates or deletes anything.
 //
-//   npm run import:duplicates -- --local
-//   npm run import:duplicates -- --remote
+//   npm run import:duplicates:local
+//   npm run import:duplicates:remote
+//
+// On Windows PowerShell, `npm run import:duplicates -- --remote` is eaten by npm
+// ("Unknown cli config --remote"). Use the :local and :remote scripts.
 //
 // --remote reads the live D1 database (needs `npx wrangler login`). Apply migration
 // 0016_import_identity.sql first if the QID column is still missing; the report still runs without it.
@@ -80,7 +83,9 @@ for (const row of sources) {
   if (!entry.qid) entry.qid = qidFromNote(typeof row.notes === 'string' ? row.notes : null);
 }
 
-const groups = findDuplicateGroups([...byId.values()]);
+const links = must("SELECT from_id, to_id FROM relationships WHERE from_type = 'theory' AND to_type = 'theory'");
+const linkedIds = links.map((row) => [Number(row.from_id), Number(row.to_id)] as [number, number]);
+const groups = findDuplicateGroups([...byId.values()], linkedIds);
 console.log(`Geprüfte Fälle: ${byId.size}. Es wurde nichts gelöscht.`);
 if (!groups.length) {
   console.log('Keine Duplikate und keine knappen Titel-Ähnlichkeiten.');

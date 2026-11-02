@@ -28,6 +28,20 @@ export function clip(text: string, max = 200): string {
   return t.length > max ? `${t.slice(0, max - 1).replace(/\s+\S*$/, '')}…` : t;
 }
 
+/**
+ * Search snippet: the longest run of whole sentences that fits, so a result never ends mid-sentence.
+ * A sentence end must follow a lowercase letter, digit or closing quote, so "U.S." does not count.
+ * If not even one sentence fits, the text is cut at a word boundary with an ellipsis.
+ */
+export function snippet(text: string, max = 160): string {
+  const t = text.replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const ends = [...t.slice(0, max + 1).matchAll(/[a-z0-9)"”][.!?](?=\s|$)/g)];
+  const last = ends.at(-1);
+  if (last && last.index !== undefined && last.index + 2 >= 60) return t.slice(0, last.index + 2);
+  return clip(t, max);
+}
+
 /** Same page in every language: English is the plain URL, other languages are prefixed (/de/...). */
 export const localeUrls = localeAlternates;
 
@@ -104,7 +118,7 @@ export async function loadOg(db: Db, slug: string, locale: Locale, origin: strin
   const alternates = localeUrls(origin, `/theory/${encodeURIComponent(slug)}`);
   return {
     title,
-    description: clip(summary),
+    description: snippet(summary),
     url: alternates.find((a) => a.locale === locale)!.url,
     image: new URL(img, origin).toString(),
     locale,

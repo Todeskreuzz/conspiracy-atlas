@@ -53,7 +53,9 @@ describe('owner reddit drafts', () => {
     expect(list.json.subreddit).toBe('ConspiracyAtlas');
     expect(list.json.subredditInvalid).toBe(false);
     expect(list.json.drafts).toHaveLength(5);
-    expect(list.json.drafts[0].theoryId).toBe(1);
+    const cotdId = list.json.caseOfTheDay.draft.theoryId as number;
+    expect(list.json.drafts.map((d: { theoryId: number }) => d.theoryId)).not.toContain(cotdId);
+    if (cotdId !== 1) expect(list.json.drafts[0].theoryId).toBe(1);
     const ids = new Set(list.json.drafts.map((d: { theoryId: number }) => d.theoryId));
     expect(ids.size).toBe(5);
     for (const d of list.json.drafts) {
@@ -78,11 +80,46 @@ describe('owner reddit drafts', () => {
 
     expect((await admin.del('/api/admin/reddit/1/posted')).status).toBe(200);
     const back = await admin.get('/api/admin/reddit');
-    expect(back.json.drafts[0].theoryId).toBe(1);
+    if (back.json.caseOfTheDay.draft.theoryId !== 1) expect(back.json.drafts[0].theoryId).toBe(1);
+    else expect(back.json.drafts.map((d: { theoryId: number }) => d.theoryId)).not.toContain(1);
 
     expect((await admin.post('/api/admin/reddit/99999/posted')).status).toBe(404);
     raw.prepare('UPDATE theories SET is_published = 0 WHERE id = 1').run();
     expect((await admin.post('/api/admin/reddit/1/posted')).status).toBe(404);
+  });
+
+  it('uses the public case of the day and tracks that post per UTC date only', async () => {
+    const env = await makeEnv();
+    const raw = (env.DB as any).raw;
+    const visitor = client(env);
+    const admin = client(env);
+    await admin.login();
+    const publicCase = await visitor.get('/api/case-of-the-day');
+    const list = await admin.get('/api/admin/reddit');
+    expect(list.json.caseOfTheDay.day).toBe(publicCase.json.day);
+    expect(list.json.caseOfTheDay.draft.slug).toBe(publicCase.json.theory.slug);
+    expect(list.json.caseOfTheDay.draft.flair).toBe('Atlas Case of the Day');
+    expect(list.json.caseOfTheDay.draft.title.startsWith('Atlas Case of the Day: ')).toBe(true);
+    expect(list.json.caseOfTheDay.draft.title.length).toBeLessThanOrEqual(300);
+    expect(list.json.caseOfTheDay.posted).toBe(false);
+    expect(list.json.drafts.map((d: { theoryId: number }) => d.theoryId)).not.toContain(list.json.caseOfTheDay.draft.theoryId);
+    const id = list.json.caseOfTheDay.draft.theoryId as number;
+
+    expect((await admin.post('/api/admin/reddit/daily/posted')).status).toBe(200);
+    const posted = await admin.get('/api/admin/reddit');
+    expect(posted.json.caseOfTheDay.posted).toBe(true);
+    expect(posted.json.caseOfTheDay.draft.theoryId).toBe(id);
+    expect(posted.json.posted.map((p: { theoryId: number }) => p.theoryId)).not.toContain(id);
+    expect(raw.prepare('SELECT theory_id FROM reddit_posts WHERE theory_id = ?').get(id)).toBeUndefined();
+
+    expect((await visitor.get('/api/admin/reddit/daily/posted')).status).toBe(401);
+    expect((await admin.del('/api/admin/reddit/daily/posted')).status).toBe(200);
+    expect((await admin.get('/api/admin/reddit')).json.caseOfTheDay.posted).toBe(false);
+
+    raw.prepare("INSERT INTO reddit_daily_posts (day, theory_id, actor) VALUES ('2000-01-01', ?, 'editor')").run(id);
+    const later = await admin.get('/api/admin/reddit');
+    expect(later.json.caseOfTheDay.posted).toBe(false);
+    expect(later.json.caseOfTheDay.draft.theoryId).toBe(id);
   });
 
   it('is limited to the site owner, not an ordinary admin account', async () => {
@@ -104,8 +141,10 @@ describe('owner reddit drafts', () => {
 
     expect((await mod.get('/api/admin/reddit')).status).toBe(403);
     expect((await mod.post('/api/admin/reddit/1/posted')).status).toBe(403);
+    expect((await mod.post('/api/admin/reddit/daily/posted')).status).toBe(403);
     const allowed = await owner.get('/api/admin/reddit');
     expect(allowed.status).toBe(200);
+    expect(allowed.json.caseOfTheDay.draft.slug).toBeTruthy();
     expect(allowed.json.drafts.length).toBeGreaterThanOrEqual(5);
   });
 
@@ -131,7 +170,8 @@ describe('owner reddit drafts', () => {
     const admin = client(env);
     await admin.login();
     const list = await admin.get('/api/admin/reddit');
-    expect(list.json.drafts).toHaveLength(3);
+    expect(list.json.caseOfTheDay.draft.theoryId).toBeLessThanOrEqual(3);
+    expect(list.json.drafts).toHaveLength(2);
 
     const xml = await buildSitemap(Db.from(env), 'https://conspiracy-atlas.pages.dev');
     expect(xml).not.toContain('/admin');

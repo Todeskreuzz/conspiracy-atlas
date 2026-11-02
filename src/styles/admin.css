@@ -767,6 +767,11 @@
   gap: 16px;
   margin-top: 14px;
 }
+.reddit-draft--daily {
+  margin-top: 14px;
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+}
 .reddit-draft__meta {
   display: flex;
   flex-wrap: wrap;

@@ -3,6 +3,7 @@ import type { AdminSession } from './auth';
 import type { Db, Row } from './db';
 import { ApiError, forbidden, notFound, unauthorized } from './errors';
 import { isOwnerUser } from './users';
+import { caseOfTheDayIndex } from './routes/public';
 import type { CategorySlug, EvidenceStatus } from '../shared/constants';
 import {
   REDDIT_DRAFTS_PER_DAY,
@@ -35,9 +36,9 @@ const CANDIDATE_SELECT = `
            + (SELECT COUNT(*) FROM relationships r WHERE r.to_type = 'theory' AND r.to_id = t.id) AS connection_count,
          (SELECT COUNT(DISTINCT e.source_id) FROM evidence e WHERE e.theory_id = t.id) AS source_count
   FROM theories t
-  JOIN categories c ON c.id = t.category_id
-  WHERE t.is_published = 1
-    AND NOT EXISTS (SELECT 1 FROM reddit_posts p WHERE p.theory_id = t.id)`;
+  JOIN categories c ON c.id = t.category_id`;
+
+const UNPOSTED_WHERE = `WHERE t.is_published = 1 AND NOT EXISTS (SELECT 1 FROM reddit_posts p WHERE p.theory_id = t.id)`;
 
 interface Candidate extends RedditCase {
   contentLanguage: string;
@@ -68,8 +69,8 @@ function mapCandidate(r: Row): Candidate {
 
 async function candidatePool(db: Db): Promise<Candidate[]> {
   const [recent, engaged] = await Promise.all([
-    db.all(`${CANDIDATE_SELECT} ORDER BY t.updated_at DESC, t.id DESC LIMIT ?`, REDDIT_RECENT_POOL),
-    db.all(`${CANDIDATE_SELECT} ORDER BY comment_count DESC, vote_count DESC, t.updated_at DESC, t.id DESC LIMIT ?`, REDDIT_ENGAGED_POOL),
+    db.all(`${CANDIDATE_SELECT} ${UNPOSTED_WHERE} ORDER BY t.updated_at DESC, t.id DESC LIMIT ?`, REDDIT_RECENT_POOL),
+    db.all(`${CANDIDATE_SELECT} ${UNPOSTED_WHERE} ORDER BY comment_count DESC, vote_count DESC, t.updated_at DESC, t.id DESC LIMIT ?`, REDDIT_ENGAGED_POOL),
   ]);
   const byId = new Map<number, Candidate>();
   for (const row of [...recent, ...engaged]) {
@@ -151,34 +152,81 @@ async function overlayEnglish(db: Db, cases: Candidate[]): Promise<void> {
   }
 }
 
+export interface RedditCaseOfTheDay {
+  day: string;
+  posted: boolean;
+  draft: RedditDraft;
+}
+
 export interface RedditQueue {
   subreddit: string;
   subredditInvalid: boolean;
   perDay: number;
   drafts: RedditDraft[];
+  /** Today's public case of the day. Null only when nothing is published. */
+  caseOfTheDay: RedditCaseOfTheDay | null;
   posted: RedditPosted[];
 }
 
+const REDDIT_TABLES = ['reddit_posts', 'reddit_daily_posts'] as const;
+
 /** A missing table is a pending migration, not an unconfigured database. */
 export async function assertRedditPostsTable(db: Db): Promise<void> {
-  const row = await db.first<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'reddit_posts'");
-  if (!row) {
+  const found = await db.all<{ name: string }>(
+    `SELECT name FROM sqlite_master WHERE type = 'table' AND name IN (${REDDIT_TABLES.map(() => '?').join(', ')})`,
+    ...REDDIT_TABLES,
+  );
+  const have = new Set(found.map((r) => r.name));
+  const missing = REDDIT_TABLES.filter((name) => !have.has(name));
+  if (missing.length) {
     throw new ApiError(
       503,
       'migration_required',
-      'The reddit_posts table is missing. From an up-to-date checkout run: npm run db:migrate:remote',
+      `Missing table ${missing.join(', ')}. From an up-to-date checkout run: npm run db:migrate:remote`,
     );
   }
+}
+
+/** Same UTC day and same published-case ordering as GET /api/case-of-the-day. */
+export async function caseOfTheDayTheoryId(db: Db, now: Date): Promise<{ day: string; theoryId: number } | null> {
+  const day = now.toISOString().slice(0, 10);
+  const count = await db.first<{ n: number }>('SELECT COUNT(*) AS n FROM theories WHERE is_published = 1');
+  const n = Number(count?.n ?? 0);
+  if (!n) return null;
+  const row = await db.first<{ id: number }>(
+    'SELECT id FROM theories WHERE is_published = 1 ORDER BY id LIMIT 1 OFFSET ?',
+    caseOfTheDayIndex(day, n),
+  );
+  return row ? { day, theoryId: Number(row.id) } : null;
+}
+
+async function loadCandidate(db: Db, theoryId: number): Promise<Candidate | null> {
+  const row = await db.first(`${CANDIDATE_SELECT} WHERE t.id = ? AND t.is_published = 1`, theoryId);
+  return row ? mapCandidate(row) : null;
 }
 
 export async function loadRedditQueue(db: Db, origin: string, subredditRaw: string | undefined, now = new Date()): Promise<RedditQueue> {
   await assertRedditPostsTable(db);
   const subreddit = resolveSubreddit(subredditRaw);
-  const pool = await candidatePool(db);
+  const dailyPick = await caseOfTheDayTheoryId(db, now);
+  const pool = (await candidatePool(db)).filter((c) => c.id !== dailyPick?.theoryId);
   const ranked = rankRedditCases(pool, now).slice(0, REDDIT_DRAFTS_PER_DAY);
-  await attachDetails(db, ranked);
-  await overlayEnglish(db, ranked);
+  const dailyCandidate = dailyPick ? await loadCandidate(db, dailyPick.theoryId) : null;
+  const detailed = dailyCandidate ? [...ranked, dailyCandidate] : ranked;
+  await attachDetails(db, detailed);
+  await overlayEnglish(db, detailed);
   const drafts = ranked.map((c) => buildRedditDraft(c, { origin, subreddit: subreddit.name, now }));
+  const dailyRow = dailyPick
+    ? await db.first<{ theory_id: number }>('SELECT theory_id FROM reddit_daily_posts WHERE day = ?', dailyPick.day)
+    : null;
+  const caseOfTheDay =
+    dailyPick && dailyCandidate
+      ? {
+          day: dailyPick.day,
+          posted: Number(dailyRow?.theory_id) === dailyPick.theoryId,
+          draft: buildRedditDraft(dailyCandidate, { origin, subreddit: subreddit.name, now, daily: true }),
+        }
+      : null;
   const posted = (
     await db.all(
       `SELECT p.theory_id, p.posted_at, p.actor, t.slug, t.title
@@ -192,7 +240,25 @@ export async function loadRedditQueue(db: Db, origin: string, subredditRaw: stri
     postedAt: String(r.posted_at),
     actor: String(r.actor),
   }));
-  return { subreddit: subreddit.name, subredditInvalid: subreddit.invalid, perDay: REDDIT_DRAFTS_PER_DAY, drafts, posted };
+  return { subreddit: subreddit.name, subredditInvalid: subreddit.invalid, perDay: REDDIT_DRAFTS_PER_DAY, drafts, caseOfTheDay, posted };
+}
+
+/** Marks only today's UTC case of the day. Does not write reddit_posts, so the case is not hidden on later days. */
+export async function setRedditDailyPosted(db: Db, actor: string, posted: boolean, now = new Date()): Promise<void> {
+  await assertRedditPostsTable(db);
+  const pick = await caseOfTheDayTheoryId(db, now);
+  if (!pick) throw notFound('Case');
+  if (!posted) {
+    await db.run('DELETE FROM reddit_daily_posts WHERE day = ? AND theory_id = ?', pick.day, pick.theoryId);
+    return;
+  }
+  await db.run(
+    `INSERT INTO reddit_daily_posts (day, theory_id, actor) VALUES (?, ?, ?)
+     ON CONFLICT(day) DO UPDATE SET theory_id = excluded.theory_id, posted_at = datetime('now'), actor = excluded.actor`,
+    pick.day,
+    pick.theoryId,
+    actor.slice(0, 80),
+  );
 }
 
 export async function setRedditPosted(db: Db, theoryId: number, actor: string, posted: boolean): Promise<void> {

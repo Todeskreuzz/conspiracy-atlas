@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from '../App';
-import { DEFAULT_LOCALE, type Locale } from '../../shared/constants';
+import { DEFAULT_LOCALE, LOCALES, type Locale } from '../../shared/constants';
 import { localeBase, localeFromPath, localePath, stripLocale } from '../../shared/localePath';
 import { storedLocale } from '.';
 
@@ -17,7 +17,7 @@ export function initialUrl(loc: { pathname: string; search: string; hash: string
   const search = params.toString() ? `?${params}` : '';
   const plain = stripLocale(loc.pathname);
   let target: Locale | null = null;
-  if (lang === 'de' || lang === 'en') target = lang;
+  if (lang && (LOCALES as readonly string[]).includes(lang)) target = lang as Locale;
   else if (stored && stored !== DEFAULT_LOCALE && localeFromPath(loc.pathname) === DEFAULT_LOCALE) target = stored;
   if (!target) return null;
   const url = localePath(target, plain) + search + loc.hash;

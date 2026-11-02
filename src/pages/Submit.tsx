@@ -5,7 +5,7 @@ import { useFeature } from '../api/status';
 import { api, ApiFailure } from '../api/client';
 import { useAsync } from '../hooks/useAsync';
 import type { Paged, SubmissionSourceInput, TheorySummary } from '../../shared/types';
-import { CATEGORY_SLUGS, SOURCE_TYPES, type CategorySlug } from '../../shared/constants';
+import { CATEGORY_SLUGS, LOCALES, SOURCE_TYPES, type CategorySlug, type Locale } from '../../shared/constants';
 import { emptyDoc, plainText, type RichNode } from '../../shared/richtext';
 import { validateSubmission } from '../../shared/submission';
 import { ValidationError } from '../../shared/validation';
@@ -29,7 +29,7 @@ export interface Draft {
   counterArguments: string[];
   relatedEvents: string[];
   relatedTheoryIds: number[];
-  language: 'en' | 'de';
+  language: Locale;
   displayMode: 'named' | 'anonymous';
   displayName: string;
 }
@@ -37,7 +37,7 @@ export interface Draft {
 export const DRAFT_KEY = 'ca.submit.draft';
 export const PREFILL_KEY = 'ca.submit.prefill';
 
-export function emptyDraft(language: 'en' | 'de'): Draft {
+export function emptyDraft(language: Locale): Draft {
   return {
     title: '',
     subtitle: '',
@@ -56,7 +56,7 @@ export function emptyDraft(language: 'en' | 'de'): Draft {
   };
 }
 
-function loadDraft(language: 'en' | 'de'): Draft {
+function loadDraft(language: Locale): Draft {
   try {
     const prefill = window.sessionStorage.getItem(PREFILL_KEY);
     if (prefill) {
@@ -309,9 +309,12 @@ export default function SubmitPage() {
                 </div>
                 <div className="field">
                   <label htmlFor="s-lang">{t('submit.language')}</label>
-                  <select id="s-lang" value={draft.language} onChange={(e) => set('language', e.target.value as 'en' | 'de')}>
-                    <option value="en">English</option>
-                    <option value="de">Deutsch</option>
+                  <select id="s-lang" value={draft.language} onChange={(e) => set('language', e.target.value as Locale)}>
+                    {LOCALES.map((l) => (
+                      <option key={l} value={l}>
+                        {t(`app.languageName.${l}`)}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

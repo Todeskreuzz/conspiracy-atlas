@@ -10,6 +10,7 @@ import type {
   RelationVerification,
   SourceType,
   SubmissionStatus,
+  Locale,
 } from './constants';
 import type { RichNode } from './richtext';
 
@@ -241,7 +242,7 @@ export interface SubmissionInput {
   counterArguments: string[];
   relatedEvents: string[];
   relatedTheoryIds: number[];
-  language: 'en' | 'de';
+  language: Locale;
   displayMode: 'named' | 'anonymous';
   displayName: string | null;
   turnstileToken: string | null;
@@ -296,7 +297,7 @@ export interface CaseNote {
   sourceUrl: string | null;
   sourceTitle: string | null;
   authorName: string;
-  language: 'en' | 'de';
+  language: Locale;
   createdAt: string;
 }
 
@@ -366,7 +367,7 @@ export interface DiscussionComment {
   /** Empty for comments the author deleted (kept only as a placeholder above replies). */
   body: string;
   deleted: boolean;
-  language: 'en' | 'de';
+  language: Locale;
   createdAt: string;
   editedAt: string | null;
   author: CommentAuthor | null;

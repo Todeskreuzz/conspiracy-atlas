@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useI18n } from '../i18n';
+import { intlLocale, useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
 import { api } from '../api/client';
 import type { TheorySummary } from '../../shared/types';
@@ -24,7 +24,7 @@ export function CaseOfTheDay({ variant = 'home' }: { variant?: 'home' | 'spotlig
       setBusy(false);
     }
   };
-  const day = new Date(`${res.data!.day}T00:00:00Z`).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const day = new Date(`${res.data!.day}T00:00:00Z`).toLocaleDateString(intlLocale(locale), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
   const spotlight = variant === 'spotlight';
   const embed = variant === 'embed';
   if (embed) {
@@ -85,7 +85,7 @@ export function CaseOfTheDay({ variant = 'home' }: { variant?: 'home' | 'spotlig
         <h2>{t('home.caseOfTheDay')}</h2>
         <span className="mono muted small">
           {day} ·{' '}
-          <a href={locale === 'de' ? '/rss-page?lang=de' : '/rss-page'} title={t('app.rssTitle')} data-testid="rss-link">
+          <a href={localePath(locale, '/rss-page')} title={t('app.rssTitle')} data-testid="rss-link">
             {t('app.rss')}
           </a>
         </span>

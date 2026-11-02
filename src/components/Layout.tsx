@@ -228,7 +228,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <Link to="/knowledge">{t('nav.knowledge')}</Link>
               <Link to="/about">{t('nav.about')}</Link>
               <Link to="/donate">{t('nav.donate')}</Link>
-              <a href={locale === 'de' ? '/rss-page?lang=de' : '/rss-page'} title={t('app.rssTitle')}>
+              <a href={localePath(locale, '/rss-page')} title={t('app.rssTitle')}>
                 {t('app.rss')}
               </a>
             </div>

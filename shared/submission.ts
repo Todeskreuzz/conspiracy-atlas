@@ -1,6 +1,7 @@
 import { CATEGORY_SLUGS, SOURCE_TYPES, ANONYMOUS_NAME } from './constants';
 import type { SubmissionInput } from './types';
 import { sanitizeRichDoc, plainText } from './richtext';
+import { LOCALES } from './constants';
 import { ValidationError, arr, int, oneOf, optStr, reqStr, url, slugify } from './validation';
 
 export const LIMITS = {
@@ -56,7 +57,7 @@ export function validateSubmission(input: Record<string, unknown>): SubmissionIn
     relatedTheoryIds: [
       ...new Set(arr(input.relatedTheoryIds, 'relatedTheoryIds', LIMITS.relatedTheories, (v, i) => int(v, `relatedTheoryIds[${i}]`, { min: 1 }) as number)),
     ],
-    language: oneOf(input.language ?? 'en', 'language', ['en', 'de'] as const),
+    language: oneOf(input.language ?? 'en', 'language', LOCALES),
     displayMode,
     displayName,
     turnstileToken: optStr(input.turnstileToken, 'turnstileToken', 4096),

@@ -6,6 +6,7 @@ import { requireFeature } from '../features';
 import { ApiError, forbidden, notFound } from '../errors';
 import { assertSameOrigin, rateLimit } from '../security';
 import { loadUserSession, requireUser, type UserSession } from '../users';
+import { asLocale } from '../../shared/constants';
 import { int } from '../../shared/validation';
 import { COMMENT_LIMITS, validateCommentBody, validateVote } from '../../shared/comments';
 import type { CommentAuthor, Discussion, DiscussionComment, VoteTally, VoteValue } from '../../shared/types';
@@ -94,7 +95,7 @@ export function threadComments(rows: Row[], userId: number | null, sort: 'top' |
       parentId: r.parent_id == null ? null : Number(r.parent_id),
       body: deleted ? '' : String(r.body),
       deleted,
-      language: r.language === 'de' ? 'de' : 'en',
+      language: asLocale(r.language),
       createdAt: String(r.created_at),
       editedAt: (r.edited_at as string) ?? null,
       author: deleted ? null : author,
@@ -173,7 +174,7 @@ commentRoutes.post('/theories/:slug/comments', async (c) => {
   const body = await readJson(c, 10_000);
   const text = validateCommentBody(body.body);
   const parentInput = int(body.parentId, 'parentId', { min: 1, optional: true });
-  const language = body.language === 'de' ? 'de' : 'en';
+  const language = asLocale(body.language);
   const theoryId = await publishedTheory(db, c.req.param('slug'));
   let parentId: number | null = null;
   if (parentInput) {

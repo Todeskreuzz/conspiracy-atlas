@@ -34,6 +34,10 @@ describe('link previews', () => {
     expect(de?.image).toMatch(/^https:\/\/x\.test\/og\/de\/theory\/moon-landing-conspiracy-theory\.png\?v=[a-z0-9]+$/);
     expect(de?.imageAlt).toContain('—');
     expect(de?.url).toBe('https://x.test/de/theory/moon-landing-conspiracy-theory');
+    const fr = await loadOg(Db.from(env), 'area-51', 'fr', 'https://x.test');
+    expect(fr?.title).toBe('Zone 51');
+    expect(fr?.image).toMatch(/^https:\/\/x\.test\/og\/fr\/theory\/area-51\.png\?v=[a-z0-9]+$/);
+    expect(fr?.imageAlt).toContain('Non vérifié');
     expect(await loadOg(Db.from(env), 'does-not-exist', 'en', 'https://x.test')).toBeNull();
   });
 
@@ -121,6 +125,7 @@ describe('language URLs', () => {
   it('serves German case pages through their own Function route', () => {
     const routes = JSON.parse(readFileSync('public/_routes.json', 'utf8'));
     expect(routes.include).toContain('/de/theory/*');
+    expect(routes.include).toContain('/fr/theory/*');
     expect(readFileSync('public/robots.txt', 'utf8')).toContain('Disallow: /de/admin');
   });
 });

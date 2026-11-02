@@ -6,7 +6,7 @@
     "tagline": "An Interactive Global Archive of Theories, Mysteries & Connections.",
     "skip": "Skip to content",
     "language": "Language",
-    "languageName": { "en": "English", "de": "Deutsch" },
+    "languageName": { "en": "English", "de": "Deutsch", "fr": "Français" },
     "menu": "Menu",
     "loading": "Loading…",
     "retry": "Try again",
@@ -275,6 +275,7 @@
   "events": {
     "title": "Historical Events",
     "intro": "Dated events referenced by the archive, from the 18th century to today.",
+    "century": "{n}th century",
     "location": "Location",
     "period": "Period",
     "related": "Related entries"

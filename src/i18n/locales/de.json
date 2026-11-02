@@ -6,7 +6,7 @@
     "tagline": "Ein interaktives globales Archiv für Theorien, Geheimnisse und Zusammenhänge.",
     "skip": "Zum Inhalt springen",
     "language": "Sprache",
-    "languageName": { "en": "English", "de": "Deutsch" },
+    "languageName": { "en": "English", "de": "Deutsch", "fr": "Français" },
     "menu": "Menü",
     "loading": "Wird geladen …",
     "retry": "Erneut versuchen",
@@ -275,6 +275,7 @@
   "events": {
     "title": "Historische Ereignisse",
     "intro": "Datierte Ereignisse aus dem Archiv, vom 18. Jahrhundert bis heute.",
+    "century": "{n}. Jahrhundert",
     "location": "Ort",
     "period": "Zeitraum",
     "related": "Zugehörige Einträge"

@@ -65,6 +65,24 @@ const STATE_EXPLANATIONS_EN: Record<ServiceState, string> = {
   backend_unavailable: 'The backend service is currently unavailable.',
 };
 
+const FEATURE_EXPLANATIONS_FR: Partial<Record<FeatureKey, string>> = {
+  community_uploads: 'L’envoi d’images est désactivé dans cette configuration.',
+  turnstile: 'La vérification anti-spam (Turnstile) n’est pas configurée.',
+  database: 'La base de données est temporairement injoignable.',
+  automatic_import: 'L’import automatique n’est pas activé.',
+  accounts: 'Les comptes utilisateurs sont désactivés.',
+};
+
+const STATE_EXPLANATIONS_FR: Record<ServiceState, string> = {
+  available: '',
+  not_configured: 'Le service requis n’est pas configuré.',
+  disabled: 'Cette fonction a été désactivée.',
+  limit_reached: 'Le quota gratuit de ce service est atteint. La fonction redevient disponible après la remise à zéro.',
+  temporary_error: 'Une erreur temporaire du service s’est produite. Réessayez plus tard.',
+  not_activated: 'Cette fonction n’est pas activée.',
+  backend_unavailable: 'Le service dorsal est actuellement injoignable.',
+};
+
 const STATE_EXPLANATIONS_DE: Record<ServiceState, string> = {
   available: '',
   not_configured: 'Der benötigte Dienst ist nicht eingerichtet.',
@@ -96,6 +114,18 @@ export function explainDe(feature: FeatureKey | null, state: ServiceState): stri
     return STATE_EXPLANATIONS_DE[state];
   }
   return (feature && FEATURE_EXPLANATIONS_DE[feature]) || STATE_EXPLANATIONS_DE[state];
+}
+
+/** Optional additional French explanation. The English status text stays visible. */
+export function explainFr(feature: FeatureKey | null, state: ServiceState): string {
+  if (feature === 'community_uploads' && state === 'limit_reached') {
+    return 'L’espace gratuit pour les images est plein. De nouvelles images ne pourront être envoyées que lorsqu’il se libérera.';
+  }
+  if (feature === 'database' && (state === 'backend_unavailable' || state === 'temporary_error')) return FEATURE_EXPLANATIONS_FR.database!;
+  if (state === 'limit_reached' || state === 'backend_unavailable' || state === 'temporary_error') {
+    return STATE_EXPLANATIONS_FR[state];
+  }
+  return (feature && FEATURE_EXPLANATIONS_FR[feature]) || STATE_EXPLANATIONS_FR[state];
 }
 
 export function unavailableMessage(feature: FeatureKey | null, state: ServiceState): string {

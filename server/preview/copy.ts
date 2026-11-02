@@ -2,9 +2,10 @@
 // this module only reads them so a card cannot drift from the site.
 import en from '../../src/i18n/locales/en.json';
 import de from '../../src/i18n/locales/de.json';
+import fr from '../../src/i18n/locales/fr.json';
 import type { EvidenceStatus, Locale } from '../../shared/constants';
 
-const dictionaries = { en, de };
+const dictionaries = { en, de, fr };
 
 export function statusLabel(locale: Locale, status: EvidenceStatus): string {
   return dictionaries[locale].status[status];

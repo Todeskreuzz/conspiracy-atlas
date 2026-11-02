@@ -9,5 +9,5 @@
     "noEmit": false,
     "outDir": "./node_modules/.tmp/worker"
   },
-  "include": ["server", "functions", "shared", "workers", "src/i18n/locales/en.json", "src/i18n/locales/de.json"]
+  "include": ["server", "functions", "shared", "workers", "src/i18n/locales/en.json", "src/i18n/locales/de.json", "src/i18n/locales/fr.json"]
 }

@@ -103,9 +103,14 @@ export const INVESTIGATION_NOTE_KINDS = [
 ] as const;
 export type InvestigationNoteKind = (typeof INVESTIGATION_NOTE_KINDS)[number];
 
-export const LOCALES = ['en', 'de'] as const;
+export const LOCALES = ['en', 'de', 'fr'] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'en';
+
+/** A stored content language, or English when the value is missing or unknown. */
+export function asLocale(value: unknown): Locale {
+  return typeof value === 'string' && (LOCALES as readonly string[]).includes(value) ? (value as Locale) : DEFAULT_LOCALE;
+}
 
 export const ANONYMOUS_NAME = 'Anonymous';
 

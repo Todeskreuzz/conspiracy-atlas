@@ -24,6 +24,7 @@
     "restore:remote": "node scripts/restore.mjs --remote",
     "cost-check": "node scripts/cost-check.mjs",
     "og:font": "node scripts/generate-og-font.mjs",
+    "fr:sql": "node scripts/generate-french.mjs",
     "perf:wall": "vitest run tests/perf",
     "check-sources": "node scripts/check-sources.mjs",
     "deploy:import-cron": "wrangler deploy --config workers/import-cron/wrangler.toml",

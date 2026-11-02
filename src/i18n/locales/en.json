@@ -720,6 +720,15 @@
     "commentReply": "Reply",
     "commentScore": "Score {n}"
   },
+  "rss": {
+    "title": "RSS feed",
+    "intro": "Get new case files and the case of the day in your feed reader, without an account or newsletter.",
+    "address": "Copy this address into your feed reader:",
+    "copy": "Copy address",
+    "copied": "Copied!",
+    "raw": "Open raw feed",
+    "latest": "Latest case files"
+  },
   "quiz": {
     "title": "Quiz: true or invented?",
     "intro": "A documented historical event is shown with a year. Decide whether the year is right. Every correct answer gives {points} points on your profile.",

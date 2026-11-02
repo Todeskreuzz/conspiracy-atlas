@@ -1246,6 +1246,28 @@ table.data th {
   }
 }
 
+/* Case of the day as the highlight of the RSS page */
+.case-of-day--spotlight {
+  grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
+  gap: 32px;
+  padding: 28px;
+}
+.case-of-day--spotlight .case-of-day__body h3 {
+  font-size: 2.4rem;
+}
+.case-of-day--spotlight .case-of-day__body p {
+  font-size: 1.12rem;
+}
+.case-of-day__day {
+  margin-bottom: 8px;
+}
+@media (max-width: 720px) {
+  .case-of-day--spotlight {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+}
+
 /* Saved cases */
 .saved-item {
   display: flex;

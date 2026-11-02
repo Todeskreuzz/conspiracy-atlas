@@ -10,3 +10,7 @@
 
 /media/*
   Cache-Control: public, max-age=86400
+
+/feed.xsl
+  Content-Type: text/xsl; charset=utf-8
+  Cache-Control: public, max-age=86400

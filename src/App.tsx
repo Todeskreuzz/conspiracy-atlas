@@ -79,6 +79,7 @@ export function AppRoutes() {
           <Route path="/saved" element={<SavedPage />} />
           <Route path="/quiz" element={<QuizPage />} />
           <Route path="/rss" element={<RssPage />} />
+          <Route path="/rss-page" element={<RssPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/u/:username" element={<ProfilePage />} />

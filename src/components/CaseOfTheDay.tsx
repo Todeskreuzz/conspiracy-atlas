@@ -61,7 +61,7 @@ export function CaseOfTheDay({ variant = 'home' }: { variant?: 'home' | 'spotlig
         <h2>{t('home.caseOfTheDay')}</h2>
         <span className="mono muted small">
           {day} ·{' '}
-          <a href={locale === 'de' ? '/rss?lang=de' : '/rss'} title={t('app.rssTitle')} data-testid="rss-link">
+          <a href={locale === 'de' ? '/rss-page?lang=de' : '/rss-page'} title={t('app.rssTitle')} data-testid="rss-link">
             {t('app.rss')}
           </a>
         </span>

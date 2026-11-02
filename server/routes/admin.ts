@@ -34,6 +34,7 @@ import { validateSubmission } from '../../shared/submission';
 import { arr, int, isoDateOrYear, oneOf, optOneOf, optStr, reqStr, slugify, url, ValidationError } from '../../shared/validation';
 import { THEORY_SUMMARY_SELECT, loadTheoryDetail, mapSource, mapTheorySummary } from '../repo';
 import { IMPORT_BATCH, LAST_RUN_KEY, lastImportResult, runImport } from '../importer';
+import { qidFromNote } from '../../shared/import-match';
 import { addEdge, addNode, deleteEdge, deleteNode, savePositions } from '../boards';
 import { BACKUP_TABLES, toCsv } from '../backup';
 import { IMAGE_LIMITS } from '../../shared/images';
@@ -334,19 +335,25 @@ async function uniqueSlug(db: Db, table: 'theories' | 'events' | 'organizations'
  * - links to other theories become *suggested* connections
  */
 async function publishSubmission(db: Db, row: Row): Promise<string> {
+  const note = String(row.moderator_note ?? '');
+  const fromImport = note.startsWith('import-review');
+  const qidRaw = typeof row.wikidata_qid === 'string' ? row.wikidata_qid : qidFromNote(note);
+  const qid = qidRaw && /^Q\d+$/.test(qidRaw) ? qidRaw : null;
+  const origin = fromImport ? 'editorial' : 'community';
+  const theoryCols = await db.all<{ name: string }>('PRAGMA table_info(theories)');
+  const hasQid = theoryCols.some((c) => c.name === 'wikidata_qid');
   const slug = await uniqueSlug(db, 'theories', String(row.title));
-  const theory = await db.first<{ id: number }>(
-    `INSERT INTO theories (slug, title, subtitle, summary, body_json, category_id, evidence_status, author_id, origin, content_language, is_published)
-     VALUES (?, ?, ?, ?, ?, ?, 'unverified', ?, 'community', ?, 1) RETURNING id`,
-    slug,
-    row.title,
-    row.subtitle ?? null,
-    row.summary,
-    row.body_json,
-    row.category_id,
-    row.author_id ?? null,
-    row.language ?? 'en',
-  );
+  const theory = hasQid
+    ? await db.first<{ id: number }>(
+        `INSERT INTO theories (slug, title, subtitle, summary, body_json, category_id, evidence_status, author_id, origin, content_language, is_published, wikidata_qid)
+         VALUES (?, ?, ?, ?, ?, ?, 'unverified', ?, ?, ?, 1, ?) RETURNING id`,
+        slug, row.title, row.subtitle ?? null, row.summary, row.body_json, row.category_id, row.author_id ?? null, origin, row.language ?? 'en', qid,
+      )
+    : await db.first<{ id: number }>(
+        `INSERT INTO theories (slug, title, subtitle, summary, body_json, category_id, evidence_status, author_id, origin, content_language, is_published)
+         VALUES (?, ?, ?, ?, ?, ?, 'unverified', ?, ?, ?, 1) RETURNING id`,
+        slug, row.title, row.subtitle ?? null, row.summary, row.body_json, row.category_id, row.author_id ?? null, origin, row.language ?? 'en',
+      );
   const theoryId = theory!.id;
   await db.run("UPDATE images SET status = 'approved', theory_id = ? WHERE submission_id = ?", theoryId, row.id);
   const stmts: D1PreparedStatement[] = [];
@@ -1220,7 +1227,7 @@ adminRoutes.get('/services', async (c) => {
         test: lastImport
           ? lastImport.error
             ? `Last run failed: ${lastImport.error}`
-            : `${lastImport.imported.length} imported, ${lastImport.remaining} still to import`
+            : `${lastImport.imported.length} imported, ${lastImport.reviewed?.length ?? 0} queued for review, ${lastImport.remaining} still to import`
           : 'No run yet',
         lastOk: lastImport && !lastImport.error ? lastImport.ranAt : null,
         freeLimit: `Free public APIs, max. ${IMPORT_BATCH} entries per run`,

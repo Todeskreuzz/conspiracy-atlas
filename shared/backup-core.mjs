@@ -12,6 +12,7 @@ export const BACKUP_TABLES = [
   'theories',
   'reddit_posts',
   'theory_tags',
+  'theory_aliases',
   'claims',
   'counter_arguments',
   'evidence',

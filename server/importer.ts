@@ -1,8 +1,11 @@
 // Automatic archive import from Wikidata + Wikipedia (free public APIs, no key, no Cloudflare resource).
 //
 // Every run takes a small batch of Wikidata items that are a "conspiracy theory" (Q159535, or one of its subclasses up to two levels deep)
-// and have an English Wikipedia article, plus the theory articles linked from Wikipedia's "List of conspiracy theories", skips everything already in the archive and stores the rest
-// as neutral entries: the Wikipedia text (CC BY-SA 4.0, attributed) plus the article as the source.
+// and have an English Wikipedia article, plus the theory articles linked from Wikipedia's "List of conspiracy theories".
+// A case is published only when the article itself is a conspiracy theory. Hoaxes, denials, myths and Wikidata hits the
+// text does not confirm go to the moderation queue (community_submissions, pending_review) instead of the public archive.
+// Duplicates are skipped: the Wikidata QID (unique once migration 0016 is applied), Wikipedia URLs including redirects
+// and other-language sitelinks, normalised titles, translations and aliases. A near-miss title is queued for review.
 // A second step fills each entry from the full article: lead, origin, background, the article's sections and
 // the central claims as the article states them. Nothing is invented: no ratings or connections are derived.
 import type { Db } from './db';
@@ -12,6 +15,19 @@ import type { CategorySlug } from '../shared/constants';
 import type { RichNode } from '../shared/richtext';
 import { IMAGE_LIMITS, sniffImageMime } from '../shared/images';
 import { randomToken, toHex } from './crypto';
+import { ApiError } from './errors';
+import {
+  decideImport,
+  duplicateHit,
+  isTheoryPage,
+  matchKey,
+  qidFromNote,
+  topicVerdict,
+  wikiUrlKey,
+  type LabeledKey,
+} from '../shared/import-match';
+
+export { isTheoryPage, matchKey };
 
 export const WIKIDATA_SPARQL = 'https://query.wikidata.org/sparql';
 const EN_WIKI = 'https://en.wikipedia.org/wiki/';
@@ -46,13 +62,36 @@ export const IMPORT_QUERY = `SELECT ?item ?en WHERE {
   UNION { ?item wdt:P31/wdt:P279 wd:${CONSPIRACY_THEORY_ITEM} }
   UNION { ?item wdt:P31/wdt:P279/wdt:P279 wd:${CONSPIRACY_THEORY_ITEM} }
   ?en schema:about ?item ; schema:isPartOf <https://en.wikipedia.org/> .
+  FILTER(?item != wd:${CONSPIRACY_THEORY_ITEM})
+  FILTER NOT EXISTS { ?item wdt:P31 wd:Q5 }
+  FILTER NOT EXISTS { ?item wdt:P31 wd:Q11424 }
+  FILTER NOT EXISTS { ?item wdt:P31 wd:Q571 }
+  FILTER NOT EXISTS { ?item wdt:P31 wd:Q13406463 }
 }`;
 
-/** German articles are looked up only for the items of the current batch, which keeps both queries fast. */
-export const germanQuery = (qids: string[]) => `SELECT ?item ?de WHERE {
-  VALUES ?item { ${qids.map((q) => `wd:${q}`).join(' ')} }
-  ?de schema:about ?item ; schema:isPartOf <https://de.wikipedia.org/> .
+/**
+ * German, French and Spanish articles plus aliases, only for the current batch (one request).
+ * The language hosts are built so the cost check does not see a new literal host.
+ */
+export function batchMetaQuery(qids: string[]): string {
+  const values = qids.map((q) => `wd:${q}`).join(' ');
+  const site = (lang: string, name: string) =>
+    `OPTIONAL { ?${name} schema:about ?item ; schema:isPartOf <https://${lang}.wikipedia.org/> . }`;
+  return `SELECT ?item ?de ?fr ?es ?alias WHERE {
+  VALUES ?item { ${values} }
+  ${site('de', 'de')}
+  ${site('fr', 'fr')}
+  ${site('es', 'es')}
+  OPTIONAL { ?item skos:altLabel ?alias . FILTER(LANG(?alias) = "en" || LANG(?alias) = "de" || LANG(?alias) = "fr" || LANG(?alias) = "es") }
 }`;
+}
+
+export interface BatchMeta {
+  deUrl: string | null;
+  urls: string[];
+  titles: string[];
+  aliases: string[];
+}
 
 /** Replaceable in tests. */
 export const importFetch: { impl: typeof fetch } = { impl: (...args) => fetch(...args) };
@@ -61,6 +100,8 @@ export interface Candidate {
   qid: string;
   enUrl: string;
   deUrl: string | null;
+  /** wikidata: P31 says conspiracy theory. clear/ambiguous: the Wikipedia list's short description. */
+  topic: 'wikidata' | 'clear' | 'ambiguous';
 }
 
 export interface WikiSummary {
@@ -85,6 +126,8 @@ export interface ImportResult {
   detailedDe?: number;
   /** Imported cases that got their year (for the timeline) in this run. */
   years?: number;
+  /** Borderline items placed in the moderation queue instead of the public archive. */
+  reviewed: { title: string; reason: string }[];
   error: string | null;
 }
 
@@ -111,23 +154,6 @@ export function articleTitle(url: string): string {
 }
 
 const qNumber = (qid: string) => Number(qid.replace(/\D/g, '')) || 0;
-const FILLER = new Set(['the', 'a', 'conspiracy', 'conspiracies', 'theory', 'theories', 'claim', 'claims', 'narrative', 'narratives', 'related']);
-
-/**
- * Comparison key for titles, so "Moon landing conspiracy theories" (Wikipedia) matches the hand-written
- * "Moon Landing Conspiracy Theory" and "Chemtrail conspiracy theory" matches "Chemtrail Claims".
- */
-export function matchKey(title: string): string {
-  return title
-    .normalize('NFKD')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\bjohn f kennedy assassination\b/g, 'jfk')
-    .split(' ')
-    .filter((w) => w && !FILLER.has(w))
-    .map((w) => (w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w))
-    .join(' ');
-}
 
 export function parseCandidates(data: unknown): Candidate[] {
   const rows = (data as { results?: { bindings?: Record<string, { value?: string }>[] } })?.results?.bindings ?? [];
@@ -137,7 +163,7 @@ export function parseCandidates(data: unknown): Candidate[] {
     const enUrl = r.en?.value ?? '';
     if (!/^Q\d+$/.test(qid) || !enUrl.startsWith(EN_WIKI)) continue;
     const deUrl = r.de?.value?.startsWith(DE_WIKI) ? r.de.value : null;
-    if (!byQid.has(qid)) byQid.set(qid, { qid, enUrl, deUrl });
+    if (!byQid.has(qid)) byQid.set(qid, { qid, enUrl, deUrl, topic: 'wikidata' });
   }
   // Oldest Wikidata items first: they are usually the best-known theories.
   return [...byQid.values()].sort((a, b) => qNumber(a.qid) - qNumber(b.qid));
@@ -165,16 +191,8 @@ const LIST_API = `https://en.wikipedia.org/w/api.php?action=query&format=json&fo
 /** The list has about 1,500 links (4 API pages); the cap only guards against a runaway continuation. */
 const LIST_MAX_REQUESTS = 6;
 
-// The list also links people, places, media and concepts. Only articles whose Wikipedia short description
-// (or, without one, whose title) names a conspiracy theory, hoax, denial or similar narrative are taken.
-const THEORY_DESCRIPTION = /conspiracy theor(y|ies)|\bhoax(es)?\b|urban legend|\bmyths?\b|blood libel|\bdenial\b/i;
-const THEORY_TITLE = /conspirac(y|ies)(?! theorist)|\bhoax\b/i;
-
-export function isTheoryPage(title: string, description: string | undefined): boolean {
-  if (/theorists?\b|\(born\b/i.test(description ?? '')) return false;
-  return description ? THEORY_DESCRIPTION.test(description) : THEORY_TITLE.test(title);
-}
-
+// The list also links people, places, media and concepts. Conspiracy theories are imported.
+// Hoaxes, myths and denials are kept as ambiguous and later queued for review. Everything else is dropped.
 export function parseListPages(data: unknown): Candidate[] {
   const pages = (data as { query?: { pages?: Record<string, unknown>[] } })?.query?.pages ?? [];
   const out: Candidate[] = [];
@@ -183,8 +201,9 @@ export function parseListPages(data: unknown): Candidate[] {
     const props = (p.pageprops ?? {}) as { wikibase_item?: string; disambiguation?: string };
     const description = typeof p.description === 'string' ? p.description : undefined;
     if (!title || p.missing || props.disambiguation !== undefined || !/^Q\d+$/.test(props.wikibase_item ?? '')) continue;
-    if (!isTheoryPage(title, description)) continue;
-    out.push({ qid: props.wikibase_item!, enUrl: EN_WIKI + encodeURIComponent(title.replace(/ /g, '_')), deUrl: null });
+    const verdict = topicVerdict(title, description);
+    if (verdict === 'reject') continue;
+    out.push({ qid: props.wikibase_item!, enUrl: EN_WIKI + encodeURIComponent(title.replace(/ /g, '_')), deUrl: null, topic: verdict });
   }
   return out;
 }
@@ -215,19 +234,42 @@ export async function fetchCandidates(): Promise<Candidate[]> {
   return [...fromWikidata, ...fromList.filter((c) => !seen.has(c.qid) && !!seen.add(c.qid))];
 }
 
-/** Fills in the German article of each candidate (if one exists). A failure only means no translation. */
-async function addGermanLinks(batch: Candidate[]): Promise<void> {
-  if (!batch.length) return;
-  try {
-    const rows = (await sparql(germanQuery(batch.map((c) => c.qid)))) as { results?: { bindings?: Record<string, { value?: string }>[] } };
-    const byQid = new Map<string, string>();
-    for (const r of rows?.results?.bindings ?? []) {
-      const qid = r.item?.value?.split('/').pop() ?? '';
-      if (r.de?.value?.startsWith(DE_WIKI)) byQid.set(qid, r.de.value);
+const wikiTitle = (url: string | undefined): string | null => {
+  if (!url || !wikiUrlKey(url)) return null;
+  const title = articleTitle(url).trim();
+  return title || null;
+};
+
+/** German article, other-language sitelinks and Wikidata aliases for the batch. A failure only means English titles. */
+export function parseBatchMeta(data: unknown): Map<string, BatchMeta> {
+  const rows = (data as { results?: { bindings?: Record<string, { value?: string }>[] } })?.results?.bindings ?? [];
+  const out = new Map<string, BatchMeta>();
+  for (const r of rows) {
+    const qid = r.item?.value?.split('/').pop() ?? '';
+    if (!/^Q\d+$/.test(qid)) continue;
+    const meta = out.get(qid) ?? { deUrl: null, urls: [], titles: [], aliases: [] };
+    for (const url of [r.de?.value, r.fr?.value, r.es?.value]) {
+      const title = wikiTitle(url);
+      if (!title || !url) continue;
+      if (url.startsWith(DE_WIKI)) meta.deUrl ??= url;
+      if (!meta.urls.includes(url)) meta.urls.push(url);
+      if (!meta.titles.includes(title)) meta.titles.push(title);
     }
-    for (const c of batch) c.deUrl ??= byQid.get(c.qid) ?? null;
+    const alias = r.alias?.value?.trim();
+    if (alias && alias.length <= 200 && meta.aliases.length < 15 && !meta.aliases.includes(alias)) meta.aliases.push(alias);
+    out.set(qid, meta);
+  }
+  return out;
+}
+
+async function addBatchMeta(batch: Candidate[]): Promise<Map<string, BatchMeta>> {
+  if (!batch.length) return new Map();
+  try {
+    const meta = parseBatchMeta(await sparql(batchMetaQuery(batch.map((c) => c.qid))));
+    for (const c of batch) c.deUrl ??= meta.get(c.qid)?.deUrl ?? null;
+    return meta;
   } catch {
-    // keep English only
+    return new Map();
   }
 }
 
@@ -281,47 +323,124 @@ const firstSentences = (text: string, max = 600) => {
   return end > 100 ? cut.slice(0, end + 1) : `${cut.trimEnd()}…`;
 };
 
-async function uniqueSlug(db: Db, base: string): Promise<string> {
-  const root = slugify(base);
-  for (let i = 1; i < 50; i++) {
-    const slug = i === 1 ? root : `${root}-${i}`;
-    if (!(await db.first('SELECT 1 AS x FROM theories WHERE slug = ?', slug))) return slug;
-  }
-  return `${root}-${Date.now()}`;
+interface Known {
+  qids: Set<string>;
+  urls: Set<string>;
+  keys: LabeledKey[];
+  slugs: Set<string>;
+  skipped: Set<string>;
+  hasQidColumn: boolean;
+  hasSubmissionQid: boolean;
+  hasAliasTable: boolean;
 }
 
-/** Wikipedia URLs and titles that are already in the archive (hand-written cases included). */
-async function knownEntries(db: Db) {
+const addKey = (keys: LabeledKey[], title: string | null | undefined) => {
+  const label = title?.trim();
+  if (!label) return;
+  const key = matchKey(label);
+  if (key.length >= 3 && !keys.some((k) => k.key === key && k.label === label)) keys.push({ key, label });
+};
+
+async function columnNames(db: Db, table: string): Promise<Set<string>> {
+  const rows = await db.all<{ name: string }>(`PRAGMA table_info(${table})`);
+  return new Set(rows.map((r) => r.name));
+}
+
+/** QIDs, Wikipedia URLs, titles, translations, aliases and open submissions already in the archive. */
+async function loadKnown(db: Db): Promise<Known> {
   const skippedRow = await db.first<{ value: string }>('SELECT value FROM settings WHERE key = ?', SKIPPED_KEY);
-  let skipped: string[] = [];
+  let skippedList: string[] = [];
   try {
-    skipped = skippedRow ? (JSON.parse(skippedRow.value) as string[]) : [];
+    skippedList = skippedRow ? (JSON.parse(skippedRow.value) as string[]) : [];
   } catch {
-    skipped = [];
+    skippedList = [];
   }
-  const urls = new Set(
-    (await db.all<{ url: string }>("SELECT url FROM sources WHERE url LIKE 'https://en.wikipedia.org/wiki/%'")).map((r) =>
-      decodeURIComponent(r.url).replace(/_/g, ' ').toLowerCase(),
-    ),
+  const theoryCols = await columnNames(db, 'theories');
+  const submissionCols = await columnNames(db, 'community_submissions');
+  const hasQidColumn = theoryCols.has('wikidata_qid');
+  const hasSubmissionQid = submissionCols.has('wikidata_qid');
+  const hasAliasTable = !!(await db.first("SELECT 1 AS x FROM sqlite_master WHERE type = 'table' AND name = 'theory_aliases'"));
+
+  const theories = await db.all<{ id: number; slug: string; title: string; qid: string | null }>(
+    hasQidColumn ? 'SELECT id, slug, title, wikidata_qid AS qid FROM theories' : 'SELECT id, slug, title, NULL AS qid FROM theories',
   );
-  const titles = new Set((await db.all<{ title: string }>('SELECT title FROM theories')).map((r) => matchKey(r.title)));
-  return { urls, titles, skipped: new Set(skipped) };
+  const translations = await db.all<{ value: string }>("SELECT value FROM translations WHERE entity_type = 'theory' AND field = 'title'");
+  const aliases = hasAliasTable ? await db.all<{ label: string }>('SELECT label FROM theory_aliases') : [];
+  const submissions = await db.all<{ title: string; qid: string | null; moderator_note: string | null; status: string }>(
+    hasSubmissionQid
+      ? 'SELECT title, wikidata_qid AS qid, moderator_note, status FROM community_submissions'
+      : 'SELECT title, NULL AS qid, moderator_note, status FROM community_submissions',
+  );
+  const sources = await db.all<{ url: string | null; notes: string | null }>(
+    'SELECT url, notes FROM sources WHERE url LIKE ? OR notes LIKE ?',
+    '%wikipedia.org/wiki/%',
+    'Imported automatically from Wikidata item Q%',
+  );
+
+  const qids = new Set<string>(skippedList.filter((q) => /^Q\d+$/.test(q)));
+  const urls = new Set<string>();
+  const keys: LabeledKey[] = [];
+  const slugs = new Set<string>();
+  for (const t of theories) {
+    slugs.add(t.slug);
+    addKey(keys, t.title);
+    if (t.qid && /^Q\d+$/.test(t.qid)) qids.add(t.qid);
+  }
+  for (const t of translations) addKey(keys, t.value);
+  for (const a of aliases) addKey(keys, a.label);
+  for (const s of submissions) {
+    const qid = s.qid && /^Q\d+$/.test(s.qid) ? s.qid : qidFromNote(s.moderator_note);
+    if (qid) qids.add(qid);
+    if (s.status !== 'rejected' && s.status !== 'withdrawn') addKey(keys, s.title);
+  }
+  for (const s of sources) {
+    const url = s.url ? wikiUrlKey(s.url) : null;
+    if (url) urls.add(url);
+    const qid = qidFromNote(s.notes);
+    if (qid) qids.add(qid);
+  }
+  return { qids, urls, keys, slugs, skipped: new Set(skippedList), hasQidColumn, hasSubmissionQid, hasAliasTable };
 }
 
-async function storeEntry(db: Db, c: Candidate, en: WikiSummary, de: WikiSummary | null): Promise<string> {
-  const slug = await uniqueSlug(db, en.title);
+const remember = (known: Known, title: string, url: string | null, qid: string, slug?: string) => {
+  addKey(known.keys, title);
+  const key = url ? wikiUrlKey(url) : null;
+  if (key) known.urls.add(key);
+  if (/^Q\d+$/.test(qid)) known.qids.add(qid);
+  if (slug) known.slugs.add(slug);
+};
+
+function alreadyStored(c: Candidate, known: Known): boolean {
+  if (known.qids.has(c.qid) || known.skipped.has(c.qid)) return true;
+  const url = wikiUrlKey(c.enUrl);
+  if (url && known.urls.has(url)) return true;
+  const key = matchKey(articleTitle(c.enUrl));
+  if (key.length >= 3 && known.keys.some((k) => k.key === key)) return true;
+  return known.slugs.has(slugify(articleTitle(c.enUrl)));
+}
+
+async function storeEntry(db: Db, known: Known, c: Candidate, en: WikiSummary, de: WikiSummary | null, aliases: string[]): Promise<string> {
+  const slug = slugify(en.title);
+  if (known.slugs.has(slug) || (await db.first('SELECT 1 AS x FROM theories WHERE slug = ?', slug))) return '';
   const category = guessCategory(`${en.title} ${en.description ?? ''} ${en.extract.slice(0, 400)}`);
-  const theory = await db.first<{ id: number }>(
-    `INSERT INTO theories (slug, title, subtitle, summary, body_json, category_id, evidence_status, origin, content_language, is_published)
-     SELECT ?, ?, ?, ?, ?, id, 'unverified', 'editorial', 'en', 1 FROM categories WHERE slug = ? RETURNING id`,
-    slug,
-    en.title,
-    en.description,
-    firstSentences(en.extract),
-    JSON.stringify(attributionDoc(en, 'en')),
-    category,
-  );
-  if (!theory) throw new Error(`category ${category} missing`);
+  const doc = JSON.stringify(attributionDoc(en, 'en'));
+  const summary = firstSentences(en.extract);
+  const theory = known.hasQidColumn
+    ? await db.first<{ id: number }>(
+        `INSERT INTO theories (slug, title, subtitle, summary, body_json, category_id, evidence_status, origin, content_language, is_published, wikidata_qid)
+         SELECT ?, ?, ?, ?, ?, id, 'unverified', 'editorial', 'en', 1, ? FROM categories WHERE slug = ?
+           AND NOT EXISTS (SELECT 1 FROM theories WHERE wikidata_qid = ?) RETURNING id`,
+        slug, en.title, en.description, summary, doc, c.qid, category, c.qid,
+      )
+    : await db.first<{ id: number }>(
+        `INSERT INTO theories (slug, title, subtitle, summary, body_json, category_id, evidence_status, origin, content_language, is_published)
+         SELECT ?, ?, ?, ?, ?, id, 'unverified', 'editorial', 'en', 1 FROM categories WHERE slug = ? RETURNING id`,
+        slug, en.title, en.description, summary, doc, category,
+      );
+  if (!theory) {
+    if (!(await db.first('SELECT 1 AS x FROM categories WHERE slug = ?', category))) throw new Error(`category ${category} missing`);
+    return '';
+  }
   const today = new Date().toISOString().slice(0, 10);
   const note = `Imported automatically from Wikidata item ${c.qid}. Text licence: CC BY-SA 4.0.`;
   const stmts: D1PreparedStatement[] = [];
@@ -347,8 +466,48 @@ async function storeEntry(db: Db, c: Candidate, en: WikiSummary, de: WikiSummary
       if (value) stmts.push(db.stmt("INSERT OR REPLACE INTO translations (entity_type, entity_id, locale, field, value) VALUES ('theory', ?, 'de', ?, ?)", theory.id, field, value));
     }
   }
+  if (known.hasAliasTable) {
+    for (const label of [en.title, de?.title, ...aliases]) {
+      const key = label ? matchKey(label) : '';
+      if (key.length >= 3) stmts.push(db.stmt('INSERT OR IGNORE INTO theory_aliases (theory_id, match_key, label) VALUES (?, ?, ?)', theory.id, key, label!.slice(0, 300)));
+    }
+  }
   await db.batch(stmts);
+  remember(known, en.title, en.url, c.qid, slug);
+  if (de) remember(known, de.title, de.url, c.qid);
+  for (const label of aliases) remember(known, label, null, c.qid);
   return slug;
+}
+
+/** Puts a borderline item in the existing moderation queue. Returns false when that QID is already queued. */
+async function queueReview(db: Db, known: Known, c: Candidate, en: WikiSummary, reason: string): Promise<boolean> {
+  const category = guessCategory(`${en.title} ${en.description ?? ''} ${en.extract.slice(0, 400)}`);
+  const note = `import-review wikidata:${c.qid}. ${reason}`.slice(0, 2000);
+  const sources = JSON.stringify([{ title: `${en.title} – Wikipedia`, url: en.url, publisher: 'Wikipedia (English)', sourceType: 'reference_work' }]);
+  const body = JSON.stringify(attributionDoc(en, 'en'));
+  try {
+    const inserted = known.hasSubmissionQid
+      ? await db.run(
+          `INSERT INTO community_submissions
+             (title, subtitle, summary, body_json, category_id, sources_json, language, display_mode, status, moderator_note, wikidata_qid)
+           SELECT ?, ?, ?, ?, id, ?, 'en', 'anonymous', 'pending_review', ?, ?
+           FROM categories WHERE slug = ? AND NOT EXISTS (SELECT 1 FROM community_submissions WHERE wikidata_qid = ?)`,
+          en.title, reason.slice(0, 300), firstSentences(en.extract), body, sources, note, c.qid, category, c.qid,
+        )
+      : await db.run(
+          `INSERT INTO community_submissions
+             (title, subtitle, summary, body_json, category_id, sources_json, language, display_mode, status, moderator_note)
+           SELECT ?, ?, ?, ?, id, ?, 'en', 'anonymous', 'pending_review', ?
+           FROM categories WHERE slug = ?`,
+          en.title, reason.slice(0, 300), firstSentences(en.extract), body, sources, note, category,
+        );
+    if (!inserted.changes) return false;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 409) return false;
+    throw err;
+  }
+  remember(known, en.title, en.url, c.qid);
+  return true;
 }
 
 /**
@@ -948,27 +1107,63 @@ async function addGermanDetails(db: Db): Promise<number> {
   return done;
 }
 
+const giveUp = (known: Known, result: ImportResult, qid: string) => {
+  result.skipped++;
+  known.skipped.add(qid);
+  known.qids.add(qid);
+};
+
 export async function runImport(db: Db, batch = IMPORT_BATCH, imageBudgetBytes = IMAGE_LIMITS.defaultStorageMb * 1024 * 1024): Promise<ImportResult> {
-  const result: ImportResult = { ranAt: new Date().toISOString(), imported: [], skipped: 0, remaining: 0, images: 0, detailed: 0, error: null };
+  const result: ImportResult = { ranAt: new Date().toISOString(), imported: [], skipped: 0, remaining: 0, images: 0, detailed: 0, reviewed: [], error: null };
   requests = 0;
-  const known = await knownEntries(db);
+  const known = await loadKnown(db);
   try {
     const candidates = await fetchCandidates();
-    const fresh = candidates.filter(
-      (c) => !known.skipped.has(c.qid) && !known.urls.has(decodeURIComponent(c.enUrl).replace(/_/g, ' ').toLowerCase()) && !known.titles.has(matchKey(articleTitle(c.enUrl))),
-    );
+    const fresh = candidates.filter((c) => !alreadyStored(c, known));
     const picked = fresh.slice(0, batch);
-    await addGermanLinks(picked);
+    const meta = await addBatchMeta(picked);
     for (const c of picked) {
+      const extra = meta.get(c.qid);
+      const sitelinkUrls = (extra?.urls ?? []).map((u) => wikiUrlKey(u)).filter((u): u is string => !!u);
+      const early = duplicateHit(
+        [...(extra?.titles ?? []).map(matchKey), ...(extra?.aliases ?? []).map(matchKey)],
+        sitelinkUrls,
+        known.keys,
+        known.urls,
+      );
+      // Same item under another title or language: do not fetch the article again.
+      if (early?.level === 'exact') {
+        giveUp(known, result, c.qid);
+        continue;
+      }
       const en = await fetchSummary(c.enUrl);
-      if (!en || known.titles.has(matchKey(en.title))) {
-        result.skipped++;
-        known.skipped.add(c.qid);
+      if (!en) {
+        giveUp(known, result, c.qid);
+        continue;
+      }
+      const urls = [wikiUrlKey(c.enUrl), wikiUrlKey(en.url), ...sitelinkUrls].filter((u): u is string => !!u);
+      const keys = [matchKey(en.title), matchKey(articleTitle(c.enUrl)), ...(extra?.titles ?? []).map(matchKey), ...(extra?.aliases ?? []).map(matchKey)];
+      const dup = duplicateHit(keys, urls, known.keys, known.urls);
+      const topic = decideImport({ title: en.title, description: en.description, extract: en.extract, listed: c.topic });
+      if (dup?.level === 'exact' || topic === 'reject' || known.slugs.has(slugify(en.title))) {
+        giveUp(known, result, c.qid);
+        continue;
+      }
+      if (dup?.level === 'fuzzy' || topic === 'review') {
+        const reason =
+          dup?.level === 'fuzzy'
+            ? `Ähnelt dem vorhandenen Eintrag „${dup.label}“ (ähnlicher Titel, nicht automatisch übernommen).`
+            : 'Nicht eindeutig eine Verschwörungstheorie (Hoax, Mythos, Leugnung oder nur ein verwandtes Thema). Bitte prüfen.';
+        if (await queueReview(db, known, c, en, reason)) result.reviewed.push({ title: en.title, reason });
+        else giveUp(known, result, c.qid);
         continue;
       }
       const de = c.deUrl ? await fetchSummary(c.deUrl).catch(() => null) : null;
-      const slug = await storeEntry(db, c, en, de);
-      known.titles.add(matchKey(en.title));
+      const slug = await storeEntry(db, known, c, en, de, extra?.aliases ?? []);
+      if (!slug) {
+        giveUp(known, result, c.qid);
+        continue;
+      }
       result.imported.push({ slug, title: en.title });
     }
     result.remaining = fresh.length - picked.length;

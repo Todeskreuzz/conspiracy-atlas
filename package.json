@@ -28,6 +28,7 @@
     "es:sql": "node scripts/generate-spanish.mjs",
     "perf:wall": "vitest run tests/perf",
     "check-sources": "node scripts/check-sources.mjs",
+    "import:duplicates": "node --experimental-strip-types --no-warnings scripts/report-duplicates.ts",
     "deploy:import-cron": "wrangler deploy --config workers/import-cron/wrangler.toml",
     "db:migrate:remote": "wrangler d1 migrations apply conspiracy-atlas-db --remote"
   },

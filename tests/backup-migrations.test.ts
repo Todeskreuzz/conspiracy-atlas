@@ -9,11 +9,12 @@ const REQUIRED_TABLES = [
   'events', 'relationships', 'documents', 'boards', 'board_nodes', 'board_positions', 'investigations', 'investigation_notes',
   'community_submissions', 'moderation_actions', 'authors', 'reports', 'tags', 'translations', 'settings', 'case_notes', 'users', 'user_sessions', 'profile_images', 'comments', 'theory_votes', 'comment_votes',
   'reddit_posts',
+  'theory_aliases',
 ];
 
 describe('migrations', () => {
   it('are numbered and create every required table', () => {
-    expect(migrationFiles()).toEqual(['0001_schema.sql', '0002_seed.sql', '0003_images.sql', '0004_case_images.sql', '0005_more_cases.sql', '0006_case_notes.sql', '0007_case_years.sql', '0008_user_profiles.sql', '0009_profile_images.sql', '0010_moderation.sql', '0011_comments_votes.sql', '0012_quiz.sql', '0013_french.sql', '0014_reddit_posts.sql', '0015_spanish.sql']);
+    expect(migrationFiles()).toEqual(['0001_schema.sql', '0002_seed.sql', '0003_images.sql', '0004_case_images.sql', '0005_more_cases.sql', '0006_case_notes.sql', '0007_case_years.sql', '0008_user_profiles.sql', '0009_profile_images.sql', '0010_moderation.sql', '0011_comments_votes.sql', '0012_quiz.sql', '0013_french.sql', '0014_reddit_posts.sql', '0015_spanish.sql', '0016_import_identity.sql']);
     const db = createDb({ seed: false });
     const tables = db.raw.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r: any) => r.name);
     for (const t of REQUIRED_TABLES) expect(tables, t).toContain(t);
@@ -23,6 +24,12 @@ describe('migrations', () => {
     const db = createDb();
     expect(() => db.raw.exec("INSERT INTO claims (theory_id, text, evidence_status) VALUES (9999, 'x', 'unverified')")).toThrow(/FOREIGN KEY/);
     expect(() => db.raw.exec("UPDATE theories SET evidence_status = 'proven' WHERE id = 1")).toThrow(/CHECK/);
+    db.raw.exec("UPDATE theories SET wikidata_qid = 'Q1' WHERE id = 1");
+    expect(() => db.raw.exec("UPDATE theories SET wikidata_qid = 'Q1' WHERE id = 2")).toThrow(/UNIQUE/);
+    db.raw.exec("INSERT INTO community_submissions (title, summary, body_json, category_id, display_mode, wikidata_qid) VALUES ('One', 'A summary.', '{\"type\":\"doc\"}', 1, 'anonymous', NULL)");
+    db.raw.exec("INSERT INTO community_submissions (title, summary, body_json, category_id, display_mode, wikidata_qid) VALUES ('Two', 'A summary.', '{\"type\":\"doc\"}', 1, 'anonymous', NULL)");
+    db.raw.exec("UPDATE community_submissions SET wikidata_qid = 'Q9' WHERE title = 'One'");
+    expect(() => db.raw.exec("UPDATE community_submissions SET wikidata_qid = 'Q9' WHERE title = 'Two'")).toThrow(/UNIQUE/);
   });
 
   it('seed contains the case files with sources and the translated languages', () => {

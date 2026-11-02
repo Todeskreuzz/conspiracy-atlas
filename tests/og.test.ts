@@ -69,6 +69,8 @@ describe('link previews', () => {
     const html = await page.text();
     expect(page.status).toBe(200);
     expect(html).toContain('<meta property="og:title" content="COINTELPRO" />');
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
+    expect(html).toContain('/og/theory/cointelpro.png');
     expect(html).toContain('<div id="root"></div>');
     const missing = await (await callFunction('/theory/nope', env as any)).text();
     expect(missing).toBe(INDEX);
@@ -82,6 +84,8 @@ describe('search engines', () => {
     const env = await makeEnv();
     const html = await (await callFunction('/de/theory/cointelpro', env as any)).text();
     expect(html).toContain('<html lang="de">');
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
+    expect(html).toContain('twitter:image');
     expect(html).toContain('<link rel="alternate" hreflang="en" href="https://conspiracy-atlas.pages.dev/theory/cointelpro" />');
     expect(html).toContain('<link rel="alternate" hreflang="de" href="https://conspiracy-atlas.pages.dev/de/theory/cointelpro" />');
     expect(html).toContain('<link rel="alternate" hreflang="x-default" href="https://conspiracy-atlas.pages.dev/theory/cointelpro" />');

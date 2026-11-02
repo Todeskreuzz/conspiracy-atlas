@@ -44,6 +44,7 @@ import { describeTarget, hideTarget, lockUser, restoreTarget } from '../moderati
 import { COMMENT_AUTHOR_COLUMNS, COMMENT_AUTHOR_JOIN, mapAuthor } from './comments';
 import { IMAGE_PATH_RE, assertImageQuota, imageInsertStatements, imageResponse, imageStorageLimitBytes, imageStorageUsed, mapImage, parseImages } from '../images';
 import { loadRedditQueue, requireSiteOwner, setRedditDailyPosted, setRedditPosted } from '../reddit';
+import { loadXQueue, setXDailyPosted, setXPosted } from '../x';
 
 export const adminRoutes = new Hono<AppEnv>();
 type AdminCtx = Ctx & { session?: AdminSession };
@@ -1315,5 +1316,43 @@ adminRoutes.delete('/reddit/:id/posted', async (c) => {
   const db = Db.from(c.env);
   await requireSiteOwner(db, (c as AdminCtx).session);
   await setRedditPosted(db, idParam(c), 'owner', false);
+  return c.json({ ok: true });
+});
+
+// ---------------------------------------------------------------------------
+// X drafts (site owner only). Separate from the Reddit queue.
+// ---------------------------------------------------------------------------
+
+adminRoutes.get('/x', async (c) => {
+  const db = Db.from(c.env);
+  await requireSiteOwner(db, (c as AdminCtx).session);
+  return c.json(await loadXQueue(db, new URL(c.req.url).origin, c.env.X_HANDLE));
+});
+
+adminRoutes.post('/x/daily/posted', async (c) => {
+  const db = Db.from(c.env);
+  const session = await requireSiteOwner(db, (c as AdminCtx).session);
+  await setXDailyPosted(db, session.username || 'owner', true);
+  return c.json({ ok: true });
+});
+
+adminRoutes.delete('/x/daily/posted', async (c) => {
+  const db = Db.from(c.env);
+  await requireSiteOwner(db, (c as AdminCtx).session);
+  await setXDailyPosted(db, 'owner', false);
+  return c.json({ ok: true });
+});
+
+adminRoutes.post('/x/:id/posted', async (c) => {
+  const db = Db.from(c.env);
+  const session = await requireSiteOwner(db, (c as AdminCtx).session);
+  await setXPosted(db, idParam(c), session.username || 'owner', true);
+  return c.json({ ok: true });
+});
+
+adminRoutes.delete('/x/:id/posted', async (c) => {
+  const db = Db.from(c.env);
+  await requireSiteOwner(db, (c as AdminCtx).session);
+  await setXPosted(db, idParam(c), 'owner', false);
   return c.json({ ok: true });
 });

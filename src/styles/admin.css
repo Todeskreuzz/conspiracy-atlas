@@ -772,6 +772,23 @@
   outline: 2px solid var(--red);
   outline-offset: 3px;
 }
+.x-drafts__intro {
+  margin-top: 0;
+}
+.x-post__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+.x-count {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+.x-count--over {
+  color: var(--red);
+  font-weight: 700;
+}
 .reddit-draft__meta {
   display: flex;
   flex-wrap: wrap;

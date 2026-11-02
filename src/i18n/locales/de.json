@@ -537,7 +537,8 @@
       "users": "Konten",
       "overview": "Übersicht",
       "comments": "Kommentare",
-      "reddit": "Reddit"
+      "reddit": "Reddit",
+      "x": "X"
     },
     "queue": "Warteschlange",
     "statuses": {
@@ -669,7 +670,8 @@
       "services": "Zeigt, ob alle Cloudflare-Dienste laufen und wie viel vom Gratis-Limit verbraucht ist.",
       "backup": "Lade eine komplette Sicherung der Datenbank herunter. Mach das regelmäßig und vor großen Änderungen.",
       "comments": "Kommentare von Konten erscheinen sofort. Blende aus, was gegen die Regeln verstößt; ausgeblendete Kommentare lassen sich wiederherstellen.",
-      "reddit": "Englische Beitragsentwürfe für den Subreddit der Seite. Kopiere Titel und Text, öffne Reddit und markiere den Entwurf als gepostet, damit er nicht noch einmal vorgeschlagen wird."
+      "reddit": "Englische Beitragsentwürfe für den Subreddit der Seite. Kopiere Titel und Text, öffne Reddit und markiere den Entwurf als gepostet, damit er nicht noch einmal vorgeschlagen wird.",
+      "x": "Englische Beiträge für das X-Konto der Seite. Ein Aufhänger ohne Link, eine Antwort mit Link und derselbe Aufhänger mit Link im Beitrag."
     },
     "overview": {
       "welcome": "Willkommen, {name}! Hier siehst du auf einen Blick, was zu tun ist.",
@@ -749,6 +751,33 @@
       "marked": "Als gepostet markiert. Er wird nicht wieder vorgeschlagen.",
       "restored": "Wieder in die Liste gelegt.",
       "postedTitle": "Schon gepostet",
+      "undo": "Wieder in die Liste"
+    },
+    "x": {
+      "intro": "{n} Beiträge für @{handle}. Der Aufhänger lässt den Link für eine Antwort, weil X solche Beiträge öfter zeigt. Die Fassung mit Link ist da, wenn du die Vorschaukarte willst.",
+      "why": "Dieselbe Rangfolge und derselbe UTC-Fall des Tages wie im Reddit-Reiter. Was auf X gepostet ist, wird getrennt gespeichert. Ein Link zählt als 23 Zeichen.",
+      "invalidHandle": "X_HANDLE ist kein gültiger Handle, deshalb nutzen diese Entwürfe @{handle}.",
+      "forbidden": "Nur der Betreiber sieht die X-Entwürfe.",
+      "migrationRequired": "Eine X-Tabelle fehlt. Im aktuellen Checkout ausführen: npm run db:migrate:remote",
+      "empty": "Keine veröffentlichte Akte wartet.",
+      "draftN": "Beitrag {n}",
+      "caseKicker": "Fall des Tages · {day}",
+      "casePosted": "Für dieses Datum gepostet.",
+      "hook": "Aufhänger (ohne Link)",
+      "reply": "Antwort (mit Link)",
+      "withLink": "Beitrag mit Link",
+      "copyPost": "Beitrag kopieren",
+      "copyReply": "Antwort kopieren",
+      "copyWithLink": "Mit Link kopieren",
+      "copied": "Kopiert",
+      "copyFailed": "Kopieren fehlgeschlagen. Markiere den Text und kopiere ihn von Hand.",
+      "openX": "Auf X öffnen",
+      "openXLink": "Auf X mit Link öffnen",
+      "openCase": "Fallakte öffnen",
+      "markPosted": "Als gepostet markieren",
+      "marked": "Als auf X gepostet markiert. Er wird nicht wieder vorgeschlagen.",
+      "restored": "Wieder in die Liste gelegt.",
+      "postedTitle": "Schon auf X gepostet",
       "undo": "Wieder in die Liste"
     }
   },

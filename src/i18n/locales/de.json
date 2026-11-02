@@ -720,6 +720,15 @@
     "commentReply": "Antwort",
     "commentScore": "Wertung {n}"
   },
+  "rss": {
+    "title": "RSS-Feed",
+    "intro": "Hol dir neue Fallakten und den Fall des Tages in deinen Feed-Reader, ohne Konto und ohne Newsletter.",
+    "address": "Kopiere diese Adresse in deinen Feed-Reader:",
+    "copy": "Adresse kopieren",
+    "copied": "Kopiert!",
+    "raw": "Rohdaten des Feeds öffnen",
+    "latest": "Neueste Fallakten"
+  },
   "quiz": {
     "title": "Quiz: wahr oder erfunden?",
     "intro": "Ein belegtes historisches Ereignis wird mit einer Jahreszahl gezeigt. Entscheide, ob die Jahreszahl stimmt. Jede richtige Antwort bringt {points} Punkte auf dein Profil.",

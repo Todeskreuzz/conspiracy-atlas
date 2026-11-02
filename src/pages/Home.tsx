@@ -72,7 +72,7 @@ function CaseOfTheDay() {
         <h2>{t('home.caseOfTheDay')}</h2>
         <span className="mono muted small">
           {day} ·{' '}
-          <a href={locale === 'de' ? '/feed.xml?lang=de' : '/feed.xml'} title={t('app.rssTitle')} data-testid="rss-link">
+          <a href={locale === 'de' ? '/rss.html?lang=de' : '/rss.html'} title={t('app.rssTitle')} data-testid="rss-link">
             {t('app.rss')}
           </a>
         </span>

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { makeEnv } from './helpers/app';
 import { Db } from '../server/db';
-import { clip, injectOg, jsonLd, loadOg } from '../server/og';
+import { clip, injectOg, jsonLd, loadOg, snippet } from '../server/og';
 import { onRequestGet as sitemap } from '../functions/sitemap.xml';
 import { onRequestGet as verification } from '../functions/googlee808fb02e2c3ca02.html';
 import { onRequestGet } from '../functions/theory/[slug]';
@@ -41,6 +41,14 @@ describe('link previews', () => {
     expect(html.match(/name="description"/g)).toHaveLength(1);
     expect(html).not.toContain('<case>');
     expect(clip('word '.repeat(100), 50).length).toBeLessThanOrEqual(50);
+    expect(snippet('Short text.')).toBe('Short text.');
+    const long = 'The U.S. Navy reported two attacks in the Gulf of Tonkin in 1964. The first attack took place on 2 August. The second, reported on 4 August, almost certainly did not happen and was used to justify war.';
+    const s = snippet(long);
+    expect(s.length).toBeLessThanOrEqual(160);
+    expect(s).toMatch(/[a-z0-9)"”][.!?]$/);
+    expect(s).toContain('U.S. Navy');
+    expect(snippet('word '.repeat(100))).toMatch(/…$/);
+    expect(snippet('word '.repeat(100)).length).toBeLessThanOrEqual(160);
   });
 
   it('serves case pages with preview tags and falls back to the plain page', async () => {

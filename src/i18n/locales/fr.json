@@ -536,7 +536,8 @@
       "notes": "Notes des lecteurs",
       "users": "Comptes",
       "overview": "Vue d'ensemble",
-      "comments": "Commentaires"
+      "comments": "Commentaires",
+      "reddit": "Reddit"
     },
     "queue": "File",
     "statuses": {
@@ -655,7 +656,8 @@
     "groups": {
       "review": "Relecture",
       "manage": "Gérer",
-      "system": "Système"
+      "system": "Système",
+      "publish": "Publier"
     },
     "sections": {
       "overview": "Ce qui demande attention et où tout trouver.",
@@ -666,7 +668,8 @@
       "archive": "Les dossiers publiés. Cliquez sur un titre pour le modifier, ou créez une nouvelle théorie.",
       "services": "Indique si tous les services Cloudflare fonctionnent et quelle part du quota gratuit est utilisée.",
       "backup": "Téléchargez une sauvegarde complète de la base. Faites-le régulièrement et avant de grands changements.",
-      "comments": "Les commentaires des comptes apparaissent tout de suite. Masquez ce qui enfreint les règles ; les commentaires masqués peuvent être rétablis."
+      "comments": "Les commentaires des comptes apparaissent tout de suite. Masquez ce qui enfreint les règles ; les commentaires masqués peuvent être rétablis.",
+      "reddit": "Brouillons de billets en anglais pour le subreddit du site. Copiez le titre et le texte, ouvrez Reddit, puis marquez le brouillon comme publié pour qu'il ne soit plus proposé."
     },
     "overview": {
       "welcome": "Bienvenue, {name} ! Voici ce qu'il y a à faire d'un coup d'œil.",
@@ -719,7 +722,31 @@
     "commentShow": "Afficher de nouveau",
     "commentDelete": "Supprimer définitivement",
     "commentReply": "Répondre",
-    "commentScore": "Score {n}"
+    "commentScore": "Score {n}",
+    "reddit": {
+      "intro": "{n} brouillons pour r/{subreddit}, le meilleur score d'abord. Copiez le titre et le texte séparément, ouvrez la page d'envoi de Reddit, puis marquez un brouillon comme publié une fois en ligne.",
+      "whyText": "La file montre les {perDay} dossiers publiés les mieux classés qui ne sont pas encore marqués comme publiés. Le score additionne la fraîcheur (dernière mise à jour), le statut de preuve (les dossiers ouverts ou contestés passent avant les dossiers clos), la discussion (affirmations, contre-arguments, liens) et l'intérêt (commentaires et votes). Les candidats sont les {recent} dossiers les plus récemment mis à jour plus les {engaged} plus commentés. Le texte est rempli à partir du dossier avec des modèles fixes. Rien n'est envoyé à un service externe.",
+      "invalidSubreddit": "REDDIT_SUBREDDIT n'est pas un nom de subreddit valide, donc ces liens utilisent r/{subreddit}.",
+      "forbidden": "Seul le propriétaire du site voit les brouillons Reddit.",
+      "empty": "Aucun dossier publié n'attend. Tout ce que la file peut atteindre est marqué comme publié.",
+      "draftN": "Brouillon {n}",
+      "flair": "Flair suggéré",
+      "rank": "Score {score} · mis à jour il y a {days} jours · {status} · {claims} affirmations · {comments} commentaires",
+      "rankToday": "Score {score} · mis à jour aujourd'hui · {status} · {claims} affirmations · {comments} commentaires",
+      "breakdown": "Fraîcheur {recency} · statut de preuve {status} · discussion {discussion} · intérêt {interest}",
+      "copyTitle": "Copier le titre",
+      "copyBody": "Copier le texte",
+      "copied": "Copié",
+      "copyFailed": "Copie impossible. Sélectionnez le texte et copiez-le à la main.",
+      "openReddit": "Ouvrir le formulaire Reddit",
+      "openCase": "Ouvrir le dossier",
+      "submitShort": "Le lien ouvre Reddit avec le titre rempli. Collez le texte complet : il est trop long pour l'adresse.",
+      "markPosted": "Marquer comme publié",
+      "marked": "Marqué comme publié. Il ne sera plus proposé.",
+      "restored": "Remis dans la file.",
+      "postedTitle": "Déjà publié",
+      "undo": "Remettre dans la file"
+    }
   },
   "rss": {
     "title": "Flux RSS",

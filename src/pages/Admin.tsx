@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { formatDate, useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
@@ -28,6 +28,7 @@ import { Pagination } from '../components/TheoryCard';
 import { ImageGallery } from '../components/ImageGallery';
 import { Avatar } from '../components/ProfileView';
 import { ImageUploader, toUploads, type PickedImage } from '../components/ImageUploader';
+import { RedditDrafts } from '../components/RedditDrafts';
 import type { PublicImage } from '../../shared/images';
 
 type Api = ReturnType<typeof adminApi>;
@@ -1308,7 +1309,7 @@ function Comments({ a }: { a: Api }) {
 
 // ----------------------------------------------------------------------------------- page
 
-type SectionKey = 'overview' | 'moderation' | 'notes' | 'comments' | 'reports' | 'users' | 'archive' | 'services' | 'backup';
+type SectionKey = 'overview' | 'moderation' | 'notes' | 'comments' | 'reports' | 'users' | 'archive' | 'services' | 'backup' | 'reddit';
 interface Overview {
   submissions: Record<string, number>;
   openReports: number;
@@ -1318,11 +1319,11 @@ interface Overview {
 
 const SECTION_GROUPS: readonly { group: string; items: readonly SectionKey[] }[] = [
   { group: 'start', items: ['overview'] },
+  { group: 'publish', items: ['reddit'] },
   { group: 'review', items: ['moderation', 'notes', 'comments', 'reports'] },
   { group: 'manage', items: ['users', 'archive'] },
   { group: 'system', items: ['services', 'backup'] },
 ];
-const SECTION_KEYS = SECTION_GROUPS.flatMap((g) => g.items);
 const SECTION_ICONS: Record<SectionKey, string> = {
   overview: '⌂',
   moderation: '✉',
@@ -1333,6 +1334,7 @@ const SECTION_ICONS: Record<SectionKey, string> = {
   archive: '▤',
   services: '⚙',
   backup: '⇩',
+  reddit: '↗',
 };
 
 /** Open work per section; only the review sections have a queue. */
@@ -1344,7 +1346,7 @@ function pendingCount(key: SectionKey, o: Overview | null | undefined): number {
   return 0;
 }
 
-function OverviewPanel({ data, onOpen, who }: { data: Overview | null | undefined; onOpen: (k: SectionKey) => void; who: string | null }) {
+function OverviewPanel({ data, onOpen, who, keys }: { data: Overview | null | undefined; onOpen: (k: SectionKey) => void; who: string | null; keys: readonly SectionKey[] }) {
   const { t } = useI18n();
   const queues = (['moderation', 'notes', 'reports'] as const).map((k) => ({ k, n: pendingCount(k, data) }));
   const open = queues.filter((q) => q.n > 0);
@@ -1375,7 +1377,7 @@ function OverviewPanel({ data, onOpen, who }: { data: Overview | null | undefine
       </div>
       <h3 className="adm-h3">{t('admin.overview.all')}</h3>
       <div className="adm-guide">
-        {SECTION_KEYS.filter((k) => k !== 'overview').map((k) => (
+        {keys.filter((k) => k !== 'overview').map((k) => (
           <button key={k} type="button" className="adm-guide__item" onClick={() => onOpen(k)}>
             <span className="adm-guide__icon" aria-hidden="true">
               {SECTION_ICONS[k]}
@@ -1395,8 +1397,26 @@ export default function AdminPage() {
   const { t } = useI18n();
   const session = useAdminSession();
   const [params, setParams] = useSearchParams();
+  const owner = !!session.canManageOwners;
+  const groups = SECTION_GROUPS.map((g) => ({ ...g, items: g.items.filter((k) => k !== 'reddit' || owner) })).filter((g) => g.items.length > 0);
+  const visibleKeys = groups.flatMap((g) => g.items);
   const requested = params.get('tab') as SectionKey | null;
-  const tab: SectionKey = requested && SECTION_KEYS.includes(requested) ? requested : 'overview';
+  const tab: SectionKey = requested && visibleKeys.includes(requested) ? requested : 'overview';
+  useEffect(() => {
+    let el = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    const created = !el;
+    if (!el) {
+      el = document.createElement('meta');
+      el.name = 'robots';
+      document.head.appendChild(el);
+    }
+    const prev = created ? null : el.content;
+    el.content = 'noindex, nofollow';
+    return () => {
+      if (created) el?.remove();
+      else if (el && prev !== null) el.content = prev;
+    };
+  }, []);
   const setTab = (k: SectionKey) => {
     setParams(k === 'overview' ? {} : { tab: k }, { replace: false });
     window.scrollTo({ top: 0 });
@@ -1447,13 +1467,13 @@ export default function AdminPage() {
             <div className="adm-nav__tab" aria-hidden="true">
               {t('admin.folderLabel')}
             </div>
-            {SECTION_GROUPS.map((g) => (
+            {groups.map((g) => (
               <div key={g.group} className="adm-nav__group">
                 {g.group !== 'start' && <div className="adm-nav__label">{t(`admin.groups.${g.group}`)}</div>}
                 {g.items.map((k) => {
                   const n = pendingCount(k, overview.data);
                   return (
-                    <button key={k} type="button" role="tab" aria-selected={tab === k} className="adm-nav__item" onClick={() => setTab(k)}>
+                    <button key={k} type="button" role="tab" aria-selected={tab === k} className="adm-nav__item" data-testid={`admin-tab-${k}`} onClick={() => setTab(k)}>
                       <span className="adm-nav__icon" aria-hidden="true">
                         {SECTION_ICONS[k]}
                       </span>
@@ -1470,7 +1490,7 @@ export default function AdminPage() {
               {t('admin.stamp')}
             </span>
             <div className="adm-fileno" aria-hidden="true">
-              {t('admin.fileNo', { n: String(SECTION_KEYS.indexOf(tab) + 1).padStart(2, '0') })}
+              {t('admin.fileNo', { n: String(visibleKeys.indexOf(tab) + 1).padStart(2, '0') })}
             </div>
             {tab !== 'overview' && (
               <header className="adm-section-head">
@@ -1480,7 +1500,8 @@ export default function AdminPage() {
                 <p>{t(`admin.sections.${tab}`)}</p>
               </header>
             )}
-            {tab === 'overview' && <OverviewPanel data={overview.data} onOpen={setTab} who={session.username} />}
+            {tab === 'overview' && <OverviewPanel data={overview.data} onOpen={setTab} who={session.username} keys={visibleKeys} />}
+            {tab === 'reddit' && owner && <RedditDrafts a={adminApi(session.csrfToken)} />}
             {tab === 'moderation' && <Moderation a={adminApi(session.csrfToken)} />}
             {tab === 'notes' && <Notes a={adminApi(session.csrfToken)} />}
             {tab === 'comments' && <Comments a={adminApi(session.csrfToken)} />}

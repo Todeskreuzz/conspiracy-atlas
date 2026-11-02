@@ -536,7 +536,8 @@
       "notes": "Reader notes",
       "users": "Accounts",
       "overview": "Overview",
-      "comments": "Comments"
+      "comments": "Comments",
+      "reddit": "Reddit"
     },
     "queue": "Queue",
     "statuses": {
@@ -655,7 +656,8 @@
     "groups": {
       "review": "Review",
       "manage": "Manage",
-      "system": "System"
+      "system": "System",
+      "publish": "Publish"
     },
     "sections": {
       "overview": "What needs attention and where to find everything.",
@@ -666,7 +668,8 @@
       "archive": "The published case files. Click a title to edit it, or create a new theory.",
       "services": "Shows whether all Cloudflare services are running and how much of the free limit is used.",
       "backup": "Download a complete backup of the database. Do this regularly and before big changes.",
-      "comments": "Comments from accounts appear at once. Hide anything that breaks the rules; hidden comments can be restored."
+      "comments": "Comments from accounts appear at once. Hide anything that breaks the rules; hidden comments can be restored.",
+      "reddit": "English post drafts for the site's subreddit. Copy a title and a text, open Reddit, then mark the draft as posted so it is not offered again."
     },
     "overview": {
       "welcome": "Welcome, {name}! Here is what needs doing at a glance.",
@@ -719,7 +722,31 @@
     "commentShow": "Show again",
     "commentDelete": "Delete permanently",
     "commentReply": "Reply",
-    "commentScore": "Score {n}"
+    "commentScore": "Score {n}",
+    "reddit": {
+      "intro": "{n} drafts for r/{subreddit}, highest score first. Copy the title and the text separately, open Reddit's submit page, and mark a draft as posted once it is up.",
+      "whyText": "The queue is the {perDay} highest-scoring published cases that are not marked as posted. The score adds recency (how recently the file was updated), the evidence label (open or disputed files rank above settled ones), discussion (claims, counter-arguments, connections) and interest (comments and votes). Candidates are the {recent} most recently updated cases plus the {engaged} most commented. The text is filled from the case file with fixed templates. Nothing is sent to an external service.",
+      "invalidSubreddit": "REDDIT_SUBREDDIT is not a valid subreddit name, so these links use r/{subreddit}.",
+      "forbidden": "Only the site owner can see Reddit drafts.",
+      "empty": "No published cases are waiting. Everything in reach of the queue has been marked as posted.",
+      "draftN": "Draft {n}",
+      "flair": "Suggested flair",
+      "rank": "Score {score} · updated {days} days ago · {status} · {claims} claims · {comments} comments",
+      "rankToday": "Score {score} · updated today · {status} · {claims} claims · {comments} comments",
+      "breakdown": "Recency {recency} · evidence label {status} · discussion {discussion} · interest {interest}",
+      "copyTitle": "Copy title",
+      "copyBody": "Copy text",
+      "copied": "Copied",
+      "copyFailed": "Could not copy. Select the text and copy it by hand.",
+      "openReddit": "Open Reddit submit",
+      "openCase": "Open case file",
+      "submitShort": "The link opens Reddit with the title filled in. Paste the full text — it is too long for the address.",
+      "markPosted": "Mark as posted",
+      "marked": "Marked as posted. It will not be suggested again.",
+      "restored": "Put back into the queue.",
+      "postedTitle": "Already posted",
+      "undo": "Put back in the queue"
+    }
   },
   "rss": {
     "title": "RSS feed",

@@ -33,6 +33,12 @@ export interface Env {
 
   /** "development" or "production"; informational only (cookies are always Secure, browsers accept them on localhost). */
   ENVIRONMENT?: string;
+
+  /**
+   * Subreddit for the owner-only draft queue (public name, not a secret).
+   * Defaults to ConspiracyAtlas when unset or invalid.
+   */
+  REDDIT_SUBREDDIT?: string;
 }
 
 export function flag(value: string | undefined, fallback = false): boolean {

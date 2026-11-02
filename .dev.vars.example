@@ -13,3 +13,6 @@ ADMIN_USERNAME=editor
 ADMIN_PASSWORD_HASH=
 # At least 32 random characters, e.g.:  node -e "console.log(crypto.randomBytes(32).toString('hex'))"
 SESSION_SECRET=
+
+# Owner-only Reddit drafts. Public name, not a secret. Defaults to ConspiracyAtlas.
+# REDDIT_SUBREDDIT=ConspiracyAtlas

@@ -3,7 +3,9 @@
   "include": [
     "/api/*",
     "/theory/*",
+    "/de",
     "/de/theory/*",
+    "/og/*",
     "/sitemap.xml",
     "/feed.xml",
     "/googlee808fb02e2c3ca02.html"

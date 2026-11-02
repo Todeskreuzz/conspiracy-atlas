@@ -24,11 +24,15 @@ describe('link previews', () => {
     const env = await makeEnv();
     const og = await loadOg(Db.from(env), 'area-51', 'en', 'https://conspiracy-atlas.pages.dev');
     expect(og?.title).toBe('Area 51');
-    expect(og?.image).toBe('https://conspiracy-atlas.pages.dev/media/theories/area-51.jpg');
+    expect(og?.image).toMatch(/^https:\/\/conspiracy-atlas\.pages\.dev\/og\/theory\/area-51\.png\?v=[a-z0-9]+$/);
+    expect(og?.imageAlt).toBe('Area 51 — Unverified');
+    expect(og?.imageWidth).toBe(800);
     expect(og?.url).toBe('https://conspiracy-atlas.pages.dev/theory/area-51');
     expect(og!.description.length).toBeLessThanOrEqual(200);
     const de = await loadOg(Db.from(env), 'moon-landing-conspiracy-theory', 'de', 'https://x.test');
     expect(de?.title).toBe('Verschwörungstheorie zur Mondlandung');
+    expect(de?.image).toMatch(/^https:\/\/x\.test\/og\/de\/theory\/moon-landing-conspiracy-theory\.png\?v=[a-z0-9]+$/);
+    expect(de?.imageAlt).toContain('—');
     expect(de?.url).toBe('https://x.test/de/theory/moon-landing-conspiracy-theory');
     expect(await loadOg(Db.from(env), 'does-not-exist', 'en', 'https://x.test')).toBeNull();
   });

@@ -23,6 +23,7 @@
     "restore:local": "node scripts/restore.mjs --local",
     "restore:remote": "node scripts/restore.mjs --remote",
     "cost-check": "node scripts/cost-check.mjs",
+    "og:font": "node scripts/generate-og-font.mjs",
     "perf:wall": "vitest run tests/perf",
     "check-sources": "node scripts/check-sources.mjs",
     "deploy:import-cron": "wrangler deploy --config workers/import-cron/wrangler.toml",
@@ -50,6 +51,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261030.1",
+    "@resvg/resvg-wasm": "^2.6.2",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

@@ -1,12 +1,12 @@
 // Link previews (Open Graph / Twitter cards) for case pages. Crawlers of WhatsApp, Reddit, X etc. do not run
 // JavaScript, so the Pages Function for /theory/* puts the case's title, summary and photo into the static index.html.
 import type { Db } from './db';
-import type { Locale } from '../shared/constants';
+import { EVIDENCE_STATUSES, type EvidenceStatus, type Locale } from '../shared/constants';
 import { localeAlternates } from '../shared/localePath';
+import { statusLabel } from './preview/copy';
+import { CARD_H, CARD_W } from './preview/size';
 
 export const SITE_NAME = 'The Conspiracy Atlas';
-/** Fallback preview image (PNG: most platforms ignore SVG previews). */
-export const DEFAULT_OG_IMAGE = '/media/og-default.png';
 
 export interface OgData {
   title: string;
@@ -19,6 +19,10 @@ export interface OgData {
   /** ISO dates for the structured data. */
   published?: string;
   modified?: string;
+  type?: 'article' | 'website';
+  imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -65,16 +69,18 @@ export function jsonLd(d: OgData): string {
   return `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
 }
 
-export function ogTags(d: OgData): string {
+export function ogTags(d: OgData, opts?: { jsonLd?: boolean }): string {
   const meta = (attr: 'property' | 'name', key: string, value: string) => `<meta ${attr}="${key}" content="${esc(value)}" />`;
   return [
     meta('name', 'description', d.description),
     meta('property', 'og:site_name', SITE_NAME),
-    meta('property', 'og:type', 'article'),
+    meta('property', 'og:type', d.type ?? 'article'),
     meta('property', 'og:title', d.title),
     meta('property', 'og:description', d.description),
     meta('property', 'og:url', d.url),
     meta('property', 'og:image', d.image),
+    ...(d.imageWidth ? [meta('property', 'og:image:width', String(d.imageWidth)), meta('property', 'og:image:height', String(d.imageHeight ?? d.imageWidth))] : []),
+    ...(d.imageAlt ? [meta('property', 'og:image:alt', d.imageAlt)] : []),
     meta('property', 'og:locale', d.locale === 'de' ? 'de_DE' : 'en_GB'),
     meta('name', 'twitter:card', 'summary_large_image'),
     meta('name', 'twitter:title', d.title),
@@ -83,25 +89,53 @@ export function ogTags(d: OgData): string {
     meta('property', 'og:locale:alternate', d.locale === 'de' ? 'en_GB' : 'de_DE'),
     `<link rel="canonical" href="${esc(d.url)}" />`,
     ...(d.alternates ?? []).map((a) => `<link rel="alternate" hreflang="${a.locale}" href="${esc(a.url)}" />`),
-    jsonLd(d),
+    ...(opts?.jsonLd === false ? [] : [jsonLd(d)]),
   ].join('\n    ');
 }
 
-/** Replaces the default title/description of index.html with the case's preview tags. */
-export function injectOg(html: string, d: OgData): string {
+/** Replaces the default title/description of index.html with the page's preview tags. */
+export function injectOg(html: string, d: OgData, opts?: { jsonLd?: boolean }): string {
+  const title = d.type === 'website' && d.title === SITE_NAME ? SITE_NAME : `${d.title} – ${SITE_NAME}`;
   return html
     .replace(/<html lang="[^"]*">/, `<html lang="${d.locale}">`)
-    .replace(/<title>[^<]*<\/title>/, `<title>${esc(`${d.title} – ${SITE_NAME}`)}</title>`)
+    .replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`)
     .replace(/\s*<meta name="description"[^>]*>/, '')
     .replace(/\s*<meta property="og:[^>]*>/g, '')
     .replace(/\s*<meta name="twitter:[^>]*>/g, '')
-    .replace('</head>', `    ${ogTags(d)}\n  </head>`);
+    .replace('</head>', `    ${ogTags(d, opts)}\n  </head>`);
 }
 
-/** Loads the preview data of a published case, or null. */
-export async function loadOg(db: Db, slug: string, locale: Locale, origin: string): Promise<OgData | null> {
-  const row = await db.first<{ id: number; title: string; subtitle: string | null; summary: string; image_path: string | null; created_at: string; updated_at: string }>(
-    'SELECT id, title, subtitle, summary, image_path, created_at, updated_at FROM theories WHERE slug = ? AND is_published = 1',
+/** Stable cache-buster so a changed title, summary or rating gets a new image URL. */
+export function cardVersion(title: string, status: string, summary: string): string {
+  let hash = 5381;
+  const text = `${title}\0${status}\0${summary}`;
+  for (let i = 0; i < text.length; i++) hash = Math.imul(hash, 33) ^ text.charCodeAt(i);
+  return (hash >>> 0).toString(36);
+}
+
+export function homeCardPath(locale: Locale): string {
+  return locale === 'de' ? '/og/de/home.png' : '/og/home.png';
+}
+
+export function caseCardPath(locale: Locale, slug: string, version: string): string {
+  const base = locale === 'de' ? `/og/de/theory/${encodeURIComponent(slug)}.png` : `/og/theory/${encodeURIComponent(slug)}.png`;
+  return `${base}?v=${version}`;
+}
+
+export interface CasePreview {
+  title: string;
+  summary: string;
+  status: EvidenceStatus;
+}
+
+function asStatus(value: string): EvidenceStatus {
+  return (EVIDENCE_STATUSES as readonly string[]).includes(value) ? (value as EvidenceStatus) : 'unverified';
+}
+
+/** Published case fields the preview tags and the card image both need. */
+async function loadCase(db: Db, slug: string, locale: Locale): Promise<(CasePreview & { id: number; created_at: string; updated_at: string }) | null> {
+  const row = await db.first<{ id: number; title: string; summary: string; evidence_status: string; created_at: string; updated_at: string }>(
+    'SELECT id, title, summary, evidence_status, created_at, updated_at FROM theories WHERE slug = ? AND is_published = 1',
     slug,
   );
   if (!row) return null;
@@ -113,14 +147,29 @@ export async function loadOg(db: Db, slug: string, locale: Locale, origin: strin
       if (r.field === 'summary') summary = String(r.value);
     }
   }
-  // Photos only (static files or covers stored in D1); SVG symbols fall back to the default preview.
-  const img = row.image_path && (/\.(jpe?g|png|webp)$/i.test(row.image_path) || row.image_path.startsWith('/api/images/')) ? row.image_path : DEFAULT_OG_IMAGE;
+  return { id: row.id, title, summary, status: asStatus(row.evidence_status), created_at: row.created_at, updated_at: row.updated_at };
+}
+
+export async function loadCasePreview(db: Db, slug: string, locale: Locale): Promise<CasePreview | null> {
+  const row = await loadCase(db, slug, locale);
+  return row ? { title: row.title, summary: row.summary, status: row.status } : null;
+}
+
+/** Loads the preview data of a published case, or null. The image is the generated card. */
+export async function loadOg(db: Db, slug: string, locale: Locale, origin: string): Promise<OgData | null> {
+  const row = await loadCase(db, slug, locale);
+  if (!row) return null;
+  const description = snippet(row.summary);
   const alternates = localeUrls(origin, `/theory/${encodeURIComponent(slug)}`);
+  const label = statusLabel(locale, row.status);
   return {
-    title,
-    description: snippet(summary),
+    title: row.title,
+    description,
     url: alternates.find((a) => a.locale === locale)!.url,
-    image: new URL(img, origin).toString(),
+    image: new URL(caseCardPath(locale, slug, cardVersion(row.title, row.status, row.summary)), origin).toString(),
+    imageAlt: `${row.title} — ${label}`,
+    imageWidth: CARD_W,
+    imageHeight: CARD_H,
     locale,
     alternates,
     published: row.created_at,

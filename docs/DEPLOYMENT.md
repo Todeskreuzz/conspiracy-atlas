@@ -69,9 +69,13 @@ Community submissions and reports require Turnstile. Until it is set up they sho
 
 ## 7. Automatic archive import (free)
 `FEATURE_AUTOMATIC_IMPORT = "true"` enables `POST /api/import/run`. Each run takes up to 6 Wikidata items
-that are a *conspiracy theory* (Q159535, incl. subclasses up to two levels) with an English Wikipedia article, then the theory
-articles linked from Wikipedia's *List of conspiracy theories* (people, places and other links are
-skipped by their short description), skips everything already in the archive and stores the rest neutrally: the Wikipedia lead text (CC BY-SA 4.0,
+that are a *conspiracy theory* (Q159535, incl. subclasses up to two levels, excluding humans, films, books and list articles)
+with an English Wikipedia article, then the conspiracy-theory articles linked from Wikipedia's *List of conspiracy theories*.
+People, places and other links are skipped. A page is published only when its title, short description or lead says it is a
+conspiracy theory. Hoaxes, denials, myths and Wikidata hits the text does not confirm go to *Admin → moderation queue*
+(`pending_review`) instead of the public archive. Anything already in the archive is skipped: the Wikidata QID, the Wikipedia
+URL (including redirects and German/French/Spanish sitelinks), the normalised title, translations and aliases. A near-duplicate
+title is queued for review, not published. The Wikipedia lead text (CC BY-SA 4.0,
 attributed and linked), the article as source, a German title and summary if a German article exists.
 No claims, ratings or connections are derived. The endpoint needs no secret and runs at most every
 20 minutes. Each run then fills up to 6 imported entries (new ones first, older ones step by step) from
@@ -103,6 +107,20 @@ under *Actions → Archive import → Run workflow*). Both use the same schedule
 makes the second call a harmless 429. The admin API can start a run too (`POST /api/admin/import/run`);
 the last result is shown under Admin → *Services*. Set the flag to `"false"` to stop the import, or
 remove the Worker with `npx wrangler delete --config workers/import-cron/wrangler.toml`.
+
+Migration `0016_import_identity.sql` adds the unique Wikidata QID and the alias table. It does not delete
+cases. Apply it with the other migrations before relying on the database constraint (the import still
+deduplicates without it, using titles and source notes):
+
+```bash
+npm run db:migrate:remote
+```
+
+A read-only duplicate report (nothing is deleted):
+
+```bash
+npm run import:duplicates -- --remote
+```
 
 ## 8. Verify
 - `https://conspiracy-atlas.pages.dev/api/health` → `{"ok":true,...}`

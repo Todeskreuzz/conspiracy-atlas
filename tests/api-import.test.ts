@@ -96,6 +96,7 @@ function fakeUpstream(
     pageFiles?: Record<string, string[]>;
     licenses?: Record<string, string>;
     commons?: Record<string, { file: string; license: string }[]>;
+    aliasRows?: Record<string, unknown>[];
   } = {},
 ) {
   const calls: string[] = [];
@@ -181,10 +182,12 @@ function fakeUpstream(
       return Response.json({ query: { pages: listPages[n] }, ...(listPages[n + 1] ? { continue: { gplcontinue: 'x|0|B', continue: 'gplcontinue||' } } : {}) });
     }
     if (url.startsWith('https://query.wikidata.org/')) {
-      // The main query lists English articles only; German links come from a second query for the batch.
-      const german = decodeURIComponent(url).includes('VALUES');
-      const rows = (bindings as Record<string, unknown>[]).map(({ de, ...rest }) => (german ? { ...rest, de } : rest)).filter((r) => !german || r.de);
-      return Response.json({ results: { bindings: rows } });
+      // The main query lists English articles only. The batch query (VALUES) also asks for sitelinks and aliases.
+      const q = decodeURIComponent(url);
+      const batch = q.includes('VALUES');
+      const rows = (bindings as Record<string, unknown>[]).map(({ de, ...rest }) => (batch ? { ...rest, de } : rest)).filter((r) => !batch || r.de);
+      const aliasRows = q.includes('altLabel') ? (extra.aliasRows ?? []) : [];
+      return Response.json({ results: { bindings: [...rows, ...aliasRows] } });
     }
     const m = url.match(/^https:\/\/(en|de)\.wikipedia\.org\/api\/rest_v1\/page\/summary\/([^?]+)/);
     const key = m ? `${m[1]}:${decodeURIComponent(m[2]).replace(/_/g, ' ')}` : '';
@@ -505,7 +508,7 @@ describe('article details', () => {
 
 describe('second source: Wikipedia list', () => {
   it('adds theory articles from the list after Wikidata, skipping people, places and duplicates', async () => {
-    const { visitor } = await setup();
+    const { visitor, raw } = await setup();
     const listPage = (title: string, qid: string, description?: string) => ({ title, description, pageprops: { wikibase_item: qid } });
     fakeUpstream(
       [binding('Q50', 'Flat_Earth')],
@@ -520,8 +523,13 @@ describe('second source: Wikipedia list', () => {
       ],
     );
     const r = await visitor.post('/api/import/run');
-    expect(r.json.imported.map((i: any) => i.title)).toEqual(['Flat Earth', 'Bielefeld conspiracy', 'Dundy County UFO hoax']);
+    expect(r.json.error ?? null).toBeNull();
+    expect(r.json.imported.map((i: any) => i.title)).toEqual(['Flat Earth', 'Bielefeld conspiracy']);
+    // A hoax is not published. It waits in the moderation queue.
+    expect(r.json.reviewed.map((i: any) => i.title)).toEqual(['Dundy County UFO hoax']);
     expect(r.json.remaining).toBe(0);
+    const queued = raw.prepare("SELECT status, wikidata_qid, moderator_note FROM community_submissions").all();
+    expect(queued).toEqual([{ status: 'pending_review', wikidata_qid: 'Q4', moderator_note: expect.stringContaining('wikidata:Q4') }]);
   });
 
   it('still imports from Wikidata when the list is unavailable', async () => {
@@ -530,6 +538,76 @@ describe('second source: Wikipedia list', () => {
     const r = await visitor.post('/api/import/run');
     expect(r.status).toBe(200);
     expect(r.json.imported).toHaveLength(1);
+  });
+
+  it('does not publish redirects, translations, aliases, near-duplicates or off-topic pages', async () => {
+    const { env, visitor, raw } = await setup();
+    const page = (title: string, description: string, extract: string) => ({
+      type: 'standard',
+      title,
+      description,
+      extract,
+      content_urls: { desktop: { page: `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}` } },
+    });
+    fakeUpstream(
+      [
+        binding('Q901', 'Lunar_photography_controversy'),
+        binding('Q902', 'Apollo_studio_hoax', 'Verschw%C3%B6rungstheorie_zur_Mondlandung'),
+        binding('Q903', 'Moon_landing_hoax'),
+        binding('Q904', 'September_11_attacks'),
+        binding('Q905', 'Freemasonry'),
+        binding('Q906', 'Phantom_time_hypothesis'),
+      ],
+      {
+        'en:Lunar photography controversy': summary('Lunar photography controversy'),
+        'en:Apollo studio hoax': summary('Apollo studio hoax'),
+        'en:Moon landing hoax': summary('Moon landing hoax'),
+        'en:September 11 attacks': page('September 11 attacks', '2001 terrorist attacks in the United States', 'The September 11 attacks were four coordinated terrorist attacks carried out by al-Qaeda.'),
+        'en:Freemasonry': page('Freemasonry', 'Fraternal organization mentioned in conspiracy theories', 'Freemasonry is a fraternal organization that began among stonemasons.'),
+        'en:Phantom time hypothesis': page('Phantom time hypothesis', 'Historical hypothesis about the early Middle Ages', 'The phantom time hypothesis proposes that a span of the early Middle Ages never occurred.'),
+      },
+      [],
+      {},
+      { aliasRows: [{ item: { value: 'http://www.wikidata.org/entity/Q901' }, alias: { value: 'Moon Landing Conspiracy Theory' } }] },
+    );
+    const r = await visitor.post('/api/import/run');
+    expect(r.status).toBe(200);
+    expect(r.json.imported).toEqual([]);
+    expect(r.json.reviewed.map((i: { title: string }) => i.title).sort()).toEqual(['Moon landing hoax', 'Phantom time hypothesis']);
+    expect(raw.prepare("SELECT slug FROM theories WHERE slug LIKE 'september%' OR slug LIKE 'freemasonry%' OR slug LIKE 'lunar%' OR slug LIKE 'apollo%' OR slug LIKE 'moon-landing-hoax%' OR slug LIKE 'phantom%'").all()).toEqual([]);
+    // The hand-written moon-landing case is still the only one.
+    expect(raw.prepare("SELECT COUNT(*) AS n FROM theories WHERE slug = 'moon-landing-conspiracy-theory'").get().n).toBe(1);
+
+    raw.prepare("UPDATE settings SET value = '2000-01-01T00:00:00.000Z' WHERE key = 'import.last_run'").run();
+    const again = await visitor.post('/api/import/run');
+    expect(again.json.imported).toEqual([]);
+    expect(again.json.reviewed).toEqual([]);
+    expect(raw.prepare('SELECT COUNT(*) AS n FROM community_submissions').get().n).toBe(2);
+
+    const admin = client(env);
+    await admin.login();
+    const queued = await admin.get('/api/admin/submissions?status=pending_review');
+    const phantom = queued.json.items.find((i: { title: string }) => i.title === 'Phantom time hypothesis');
+    expect(phantom.moderatorNote).toContain('wikidata:Q906');
+    expect((await admin.post(`/api/admin/submissions/${phantom.id}/action`, { action: 'approve' })).status).toBe(200);
+    const published = await admin.post(`/api/admin/submissions/${phantom.id}/action`, { action: 'publish' });
+    expect(published.status).toBe(200);
+    expect(raw.prepare('SELECT origin, wikidata_qid FROM theories WHERE slug = ?').get(published.json.publishedSlug)).toEqual({ origin: 'editorial', wikidata_qid: 'Q906' });
+  });
+
+  it('keeps importing when the identity columns are not migrated yet, and still will not insert the same item twice', async () => {
+    const { visitor, raw } = await setup();
+    raw.exec('DROP INDEX idx_theories_wikidata_qid');
+    raw.exec('ALTER TABLE theories DROP COLUMN wikidata_qid');
+    raw.exec('DROP INDEX idx_submissions_wikidata_qid');
+    raw.exec('ALTER TABLE community_submissions DROP COLUMN wikidata_qid');
+    raw.exec('DROP TABLE theory_aliases');
+    fakeUpstream([binding('Q50', 'Flat_Earth')], { 'en:Flat Earth': summary('Flat Earth') });
+    expect((await visitor.post('/api/import/run')).json.imported).toHaveLength(1);
+    expect(raw.prepare("SELECT notes FROM sources WHERE notes LIKE 'Imported automatically%'").get().notes).toContain('Wikidata item Q50');
+    raw.prepare("UPDATE settings SET value = '2000-01-01T00:00:00.000Z' WHERE key = 'import.last_run'").run();
+    expect((await visitor.post('/api/import/run')).json.imported).toEqual([]);
+    expect(raw.prepare("SELECT COUNT(*) AS n FROM theories WHERE slug LIKE 'flat-earth%'").get().n).toBe(1);
   });
 
   it('recognises theory articles by their short description', () => {
@@ -549,6 +627,7 @@ describe('import helpers', () => {
     expect(matchKey('Chemtrail conspiracy theory')).toBe(matchKey('Chemtrail Claims'));
     expect(matchKey('John F. Kennedy assassination conspiracy theories')).toBe(matchKey('JFK-related Conspiracy Narratives'));
     expect(matchKey('Illuminati')).toBe(matchKey('Illuminati Narratives'));
+    expect(matchKey('Chemtrail-Verschwörungstheorie')).toBe(matchKey('Chemtrail conspiracy theory'));
     expect(matchKey('Flat Earth')).not.toBe(matchKey('Hollow Earth'));
   });
 
@@ -564,7 +643,7 @@ describe('import helpers', () => {
     const c = parseCandidates({
       results: { bindings: [binding('Q7', 'A'), binding('Q7', 'A'), { item: { value: 'x/Q8' }, en: { value: 'https://evil.example/wiki/B' } }] },
     });
-    expect(c).toEqual([{ qid: 'Q7', enUrl: 'https://en.wikipedia.org/wiki/A', deUrl: null }]);
+    expect(c).toEqual([{ qid: 'Q7', enUrl: 'https://en.wikipedia.org/wiki/A', deUrl: null, topic: 'wikidata' }]);
   });
 
   it('keeps the cost check green', () => {

@@ -10,6 +10,7 @@ export const BACKUP_TABLES = [
   'sources',
   'locations',
   'theories',
+  'reddit_posts',
   'theory_tags',
   'claims',
   'counter_arguments',

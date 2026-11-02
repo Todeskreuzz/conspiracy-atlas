@@ -24,6 +24,8 @@ export const ALLOWED_HOSTS = [
   // Namespace identifiers in the sitemap and structured data; never contacted.
   'www.sitemaps.org', 'schema.org',
   'query.wikidata.org', 'en.wikipedia.org', 'de.wikipedia.org', 'upload.wikimedia.org', 'thumb.wikimedia.org', 'commons.wikimedia.org', 'conspiracy-atlas.pages.dev',
+  // Link the owner opens by hand (Reddit's submit form). The server never fetches it.
+  'www.reddit.com',
 ];
 /** Hosts of paid / usage-billed products that must never appear in code. */
 export const FORBIDDEN_PATTERNS = [

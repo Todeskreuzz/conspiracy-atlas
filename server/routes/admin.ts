@@ -42,6 +42,7 @@ import type { AdminCaseNote, AdminComment, ModerationLogEntry, ReportGroup } fro
 import { describeTarget, hideTarget, lockUser, restoreTarget } from '../moderation';
 import { COMMENT_AUTHOR_COLUMNS, COMMENT_AUTHOR_JOIN, mapAuthor } from './comments';
 import { IMAGE_PATH_RE, assertImageQuota, imageInsertStatements, imageResponse, imageStorageLimitBytes, imageStorageUsed, mapImage, parseImages } from '../images';
+import { loadRedditQueue, requireSiteOwner, setRedditPosted } from '../reddit';
 
 export const adminRoutes = new Hono<AppEnv>();
 type AdminCtx = Ctx & { session?: AdminSession };
@@ -96,6 +97,7 @@ adminRoutes.post('/logout', async (c) => {
 
 // Every other admin route: feature enabled (fail closed), valid session, CSRF for writes.
 adminRoutes.use('*', async (c, next) => {
+  c.header('X-Robots-Tag', 'noindex, nofollow');
   const path = new URL(c.req.url).pathname;
   if (path.endsWith('/admin/login') || path.endsWith('/admin/session') || path.endsWith('/admin/logout')) return next();
   requireFeature(c.env, 'admin_panel');
@@ -1268,4 +1270,29 @@ adminRoutes.get('/export', async (c) => {
   }
   c.header('Content-Disposition', `attachment; filename="conspiracy-atlas-backup-${stamp}.json"`);
   return c.json({ format: 'conspiracy-atlas-backup', version: 1, createdAt: new Date().toISOString(), tables: data });
+});
+
+// ---------------------------------------------------------------------------
+// Reddit drafts (site owner only). Posting stays manual; this only prepares the text.
+// ---------------------------------------------------------------------------
+
+adminRoutes.get('/reddit', async (c) => {
+  const db = Db.from(c.env);
+  await requireSiteOwner(db, (c as AdminCtx).session);
+  const origin = new URL(c.req.url).origin;
+  return c.json(await loadRedditQueue(db, origin, c.env.REDDIT_SUBREDDIT));
+});
+
+adminRoutes.post('/reddit/:id/posted', async (c) => {
+  const db = Db.from(c.env);
+  const session = await requireSiteOwner(db, (c as AdminCtx).session);
+  await setRedditPosted(db, idParam(c), session.username || 'owner', true);
+  return c.json({ ok: true });
+});
+
+adminRoutes.delete('/reddit/:id/posted', async (c) => {
+  const db = Db.from(c.env);
+  await requireSiteOwner(db, (c as AdminCtx).session);
+  await setRedditPosted(db, idParam(c), 'owner', false);
+  return c.json({ ok: true });
 });

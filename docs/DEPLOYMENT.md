@@ -57,6 +57,8 @@ npx wrangler pages secret put SESSION_SECRET      --project-name conspiracy-atla
 ```
 Without these secrets the admin panel shows "Currently unavailable!".
 
+The owner-only Reddit drafts (`/admin?tab=reddit`) use that same admin login, or an account with the Grand Master (owner) rank. Ordinary admin accounts do not see the tab. The subreddit defaults to `ConspiracyAtlas` (`REDDIT_SUBREDDIT` in `wrangler.toml`). After this change is deployed, apply migration `0013_reddit_posts` with `npm run db:migrate:remote` before opening the tab.
+
 ## 6. Turnstile (optional, free)
 Community submissions and reports require Turnstile. Until it is set up they show
 "Currently unavailable! Anti-spam verification has not been configured."

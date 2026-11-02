@@ -1,0 +1,14 @@
+{
+  "name": "The Conspiracy Atlas",
+  "short_name": "Atlas",
+  "description": "An interactive global archive of theories, mysteries and documented operations. Every claim linked to its sources.",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#141210",
+  "theme_color": "#141210",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -103,7 +103,7 @@ export const INVESTIGATION_NOTE_KINDS = [
 ] as const;
 export type InvestigationNoteKind = (typeof INVESTIGATION_NOTE_KINDS)[number];
 
-export const LOCALES = ['en', 'de', 'fr'] as const;
+export const LOCALES = ['en', 'de', 'fr', 'es'] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'en';
 

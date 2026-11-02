@@ -2,14 +2,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import en from './locales/en.json';
 import de from './locales/de.json';
 import fr from './locales/fr.json';
+import es from './locales/es.json';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '../../shared/constants';
 import { localeFromPath } from '../../shared/localePath';
 
 // Central translation registry. To add a language: add a JSON file with the same keys,
 // register it here and extend LOCALES in shared/constants.ts.
-export const dictionaries: Record<Locale, typeof en> = { en, de, fr };
+export const dictionaries: Record<Locale, typeof en> = { en, de, fr, es };
 
-const INTL_LOCALE: Record<Locale, string> = { en: 'en-GB', de: 'de-DE', fr: 'fr-FR' };
+const INTL_LOCALE: Record<Locale, string> = { en: 'en-GB', de: 'de-DE', fr: 'fr-FR', es: 'es-ES' };
 
 /** BCP 47 tag for dates, one per interface language. */
 export function intlLocale(locale: Locale): string {

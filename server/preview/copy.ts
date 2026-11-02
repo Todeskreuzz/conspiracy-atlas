@@ -3,9 +3,10 @@
 import en from '../../src/i18n/locales/en.json';
 import de from '../../src/i18n/locales/de.json';
 import fr from '../../src/i18n/locales/fr.json';
+import es from '../../src/i18n/locales/es.json';
 import type { EvidenceStatus, Locale } from '../../shared/constants';
 
-const dictionaries = { en, de, fr };
+const dictionaries = { en, de, fr, es };
 
 export function statusLabel(locale: Locale, status: EvidenceStatus): string {
   return dictionaries[locale].status[status];

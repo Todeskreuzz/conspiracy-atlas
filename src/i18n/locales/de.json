@@ -727,7 +727,10 @@
     "copy": "Adresse kopieren",
     "copied": "Kopiert!",
     "raw": "Rohdaten des Feeds öffnen",
-    "latest": "Neueste Fallakten"
+    "latest": "Neueste Fallakten",
+    "embedTitle": "Den Fall des Tages auf deiner Seite zeigen",
+    "embedIntro": "Füge diesen Code in deine Webseite, deinen Blog oder dein Forum ein. Die Karte zeigt immer den heutigen Fall und verlinkt zurück zum Atlas.",
+    "embedCopy": "Einbettungscode kopieren"
   },
   "quiz": {
     "title": "Quiz: wahr oder erfunden?",

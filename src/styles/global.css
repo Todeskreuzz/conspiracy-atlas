@@ -1261,6 +1261,14 @@ table.data th {
 .case-of-day__day {
   margin-bottom: 8px;
 }
+/* Compact card for other websites (no image column) */
+.case-of-day--embed {
+  display: block;
+  padding: 18px;
+}
+.case-of-day--embed .case-of-day__body h3 {
+  font-size: 1.35rem;
+}
 @media (max-width: 720px) {
   .case-of-day--spotlight {
     grid-template-columns: 1fr;

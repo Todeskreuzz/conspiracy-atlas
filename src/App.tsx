@@ -33,6 +33,7 @@ const ProfilePage = lazy(() => import('./pages/Profile'));
 const DonatePage = lazy(() => import('./pages/Donate'));
 const QuizPage = lazy(() => import('./pages/Quiz'));
 const RssPage = lazy(() => import('./pages/Rss'));
+const EmbedPage = lazy(() => import('./pages/Embed'));
 
 function ScrollTop() {
   const { pathname } = useLocation();
@@ -80,6 +81,7 @@ export function AppRoutes() {
           <Route path="/quiz" element={<QuizPage />} />
           <Route path="/rss" element={<RssPage />} />
           <Route path="/rss-page" element={<RssPage />} />
+          <Route path="/embed/case-of-the-day" element={<EmbedPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/u/:username" element={<ProfilePage />} />
@@ -93,15 +95,24 @@ export function AppRoutes() {
   );
 }
 
+/** Embeds (/embed/...) are shown inside other sites without the site header and footer. */
+function Shell() {
+  const { pathname } = useLocation();
+  if (/^\/embed(\/|$)/.test(pathname)) return <AppRoutes />;
+  return (
+    <Layout>
+      <AppRoutes />
+    </Layout>
+  );
+}
+
 export function App({ locale, onLocaleChange }: { locale?: Locale; onLocaleChange?: (l: Locale) => void } = {}) {
   return (
     <I18nProvider initial={locale} onLocaleChange={onLocaleChange}>
       <StatusProvider>
         <ScrollTop />
         <PageMeta />
-        <Layout>
-          <AppRoutes />
-        </Layout>
+        <Shell />
       </StatusProvider>
     </I18nProvider>
   );

@@ -22,6 +22,7 @@ const TEXT: Record<Locale, { description: string; cotd: string }> = {
   en: { description: 'New cases and the case of the day from the interactive archive of theories, mysteries and documented operations.', cotd: 'Case of the day' },
   de: { description: 'Neue Akten und der Fall des Tages aus dem interaktiven Archiv für Theorien, Geheimnisse und dokumentierte Operationen.', cotd: 'Fall des Tages' },
   fr: { description: 'Nouveaux dossiers et dossier du jour de l’archive interactive des théories, des mystères et des opérations documentées.', cotd: 'Dossier du jour' },
+  es: { description: 'Expedientes nuevos y el expediente del día del archivo interactivo de teorías, misterios y operaciones documentadas.', cotd: 'Expediente del día' },
 };
 
 interface Item {

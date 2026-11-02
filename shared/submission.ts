@@ -1,7 +1,6 @@
-import { CATEGORY_SLUGS, SOURCE_TYPES, ANONYMOUS_NAME } from './constants';
+import { CATEGORY_SLUGS, LOCALES, SOURCE_TYPES, ANONYMOUS_NAME } from './constants';
 import type { SubmissionInput } from './types';
 import { sanitizeRichDoc, plainText } from './richtext';
-import { LOCALES } from './constants';
 import { ValidationError, arr, int, oneOf, optStr, reqStr, url, slugify } from './validation';
 
 export const LIMITS = {

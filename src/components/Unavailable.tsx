@@ -1,4 +1,4 @@
-import { UNAVAILABLE_MESSAGE, explainDe, explainEn, explainFr, type FeatureKey, type ServiceState } from '../../shared/availability';
+import { UNAVAILABLE_MESSAGE, explainDe, explainEn, explainEs, explainFr, type FeatureKey, type ServiceState } from '../../shared/availability';
 import { useI18n } from '../i18n';
 import { ApiFailure } from '../api/client';
 
@@ -18,7 +18,7 @@ interface Props {
 export function Unavailable({ feature = null, state = 'not_configured', explanation, compact, onRetry }: Props) {
   const { locale, t } = useI18n();
   const en = explanation ?? explainEn(feature, state);
-  const extra = locale === 'de' ? explainDe(feature, state) : locale === 'fr' ? explainFr(feature, state) : null;
+  const extra = locale === 'de' ? explainDe(feature, state) : locale === 'fr' ? explainFr(feature, state) : locale === 'es' ? explainEs(feature, state) : null;
   return (
     <div className={`unavailable${compact ? ' unavailable--compact' : ''}`} role="status" data-testid="unavailable" data-state={state}>
       <strong className="unavailable__title">{UNAVAILABLE_MESSAGE}</strong>

@@ -38,6 +38,10 @@ describe('link previews', () => {
     expect(fr?.title).toBe('Zone 51');
     expect(fr?.image).toMatch(/^https:\/\/x\.test\/og\/fr\/theory\/area-51\.png\?v=[a-z0-9]+$/);
     expect(fr?.imageAlt).toContain('Non vérifié');
+    const es = await loadOg(Db.from(env), 'area-51', 'es', 'https://x.test');
+    expect(es?.title).toBe('Área 51');
+    expect(es?.image).toMatch(/^https:\/\/x\.test\/og\/es\/theory\/area-51\.png\?v=[a-z0-9]+$/);
+    expect(es?.imageAlt).toContain('No verificado');
     expect(await loadOg(Db.from(env), 'does-not-exist', 'en', 'https://x.test')).toBeNull();
   });
 
@@ -126,6 +130,7 @@ describe('language URLs', () => {
     const routes = JSON.parse(readFileSync('public/_routes.json', 'utf8'));
     expect(routes.include).toContain('/de/theory/*');
     expect(routes.include).toContain('/fr/theory/*');
+    expect(routes.include).toContain('/es/theory/*');
     expect(readFileSync('public/robots.txt', 'utf8')).toContain('Disallow: /de/admin');
   });
 });

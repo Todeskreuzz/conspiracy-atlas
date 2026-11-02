@@ -113,7 +113,7 @@ export function cardVersion(title: string, status: string, summary: string): str
   return (hash >>> 0).toString(36);
 }
 
-const OG_LOCALE: Record<Locale, string> = { en: 'en_GB', de: 'de_DE', fr: 'fr_FR' };
+const OG_LOCALE: Record<Locale, string> = { en: 'en_GB', de: 'de_DE', fr: 'fr_FR', es: 'es_ES' };
 
 export function homeCardPath(locale: Locale): string {
   return locale === 'en' ? '/og/home.png' : `/og/${locale}/home.png`;

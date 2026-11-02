@@ -18,6 +18,22 @@ afterEach(() => {
 const BANNED = [/shocking/i, /you won.t believe/i, /wake up/i, /they don.t want/i, /proven fact/i, /the truth is/i];
 
 describe('owner reddit drafts', () => {
+  it('says the migration is missing instead of claiming the database is not configured', async () => {
+    const env = await makeEnv();
+    const raw = (env.DB as any).raw;
+    raw.exec('DROP TABLE reddit_posts');
+    const admin = client(env);
+    await admin.login();
+    const list = await admin.get('/api/admin/reddit');
+    expect(list.status).toBe(503);
+    expect(list.json.error.code).toBe('migration_required');
+    expect(list.json.error.state).toBeUndefined();
+    expect(list.json.error.message).toMatch(/reddit_posts/);
+    expect(list.json.error.message).toMatch(/db:migrate:remote/);
+    expect(list.json.error.message).not.toMatch(/not configured/i);
+    expect((await admin.post('/api/admin/reddit/1/posted')).json.error.code).toBe('migration_required');
+  });
+
   it('serves five English drafts to the secret admin login and hides a case after it is marked posted', async () => {
     const env = await makeEnv();
     const raw = (env.DB as any).raw;

@@ -728,6 +728,7 @@
       "whyText": "The queue is the {perDay} highest-scoring published cases that are not marked as posted. The score adds recency (how recently the file was updated), the evidence label (open or disputed files rank above settled ones), discussion (claims, counter-arguments, connections) and interest (comments and votes). Candidates are the {recent} most recently updated cases plus the {engaged} most commented. The text is filled from the case file with fixed templates. Nothing is sent to an external service.",
       "invalidSubreddit": "REDDIT_SUBREDDIT is not a valid subreddit name, so these links use r/{subreddit}.",
       "forbidden": "Only the site owner can see Reddit drafts.",
+      "migrationRequired": "The reddit_posts table is missing. From an up-to-date checkout run: npm run db:migrate:remote",
       "empty": "No published cases are waiting. Everything in reach of the queue has been marked as posted.",
       "draftN": "Draft {n}",
       "flair": "Suggested flair",

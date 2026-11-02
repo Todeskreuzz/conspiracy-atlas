@@ -62,6 +62,7 @@ export function RedditDrafts({ a }: { a: Api }) {
   };
 
   const forbidden = queue.error instanceof ApiFailure && queue.error.status === 403;
+  const migrationRequired = queue.error instanceof ApiFailure && queue.error.code === 'migration_required';
 
   return (
     <div data-testid="reddit-drafts">
@@ -71,7 +72,13 @@ export function RedditDrafts({ a }: { a: Api }) {
       <p className="small muted">{t('admin.reddit.whyText', { recent: REDDIT_RECENT_POOL, engaged: REDDIT_ENGAGED_POOL, perDay: REDDIT_DRAFTS_PER_DAY })}</p>
       {data?.subredditInvalid && <p className="notice">{t('admin.reddit.invalidSubreddit', { subreddit: data.subreddit })}</p>}
       {message && <p className="notice">{message}</p>}
-      {forbidden ? <p className="notice notice--error">{t('admin.reddit.forbidden')}</p> : <LoadState loading={queue.loading} error={queue.error} onRetry={queue.reload} />}
+      {migrationRequired ? (
+        <p className="notice notice--error" data-testid="reddit-migration-required">{t('admin.reddit.migrationRequired')}</p>
+      ) : forbidden ? (
+        <p className="notice notice--error">{t('admin.reddit.forbidden')}</p>
+      ) : (
+        <LoadState loading={queue.loading} error={queue.error} onRetry={queue.reload} />
+      )}
       {data && data.drafts.length === 0 && <p className="muted">{t('admin.reddit.empty')}</p>}
       <div className="reddit-drafts">
         {data?.drafts.map((d, index) => (

@@ -1,7 +1,7 @@
 // Loads owner-only Reddit drafts from published cases. Text is built in shared/reddit.ts.
 import type { AdminSession } from './auth';
 import type { Db, Row } from './db';
-import { forbidden, notFound, unauthorized } from './errors';
+import { ApiError, forbidden, notFound, unauthorized } from './errors';
 import { isOwnerUser } from './users';
 import type { CategorySlug, EvidenceStatus } from '../shared/constants';
 import {
@@ -159,7 +159,20 @@ export interface RedditQueue {
   posted: RedditPosted[];
 }
 
+/** A missing table is a pending migration, not an unconfigured database. */
+export async function assertRedditPostsTable(db: Db): Promise<void> {
+  const row = await db.first<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'reddit_posts'");
+  if (!row) {
+    throw new ApiError(
+      503,
+      'migration_required',
+      'The reddit_posts table is missing. From an up-to-date checkout run: npm run db:migrate:remote',
+    );
+  }
+}
+
 export async function loadRedditQueue(db: Db, origin: string, subredditRaw: string | undefined, now = new Date()): Promise<RedditQueue> {
+  await assertRedditPostsTable(db);
   const subreddit = resolveSubreddit(subredditRaw);
   const pool = await candidatePool(db);
   const ranked = rankRedditCases(pool, now).slice(0, REDDIT_DRAFTS_PER_DAY);
@@ -183,6 +196,7 @@ export async function loadRedditQueue(db: Db, origin: string, subredditRaw: stri
 }
 
 export async function setRedditPosted(db: Db, theoryId: number, actor: string, posted: boolean): Promise<void> {
+  await assertRedditPostsTable(db);
   if (!posted) {
     await db.run('DELETE FROM reddit_posts WHERE theory_id = ?', theoryId);
     return;

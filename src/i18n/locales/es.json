@@ -728,6 +728,7 @@
       "whyText": "La cola muestra los {perDay} expedientes publicados con mejor puntuación que aún no están marcados como publicados. La puntuación suma la actualidad (última actualización), la etiqueta de pruebas (los expedientes abiertos o disputados van por delante de los cerrados), el debate (afirmaciones, contraargumentos, conexiones) y el interés (comentarios y votos). Los candidatos son los {recent} expedientes actualizados más recientemente más los {engaged} más comentados. El texto se rellena a partir del expediente con plantillas fijas. No se envía nada a un servicio externo.",
       "invalidSubreddit": "REDDIT_SUBREDDIT no es un nombre de subreddit válido, así que estos enlaces usan r/{subreddit}.",
       "forbidden": "Solo el propietario del sitio ve los borradores de Reddit.",
+      "migrationRequired": "Falta la tabla reddit_posts. En una copia actualizada del repositorio, ejecuta: npm run db:migrate:remote",
       "empty": "Ningún expediente publicado está en espera. Todo lo que la cola puede alcanzar ya está marcado como publicado.",
       "draftN": "Borrador {n}",
       "flair": "Flair sugerido",

@@ -2,11 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import en from '../src/i18n/locales/en.json';
 import {
+  CASE_OF_THE_DAY_FLAIR,
   CATEGORY_LABEL,
   DEFAULT_REDDIT_SUBREDDIT,
   EVIDENCE_LABEL,
   REDDIT_TITLE_MAX,
   buildRedditDraft,
+  caseOfTheDayTitle,
   rankRedditCases,
   redditSubmitUrl,
   resolveSubreddit,
@@ -82,6 +84,21 @@ describe('reddit draft text', () => {
     expect(huge.mode).toBe('title-only');
     expect(huge.url).not.toContain('text=');
     expect(new URL(huge.url).searchParams.get('title')).toBe('Short title');
+  });
+
+  it('marks the case of the day in the title and uses the exact flair', () => {
+    const title = caseOfTheDayTitle('Reichstag Fire', 'disputed');
+    expect(title.startsWith('Atlas Case of the Day: Reichstag Fire — ')).toBe(true);
+    expect(title.length).toBeLessThanOrEqual(REDDIT_TITLE_MAX);
+    const long = caseOfTheDayTitle('X'.repeat(400), 'unverified');
+    expect(long.startsWith('Atlas Case of the Day: ')).toBe(true);
+    expect(long.length).toBeLessThanOrEqual(REDDIT_TITLE_MAX);
+    const draft = buildRedditDraft(counts(), { origin: 'https://conspiracy-atlas.pages.dev', subreddit: 'ConspiracyAtlas', now: NOW, daily: true });
+    expect(draft.flair).toBe(CASE_OF_THE_DAY_FLAIR);
+    expect(draft.title).toBe(caseOfTheDayTitle('Example Claim', 'unverified'));
+    expect(draft.body).toContain("Today's Case of the Day");
+    expect(draft.body).toContain('not a finding');
+    expect(draft.body).toContain('https://conspiracy-atlas.pages.dev/theory/example-claim');
   });
 
   it('defaults to r/ConspiracyAtlas and rejects a name Reddit would not accept', () => {

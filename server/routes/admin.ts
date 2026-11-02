@@ -43,7 +43,7 @@ import type { AdminCaseNote, AdminComment, ModerationLogEntry, ReportGroup } fro
 import { describeTarget, hideTarget, lockUser, restoreTarget } from '../moderation';
 import { COMMENT_AUTHOR_COLUMNS, COMMENT_AUTHOR_JOIN, mapAuthor } from './comments';
 import { IMAGE_PATH_RE, assertImageQuota, imageInsertStatements, imageResponse, imageStorageLimitBytes, imageStorageUsed, mapImage, parseImages } from '../images';
-import { loadRedditQueue, requireSiteOwner, setRedditPosted } from '../reddit';
+import { loadRedditQueue, requireSiteOwner, setRedditDailyPosted, setRedditPosted } from '../reddit';
 
 export const adminRoutes = new Hono<AppEnv>();
 type AdminCtx = Ctx & { session?: AdminSession };
@@ -1288,6 +1288,20 @@ adminRoutes.get('/reddit', async (c) => {
   await requireSiteOwner(db, (c as AdminCtx).session);
   const origin = new URL(c.req.url).origin;
   return c.json(await loadRedditQueue(db, origin, c.env.REDDIT_SUBREDDIT));
+});
+
+adminRoutes.post('/reddit/daily/posted', async (c) => {
+  const db = Db.from(c.env);
+  const session = await requireSiteOwner(db, (c as AdminCtx).session);
+  await setRedditDailyPosted(db, session.username || 'owner', true);
+  return c.json({ ok: true });
+});
+
+adminRoutes.delete('/reddit/daily/posted', async (c) => {
+  const db = Db.from(c.env);
+  await requireSiteOwner(db, (c as AdminCtx).session);
+  await setRedditDailyPosted(db, 'owner', false);
+  return c.json({ ok: true });
 });
 
 adminRoutes.post('/reddit/:id/posted', async (c) => {

@@ -15,6 +15,7 @@ interface Queue {
   subredditInvalid: boolean;
   perDay: number;
   drafts: RedditDraft[];
+  caseOfTheDay: { day: string; posted: boolean; draft: RedditDraft } | null;
   posted: RedditPosted[];
 }
 
@@ -32,7 +33,7 @@ export function RedditDrafts({ a }: { a: Api }) {
   const queue = useAsync(() => a.get<Queue>('/reddit'), []);
   const [copied, setCopied] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState<number | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
   const data = queue.data;
 
   const flash = (key: string) => {
@@ -46,13 +47,16 @@ export function RedditDrafts({ a }: { a: Api }) {
     else setMessage(t('admin.reddit.copyFailed'));
   };
 
-  const mark = async (id: number, posted: boolean) => {
-    setBusy(id);
+  const mark = async (key: string, posted: boolean) => {
+    setBusy(key);
     setMessage(null);
     try {
-      if (posted) await a.post(`/reddit/${id}/posted`);
-      else await a.del(`/reddit/${id}/posted`);
-      setMessage(posted ? t('admin.reddit.marked') : t('admin.reddit.restored'));
+      if (key === 'cotd') {
+        if (posted) await a.post('/reddit/daily/posted');
+        else await a.del('/reddit/daily/posted');
+      } else if (posted) await a.post(`/reddit/${key}/posted`);
+      else await a.del(`/reddit/${key}/posted`);
+      setMessage(posted ? t(key === 'cotd' ? 'admin.reddit.casePosted' : 'admin.reddit.marked') : t('admin.reddit.restored'));
       queue.reload();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : t('admin.reddit.copyFailed'));
@@ -78,6 +82,40 @@ export function RedditDrafts({ a }: { a: Api }) {
         <p className="notice notice--error">{t('admin.reddit.forbidden')}</p>
       ) : (
         <LoadState loading={queue.loading} error={queue.error} onRetry={queue.reload} />
+      )}
+      {data?.caseOfTheDay && (
+        <article className="paper reddit-draft reddit-draft--daily" data-testid="reddit-case-of-the-day">
+          <div className="reddit-draft__meta">
+            <span className="typewriter">{t('admin.reddit.caseKicker', { day: data.caseOfTheDay.day })} · r/{data.subreddit}</span>
+            {data.caseOfTheDay.posted && <span className="small">{t('admin.reddit.casePosted')}</span>}
+          </div>
+          <p className="small muted">{t('admin.reddit.caseNote')}</p>
+          <h3>{data.caseOfTheDay.draft.title}</h3>
+          <p className="small">
+            <span className="reddit-draft__flair">{t('admin.reddit.flair')}: {data.caseOfTheDay.draft.flair}</span>
+            {' · '}
+            {t(`categories.${data.caseOfTheDay.draft.category as CategorySlug}`)}
+          </p>
+          <pre className="reddit-draft__body">{data.caseOfTheDay.draft.body}</pre>
+          {data.caseOfTheDay.draft.submitMode === 'title-only' && <p className="small muted">{t('admin.reddit.submitShort')}</p>}
+          <div className="btn-row">
+            <button type="button" className="btn btn--small" onClick={() => onCopy('cotd:title', data.caseOfTheDay!.draft.title)}>
+              {copied === 'cotd:title' ? t('admin.reddit.copied') : t('admin.reddit.copyTitle')}
+            </button>
+            <button type="button" className="btn btn--small btn--primary" onClick={() => onCopy('cotd:body', data.caseOfTheDay!.draft.body)}>
+              {copied === 'cotd:body' ? t('admin.reddit.copied') : t('admin.reddit.copyBody')}
+            </button>
+            <a className="btn btn--small" href={data.caseOfTheDay.draft.submitUrl} target="_blank" rel="noopener noreferrer">
+              {t('admin.reddit.openReddit')}
+            </a>
+            <Link className="btn btn--small" to={`/theory/${data.caseOfTheDay.draft.slug}`}>
+              {t('admin.reddit.openCase')}
+            </Link>
+            <button type="button" className="btn btn--small" disabled={busy === 'cotd'} onClick={() => mark('cotd', !data.caseOfTheDay!.posted)}>
+              {data.caseOfTheDay.posted ? t('admin.reddit.undo') : t('admin.reddit.markPosted')}
+            </button>
+          </div>
+        </article>
       )}
       {data && data.drafts.length === 0 && <p className="muted">{t('admin.reddit.empty')}</p>}
       <div className="reddit-drafts">
@@ -126,7 +164,7 @@ export function RedditDrafts({ a }: { a: Api }) {
               <Link className="btn btn--small" to={`/theory/${d.slug}`}>
                 {t('admin.reddit.openCase')}
               </Link>
-              <button type="button" className="btn btn--small" disabled={busy === d.theoryId} onClick={() => mark(d.theoryId, true)}>
+              <button type="button" className="btn btn--small" disabled={busy === String(d.theoryId)} onClick={() => mark(String(d.theoryId), true)}>
                 {t('admin.reddit.markPosted')}
               </button>
             </div>
@@ -146,7 +184,7 @@ export function RedditDrafts({ a }: { a: Api }) {
                     · {formatDate(p.postedAt, locale)} · {p.actor}
                   </span>
                 </span>
-                <button type="button" className="btn btn--small" disabled={busy === p.theoryId} onClick={() => mark(p.theoryId, false)}>
+                <button type="button" className="btn btn--small" disabled={busy === String(p.theoryId)} onClick={() => mark(String(p.theoryId), false)}>
                   {t('admin.reddit.undo')}
                 </button>
               </li>

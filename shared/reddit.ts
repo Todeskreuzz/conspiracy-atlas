@@ -14,6 +14,9 @@ export const REDDIT_RECENT_POOL = 300;
 /** Most-commented published cases added to that pool, so an older discussion is not ignored. */
 export const REDDIT_ENGAGED_POOL = 80;
 export const REDDIT_TITLE_MAX = 300;
+/** Exact flair on r/ConspiracyAtlas. Mods apply it by hand. */
+export const CASE_OF_THE_DAY_FLAIR = 'Atlas Case of the Day';
+const CASE_OF_THE_DAY_PREFIX = 'Atlas Case of the Day: ';
 /** r/ConspiracyAtlas — still overridable with the REDDIT_SUBREDDIT variable. */
 export const DEFAULT_REDDIT_SUBREDDIT = 'ConspiracyAtlas';
 /** Submit links longer than this drop the body; the owner pastes it instead. */
@@ -289,6 +292,17 @@ const QUESTIONS: Record<EvidenceStatus, [string, string]> = {
   ],
 };
 
+/** Title for the daily card. The prefix stays intact; the case title is shortened if needed. */
+export function caseOfTheDayTitle(caseTitle: string, status: EvidenceStatus): string {
+  const clean = caseTitle.replace(/\s+/g, ' ').trim() || 'Untitled case';
+  const suffix = ` — ${EVIDENCE_LABEL[status]}`;
+  const full = `${CASE_OF_THE_DAY_PREFIX}${clean}${suffix}`;
+  if (full.length <= REDDIT_TITLE_MAX) return full;
+  const room = REDDIT_TITLE_MAX - CASE_OF_THE_DAY_PREFIX.length - suffix.length;
+  if (room >= 8) return `${CASE_OF_THE_DAY_PREFIX}${clip(clean, room)}${suffix}`;
+  return clip(`${CASE_OF_THE_DAY_PREFIX}${clean}`, REDDIT_TITLE_MAX);
+}
+
 function redditTitle(id: number, title: string, status: EvidenceStatus): string {
   const clean = title.replace(/\s+/g, ' ').trim() || 'Untitled case';
   const frames = TITLE_FRAMES[status];
@@ -304,12 +318,12 @@ function caseUrl(origin: string, slug: string): string {
 }
 
 /** One ready-to-post draft. Deterministic for the same case and clock. */
-export function buildRedditDraft(theory: RedditCase, opts: { origin: string; subreddit: string; now?: Date }): RedditDraft {
+export function buildRedditDraft(theory: RedditCase, opts: { origin: string; subreddit: string; now?: Date; daily?: boolean }): RedditDraft {
   const now = opts.now ?? new Date();
   const score = scoreRedditCase(theory, now);
   const status = theory.evidenceStatus;
   const plainTitle = theory.title.replace(/\s+/g, ' ').trim() || 'Untitled case';
-  const title = redditTitle(theory.id, plainTitle, status);
+  const title = opts.daily ? caseOfTheDayTitle(plainTitle, status) : redditTitle(theory.id, plainTitle, status);
   const link = caseUrl(opts.origin, theory.slug);
   const home = `${opts.origin.replace(/\/$/, '')}/`;
   const claims = theory.claims.filter((c) => c.text.trim()).slice(0, 3);
@@ -321,6 +335,7 @@ export function buildRedditDraft(theory: RedditCase, opts: { origin: string; sub
     : 'What is the strongest counter-argument that is missing from this file?';
 
   const lines = [
+    ...(opts.daily ? ["Today's Case of the Day on The Conspiracy Atlas.", ''] : []),
     HOOK[status](plainTitle),
     '',
     `**Case:** ${mdInline(plainTitle)}${theory.subtitle ? ` — ${mdInline(clip(theory.subtitle, 180))}` : ''}`,
@@ -389,7 +404,7 @@ export function buildRedditDraft(theory: RedditCase, opts: { origin: string; sub
     slug: theory.slug,
     title,
     body,
-    flair: CATEGORY_FLAIR[theory.category],
+    flair: opts.daily ? CASE_OF_THE_DAY_FLAIR : CATEGORY_FLAIR[theory.category],
     caseUrl: link,
     submitUrl: submit.url,
     submitMode: submit.mode,

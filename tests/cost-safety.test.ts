@@ -41,10 +41,11 @@ describe('cost safety (free-only)', () => {
   it('the server only contacts Turnstile and the free Wikidata/Wikipedia APIs (import)', () => {
     const files = readdirSync('server', { recursive: true }).map((f) => String(f).replace(/\\/g, '/')).filter((f) => f.endsWith('.ts'));
     const fetchers = files.filter((f) => /\bfetch\w*\(/.test(readFileSync(join('server', f), 'utf8')));
-    expect(fetchers.sort()).toEqual(['casePage.ts', 'importer.ts', 'routes/community.ts', 'security.ts']);
+    expect(fetchers.sort()).toEqual(['casePage.ts', 'homePage.ts', 'importer.ts', 'routes/community.ts', 'security.ts']);
     // The case-page Function only reads the site's own static index.html.
     expect(readFileSync('server/casePage.ts', 'utf8').match(/\bfetch\w*\(/g)).toEqual(['fetch(']);
     expect(readFileSync('server/casePage.ts', 'utf8')).toContain('env.ASSETS.fetch(');
+    expect(readFileSync('server/homePage.ts', 'utf8')).toContain('env.ASSETS.fetch(');
     const importer = readFileSync('server/importer.ts', 'utf8');
     const hosts = new Set([...importer.matchAll(/https:\/\/([a-z0-9.-]+)/g)].map((m) => m[1]));
     expect([...hosts].sort()).toEqual(['commons.wikimedia.org', 'conspiracy-atlas.pages.dev', 'de.wikipedia.org', 'en.wikipedia.org', 'query.wikidata.org', 'thumb.wikimedia.org', 'upload.wikimedia.org']);
@@ -72,7 +73,7 @@ describe('static Pages build', () => {
       expect(files).toContain('index.html');
       expect(files).toContain('_routes.json');
       expect(files).toContain('_headers');
-      expect(JSON.parse(readFileSync(join(outDir, '_routes.json'), 'utf8')).include).toEqual(['/api/*', '/theory/*', '/de/theory/*', '/sitemap.xml', '/feed.xml', '/googlee808fb02e2c3ca02.html']);
+      expect(JSON.parse(readFileSync(join(outDir, '_routes.json'), 'utf8')).include).toEqual(['/api/*', '/theory/*', '/de', '/de/theory/*', '/og/*', '/sitemap.xml', '/feed.xml', '/googlee808fb02e2c3ca02.html']);
       expect(files).toContain('robots.txt');
       const js = files.filter((f) => f.endsWith('.js')).map((f) => readFileSync(join(outDir, f), 'utf8')).join('\n');
       for (const re of FORBIDDEN_PATTERNS as RegExp[]) expect(re.test(js), String(re)).toBe(false);

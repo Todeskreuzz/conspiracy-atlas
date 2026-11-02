@@ -119,7 +119,7 @@ npm run db:migrate:remote
 A read-only duplicate report (nothing is deleted):
 
 ```bash
-npm run import:duplicates -- --remote
+npm run import:duplicates:remote
 ```
 
 ## 8. Verify

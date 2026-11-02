@@ -71,4 +71,11 @@ describe('import duplicate matching', () => {
     const seeded = findDuplicateGroups([...byId.values()]);
     expect(seeded.filter((g) => g.kind !== 'fuzzy')).toEqual([]);
   });
+
+  it('does not report a similar title when the two cases are already linked', () => {
+    const deep = { id: 45, slug: 'deep-state', title: 'Deep state', qid: null, titles: ['Deep state'], urls: [] };
+    const turkey = { id: 50, slug: 'deep-state-in-turkey', title: 'Deep state in Turkey', qid: null, titles: ['Deep state in Turkey'], urls: [] };
+    expect(findDuplicateGroups([deep, turkey]).some((g) => g.kind === 'fuzzy')).toBe(true);
+    expect(findDuplicateGroups([deep, turkey], [[50, 45]]).filter((g) => g.kind === 'fuzzy')).toEqual([]);
+  });
 });

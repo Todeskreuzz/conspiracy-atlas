@@ -13,7 +13,7 @@ export default function RssPage() {
   const { t, locale } = useI18n();
   const [copied, setCopied] = useState(false);
   const latest = useAsync((signal) => api<Paged<TheorySummary>>('/theories?pageSize=12', { signal }), [locale]);
-  const feedPath = locale === 'de' ? '/feed.xml?lang=de' : '/feed.xml';
+  const feedPath = locale === 'en' ? '/feed.xml' : `/feed.xml?lang=${locale}`;
   const feedUrl = `${window.location.origin}${feedPath}`;
 
   const [embedCopied, setEmbedCopied] = useState(false);

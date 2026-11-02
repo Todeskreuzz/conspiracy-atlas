@@ -1,12 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import en from './locales/en.json';
 import de from './locales/de.json';
+import fr from './locales/fr.json';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '../../shared/constants';
 import { localeFromPath } from '../../shared/localePath';
 
 // Central translation registry. To add a language: add a JSON file with the same keys,
 // register it here and extend LOCALES in shared/constants.ts.
-export const dictionaries: Record<Locale, typeof en> = { en, de };
+export const dictionaries: Record<Locale, typeof en> = { en, de, fr };
+
+const INTL_LOCALE: Record<Locale, string> = { en: 'en-GB', de: 'de-DE', fr: 'fr-FR' };
+
+/** BCP 47 tag for dates, one per interface language. */
+export function intlLocale(locale: Locale): string {
+  return INTL_LOCALE[locale];
+}
 
 type Leaves<T, P extends string = ''> = {
   [K in keyof T & string]: T[K] extends Record<string, unknown> ? Leaves<T[K], `${P}${K}.`> : `${P}${K}`;
@@ -93,9 +101,9 @@ export function formatDate(value: string | null | undefined, locale: Locale): st
   if (/^-?\d{1,4}$/.test(value)) return value;
   if (/^\d{4}-\d{2}$/.test(value)) {
     const d = new Date(`${value}-01T00:00:00Z`);
-    return d.toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-GB', { year: 'numeric', month: 'long', timeZone: 'UTC' });
+    return d.toLocaleDateString(intlLocale(locale), { year: 'numeric', month: 'long', timeZone: 'UTC' });
   }
   const d = new Date(value.length === 10 ? `${value}T00:00:00Z` : value.replace(' ', 'T') + (value.includes('Z') ? '' : 'Z'));
   if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+  return d.toLocaleDateString(intlLocale(locale), { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 }

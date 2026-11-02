@@ -1,7 +1,7 @@
 // Link previews (Open Graph / Twitter cards) for case pages. Crawlers of WhatsApp, Reddit, X etc. do not run
 // JavaScript, so the Pages Function for /theory/* puts the case's title, summary and photo into the static index.html.
 import type { Db } from './db';
-import { EVIDENCE_STATUSES, type EvidenceStatus, type Locale } from '../shared/constants';
+import { EVIDENCE_STATUSES, LOCALES, type EvidenceStatus, type Locale } from '../shared/constants';
 import { localeAlternates } from '../shared/localePath';
 import { statusLabel } from './preview/copy';
 import { CARD_H, CARD_W } from './preview/size';
@@ -81,12 +81,12 @@ export function ogTags(d: OgData, opts?: { jsonLd?: boolean }): string {
     meta('property', 'og:image', d.image),
     ...(d.imageWidth ? [meta('property', 'og:image:width', String(d.imageWidth)), meta('property', 'og:image:height', String(d.imageHeight ?? d.imageWidth))] : []),
     ...(d.imageAlt ? [meta('property', 'og:image:alt', d.imageAlt)] : []),
-    meta('property', 'og:locale', d.locale === 'de' ? 'de_DE' : 'en_GB'),
+    meta('property', 'og:locale', OG_LOCALE[d.locale]),
     meta('name', 'twitter:card', 'summary_large_image'),
     meta('name', 'twitter:title', d.title),
     meta('name', 'twitter:description', d.description),
     meta('name', 'twitter:image', d.image),
-    meta('property', 'og:locale:alternate', d.locale === 'de' ? 'en_GB' : 'de_DE'),
+    ...LOCALES.filter((l) => l !== d.locale).map((l) => meta('property', 'og:locale:alternate', OG_LOCALE[l])),
     `<link rel="canonical" href="${esc(d.url)}" />`,
     ...(d.alternates ?? []).map((a) => `<link rel="alternate" hreflang="${a.locale}" href="${esc(a.url)}" />`),
     ...(opts?.jsonLd === false ? [] : [jsonLd(d)]),
@@ -113,12 +113,14 @@ export function cardVersion(title: string, status: string, summary: string): str
   return (hash >>> 0).toString(36);
 }
 
+const OG_LOCALE: Record<Locale, string> = { en: 'en_GB', de: 'de_DE', fr: 'fr_FR' };
+
 export function homeCardPath(locale: Locale): string {
-  return locale === 'de' ? '/og/de/home.png' : '/og/home.png';
+  return locale === 'en' ? '/og/home.png' : `/og/${locale}/home.png`;
 }
 
 export function caseCardPath(locale: Locale, slug: string, version: string): string {
-  const base = locale === 'de' ? `/og/de/theory/${encodeURIComponent(slug)}.png` : `/og/theory/${encodeURIComponent(slug)}.png`;
+  const base = locale === 'en' ? `/og/theory/${encodeURIComponent(slug)}.png` : `/og/${locale}/theory/${encodeURIComponent(slug)}.png`;
   return `${base}?v=${version}`;
 }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FEATURE_KEYS, GENERIC_UNAVAILABLE_EXPLANATION, UNAVAILABLE_MESSAGE, backendUnavailableMap, explainDe, makeStatus, unavailableMessage } from '../shared/availability';
+import { FEATURE_KEYS, GENERIC_UNAVAILABLE_EXPLANATION, UNAVAILABLE_MESSAGE, backendUnavailableMap, explainDe, explainFr, makeStatus, unavailableMessage } from '../shared/availability';
 import { computeFeatures } from '../server/features';
 import { client, makeEnv } from './helpers/app';
 
@@ -19,6 +19,8 @@ describe('feature status system', () => {
         expect(s.available).toBe(false);
         expect(s.message!.startsWith('Currently unavailable!')).toBe(true);
         expect(explainDe(key, state).length).toBeGreaterThan(10);
+        expect(explainFr(key, state).length).toBeGreaterThan(10);
+        expect(explainFr(key, state)).not.toBe(explainDe(key, state));
       }
     }
   });

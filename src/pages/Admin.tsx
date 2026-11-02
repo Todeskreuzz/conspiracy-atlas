@@ -14,6 +14,7 @@ import {
   SUBMISSION_STATUSES,
   type CategorySlug,
   type EvidenceStatus,
+  type Locale,
   type SubmissionStatus,
 } from '../../shared/constants';
 import type { AdminCaseNote, AdminComment, ModerationLogEntry, Paged, ReportGroup, Source, TheoryDetail, TheorySummary } from '../../shared/types';
@@ -85,7 +86,7 @@ interface SubmissionView {
   counterArguments: string[];
   relatedEvents: string[];
   relatedTheoryIds: number[];
-  language: 'en' | 'de';
+  language: Locale;
   displayMode: 'named' | 'anonymous';
   authorName: string;
   status: SubmissionStatus;

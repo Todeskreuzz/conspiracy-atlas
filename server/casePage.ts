@@ -4,18 +4,21 @@ import { Db } from './db';
 import type { Env } from './env';
 import { injectOg, loadOg } from './og';
 import { localePath } from '../shared/localePath';
-import type { Locale } from '../shared/constants';
+import { LOCALES, type Locale } from '../shared/constants';
 
 export type PagesEnv = Env & { ASSETS: Fetcher };
 
 export async function serveCasePage(request: Request, env: PagesEnv, slug: string, locale: Locale): Promise<Response> {
   const url = new URL(request.url);
-  // Old German links used ?lang=de; they move permanently to the German URL.
+  // Old ?lang= links move permanently to that language's own URL.
   const lang = url.searchParams.get('lang');
-  if (lang === 'de' || (lang === 'en' && locale !== 'en')) {
+  if (lang && (LOCALES as readonly string[]).includes(lang)) {
     url.searchParams.delete('lang');
-    const target = localePath(lang, `/theory/${encodeURIComponent(slug)}`) + url.search + url.hash;
-    return Response.redirect(new URL(target, url.origin).toString(), 301);
+    const target = localePath(lang as Locale, `/theory/${encodeURIComponent(slug)}`) + url.search + url.hash;
+    const current = new URL(request.url);
+    if (target !== current.pathname + current.search + current.hash) {
+      return Response.redirect(new URL(target, url.origin).toString(), 301);
+    }
   }
   const page = await env.ASSETS.fetch(new URL('/', url));
   if (!env.DB || !page.ok) return page;

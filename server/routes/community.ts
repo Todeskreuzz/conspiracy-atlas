@@ -5,7 +5,7 @@ import { Db } from '../db';
 import { requireFeature } from '../features';
 import { rateLimit, verifyTurnstile, assertSameOrigin } from '../security';
 import { validateSubmission } from '../../shared/submission';
-import { ANONYMOUS_NAME, LEGACY_REPORT_TARGET_TYPES, REPORT_REASONS, REPORT_TARGET_TYPES } from '../../shared/constants';
+import { ANONYMOUS_NAME, LEGACY_REPORT_TARGET_TYPES, REPORT_REASONS, REPORT_TARGET_TYPES, asLocale } from '../../shared/constants';
 import { int, oneOf, optStr, reqStr, url } from '../../shared/validation';
 import type { Row } from '../db';
 import type { CaseNote } from '../../shared/types';
@@ -141,7 +141,7 @@ export function mapCaseNote(r: Row): CaseNote {
     sourceUrl: (r.source_url as string) ?? null,
     sourceTitle: (r.source_title as string) ?? null,
     authorName: (r.author_name as string) ?? ANONYMOUS_NAME,
-    language: r.language === 'de' ? 'de' : 'en',
+    language: asLocale(r.language),
     createdAt: String(r.created_at),
   };
 }
@@ -170,7 +170,7 @@ communityRoutes.post('/theories/:slug/notes', async (c) => {
   if (text.trim().length < 10) throw new ApiError(400, 'invalid', 'Please write at least 10 characters', undefined, 'body');
   const sourceUrl = url(body.sourceUrl, 'sourceUrl', kind === 'comment');
   const sourceTitle = optStr(body.sourceTitle, 'sourceTitle', 300);
-  const language = body.language === 'de' ? 'de' : 'en';
+  const language = asLocale(body.language);
   const anonymous = body.displayMode !== 'named';
   const name = anonymous ? ANONYMOUS_NAME : reqStr(body.displayName, 'displayName', 60);
   await verifyTurnstile(c.env, typeof body.turnstileToken === 'string' ? body.turnstileToken : null, turnstileFetch.impl);

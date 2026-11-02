@@ -2,6 +2,7 @@
 // Function response, so the anti-framing headers are set on the response itself.
 import type { Env } from '../env';
 import { Db } from '../db';
+import { PREFIXED_LOCALES } from '../../shared/localePath';
 import type { Locale } from '../../shared/constants';
 import { loadCasePreview } from '../og';
 import { renderCaseCard, renderHomeCard } from './card';
@@ -28,8 +29,8 @@ function partsOf(path: string | string[] | undefined): string[] {
 function route(parts: string[]): { kind: 'home' | 'case'; locale: Locale; slug?: string } | null {
   let locale: Locale = 'en';
   let rest = parts;
-  if (rest[0] === 'de') {
-    locale = 'de';
+  if (rest[0] && (PREFIXED_LOCALES as readonly string[]).includes(rest[0])) {
+    locale = rest[0] as Locale;
     rest = rest.slice(1);
   }
   if (rest.length === 1 && rest[0] === 'home.png') return { kind: 'home', locale };

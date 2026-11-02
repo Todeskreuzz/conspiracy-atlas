@@ -12,7 +12,7 @@ const REQUIRED_TABLES = [
 
 describe('migrations', () => {
   it('are numbered and create every required table', () => {
-    expect(migrationFiles()).toEqual(['0001_schema.sql', '0002_seed.sql', '0003_images.sql', '0004_case_images.sql', '0005_more_cases.sql', '0006_case_notes.sql', '0007_case_years.sql', '0008_user_profiles.sql', '0009_profile_images.sql', '0010_moderation.sql', '0011_comments_votes.sql', '0012_quiz.sql']);
+    expect(migrationFiles()).toEqual(['0001_schema.sql', '0002_seed.sql', '0003_images.sql', '0004_case_images.sql', '0005_more_cases.sql', '0006_case_notes.sql', '0007_case_years.sql', '0008_user_profiles.sql', '0009_profile_images.sql', '0010_moderation.sql', '0011_comments_votes.sql', '0012_quiz.sql', '0013_french.sql']);
     const db = createDb({ seed: false });
     const tables = db.raw.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r: any) => r.name);
     for (const t of REQUIRED_TABLES) expect(tables, t).toContain(t);
@@ -24,7 +24,7 @@ describe('migrations', () => {
     expect(() => db.raw.exec("UPDATE theories SET evidence_status = 'proven' WHERE id = 1")).toThrow(/CHECK/);
   });
 
-  it('seed contains the case files with sources and both languages', () => {
+  it('seed contains the case files with sources and the translated languages', () => {
     const db = createDb();
     const slugs = db.raw.prepare('SELECT slug FROM theories ORDER BY slug').all().map((r: any) => r.slug);
     expect(slugs).toEqual([
@@ -36,6 +36,8 @@ describe('migrations', () => {
     expect(unsourced).toEqual([]);
     const de = db.raw.prepare("SELECT COUNT(*) AS n FROM translations WHERE locale = 'de' AND entity_type = 'theory' AND field = 'title'").get() as any;
     expect(de.n).toBe(14);
+    const fr = db.raw.prepare("SELECT COUNT(*) AS n FROM translations WHERE locale = 'fr' AND entity_type = 'theory' AND field = 'title'").get() as any;
+    expect(fr.n).toBe(14);
     // Every claim carries its own evidence status.
     expect((db.raw.prepare('SELECT COUNT(*) AS n FROM claims WHERE evidence_status IS NULL').get() as any).n).toBe(0);
   });

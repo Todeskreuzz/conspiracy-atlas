@@ -1,4 +1,4 @@
-import { UNAVAILABLE_MESSAGE, explainDe, explainEn, type FeatureKey, type ServiceState } from '../../shared/availability';
+import { UNAVAILABLE_MESSAGE, explainDe, explainEn, explainFr, type FeatureKey, type ServiceState } from '../../shared/availability';
 import { useI18n } from '../i18n';
 import { ApiFailure } from '../api/client';
 
@@ -13,19 +13,19 @@ interface Props {
 
 /**
  * The single, fixed availability notice. The English status text "Currently unavailable!"
- * is always shown verbatim; in the German UI a German explanation is added below it.
+ * is always shown verbatim; in another language an explanation in that language is added below it.
  */
 export function Unavailable({ feature = null, state = 'not_configured', explanation, compact, onRetry }: Props) {
   const { locale, t } = useI18n();
   const en = explanation ?? explainEn(feature, state);
-  const de = locale === 'de' ? explainDe(feature, state) : null;
+  const extra = locale === 'de' ? explainDe(feature, state) : locale === 'fr' ? explainFr(feature, state) : null;
   return (
     <div className={`unavailable${compact ? ' unavailable--compact' : ''}`} role="status" data-testid="unavailable" data-state={state}>
       <strong className="unavailable__title">{UNAVAILABLE_MESSAGE}</strong>
       {en && <span className="unavailable__text"> {en}</span>}
-      {de && (
-        <p className="unavailable__de" lang="de">
-          {de}
+      {extra && (
+        <p className="unavailable__de" lang={locale}>
+          {extra}
         </p>
       )}
       {!compact && <span className="unavailable__state">{t(`unavailable.states.${state}`)}</span>}

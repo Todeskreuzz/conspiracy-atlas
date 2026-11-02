@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { useMemo } from 'react';
 import { formatDate, useI18n } from '../i18n';
+import type { Locale } from '../../shared/constants';
 import { useAsync } from '../hooks/useAsync';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { api } from '../api/client';
@@ -9,7 +10,7 @@ import { LoadState } from '../components/Unavailable';
 import { CategoryBadge } from '../components/Badges';
 import { RelationshipList } from './Theory';
 
-export function eventDate(ev: EventSummary, locale: 'en' | 'de') {
+export function eventDate(ev: EventSummary, locale: Locale) {
   const start = formatDate(ev.startDate ?? String(ev.startYear), locale);
   return ev.endDate ? `${start} – ${formatDate(ev.endDate, locale)}` : start;
 }
@@ -39,7 +40,7 @@ export function EventsPage() {
       {byCentury.map(([century, events]) => (
         <section key={century} className="ledger">
           <h2 className="ledger__title">
-            <span>{locale === 'de' ? `${century}. Jahrhundert` : `${century}th century`}</span>
+            <span>{t('events.century', { n: century })}</span>
             <small>{events.length}</small>
           </h2>
           <ul className="ledger__rows">

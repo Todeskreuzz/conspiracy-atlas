@@ -727,7 +727,10 @@
     "copy": "Copy address",
     "copied": "Copied!",
     "raw": "Open raw feed",
-    "latest": "Latest case files"
+    "latest": "Latest case files",
+    "embedTitle": "Show the case of the day on your site",
+    "embedIntro": "Paste this code into your website, blog or forum. The card always shows today's case and links back to the atlas.",
+    "embedCopy": "Copy embed code"
   },
   "quiz": {
     "title": "Quiz: true or invented?",

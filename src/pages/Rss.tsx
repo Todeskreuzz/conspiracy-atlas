@@ -6,6 +6,7 @@ import type { Paged, TheorySummary } from '../../shared/types';
 import { TheoryCard } from '../components/TheoryCard';
 import { LoadState } from '../components/Unavailable';
 import { CaseOfTheDay } from '../components/CaseOfTheDay';
+import { localePath } from '../../shared/localePath';
 
 /** Readable page for the RSS feed: the case of the day as the highlight, then the newest case files with their images. */
 export default function RssPage() {
@@ -15,15 +16,21 @@ export default function RssPage() {
   const feedPath = locale === 'de' ? '/feed.xml?lang=de' : '/feed.xml';
   const feedUrl = `${window.location.origin}${feedPath}`;
 
-  const copy = async () => {
+  const [embedCopied, setEmbedCopied] = useState(false);
+  const embedSrc = `${window.location.origin}${localePath(locale, '/embed/case-of-the-day')}`;
+  const embedCode = `<iframe src="${embedSrc}" width="100%" height="420" style="border:0;max-width:640px" loading="lazy" title="The Conspiracy Atlas – Case of the day"></iframe>`;
+
+  const copyTo = (text: string, done: (v: boolean) => void) => async () => {
     try {
-      await navigator.clipboard.writeText(feedUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(text);
+      done(true);
+      setTimeout(() => done(false), 2000);
     } catch {
-      /* clipboard blocked: the address stays visible to copy by hand */
+      /* clipboard blocked: the text stays visible to copy by hand */
     }
   };
+  const copy = copyTo(feedUrl, setCopied);
+  const copyEmbed = copyTo(embedCode, setEmbedCopied);
 
   return (
     <div className="container page">
@@ -45,6 +52,19 @@ export default function RssPage() {
           <a className="btn btn--small btn--ghost" href={feedPath}>
             {t('rss.raw')}
           </a>
+        </div>
+      </section>
+
+      <section className="panel">
+        <h2>{t('rss.embedTitle')}</h2>
+        <p>{t('rss.embedIntro')}</p>
+        <code className="mono" data-testid="embed-code">
+          {embedCode}
+        </code>
+        <div className="btn-row" style={{ marginTop: 10 }}>
+          <button type="button" className="btn btn--small" onClick={copyEmbed}>
+            {embedCopied ? t('rss.copied') : t('rss.embedCopy')}
+          </button>
         </div>
       </section>
 

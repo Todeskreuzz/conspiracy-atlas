@@ -5,9 +5,10 @@ import { useAsync } from '../hooks/useAsync';
 import { api } from '../api/client';
 import type { TheorySummary } from '../../shared/types';
 import { CategoryBadge } from './Badges';
+import { localePath } from '../../shared/localePath';
 
-/** "home": the start page block with its heading. "spotlight": the large feature on the RSS page. */
-export function CaseOfTheDay({ variant = 'home' }: { variant?: 'home' | 'spotlight' }) {
+/** "home": the start page block with its heading. "spotlight": the large feature on the RSS page. "embed": compact card for other sites. */
+export function CaseOfTheDay({ variant = 'home' }: { variant?: 'home' | 'spotlight' | 'embed' }) {
   const { t, locale } = useI18n();
   const navigate = useNavigate();
   const res = useAsync((signal) => api<{ day: string; theory: TheorySummary | null }>('/case-of-the-day', { signal }), [locale]);
@@ -25,6 +26,29 @@ export function CaseOfTheDay({ variant = 'home' }: { variant?: 'home' | 'spotlig
   };
   const day = new Date(`${res.data!.day}T00:00:00Z`).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
   const spotlight = variant === 'spotlight';
+  const embed = variant === 'embed';
+  if (embed) {
+    return (
+      <article className="case-of-day case-of-day--embed paper" data-testid="case-of-the-day-embed">
+        <span className="pin" aria-hidden="true" />
+        <div className="case-of-day__body">
+          <div className="case-of-day__day mono small">
+            {t('home.caseOfTheDay')} · {day}
+          </div>
+          <h3>{theory.title}</h3>
+          <p>{theory.summary}</p>
+          <div className="btn-row" style={{ marginTop: 10 }}>
+            <a href={localePath(locale, `/theory/${theory.slug}`)} target="_blank" rel="noopener" className="btn btn--primary">
+              {t('home.openCase')} →
+            </a>
+            <a href={localePath(locale, '/rss-page')} target="_blank" rel="noopener" className="btn btn--small">
+              {t('rss.title')}
+            </a>
+          </div>
+        </div>
+      </article>
+    );
+  }
   const article = (
     <article className={`case-of-day paper${spotlight ? ' case-of-day--spotlight' : ''}`}>
       <span className="pin" aria-hidden="true" />

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
 import { api } from '../api/client';
@@ -70,6 +70,7 @@ export default function WallPage() {
         localLayout={!stress}
         banner={stress ? t('wall.stressTest', { count: stress }) : null}
         height="calc(100vh - var(--header-h))"
+        toolbarAction={!stress && <Link className="btn btn--small" to="/investigations">{t('wall.createPersonalWall')}</Link>}
       />
     </div>
   );

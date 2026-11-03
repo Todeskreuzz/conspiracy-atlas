@@ -94,7 +94,7 @@ async function pool(db: Db): Promise<Candidate[]> {
 
 async function loadOne(db: Db, theoryId: number): Promise<Candidate | null> {
   const row = await db.first(
-    `SELECT t.id, t.slug, t.title, t.summary, t.evidence_status, t.updated_at, t.content_language, c.slug AS category,
+    `SELECT t.id, t.slug, t.title, t.summary, t.image_path, t.evidence_status, t.updated_at, t.content_language, c.slug AS category,
             0 AS claim_count, 0 AS counter_count, 0 AS connection_count, 0 AS comment_count, 0 AS vote_count
      FROM theories t JOIN categories c ON c.id = t.category_id
      WHERE t.id = ? AND t.is_published = 1`,

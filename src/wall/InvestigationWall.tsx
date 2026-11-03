@@ -9,6 +9,7 @@ import { CategoryBadge } from '../components/Badges';
 import {
   CARD_H,
   CARD_W,
+  cardImage,
   DEFAULT_FILTERS,
   AUTO_THREAD_COLOR,
   RELATION_STYLE,
@@ -22,6 +23,7 @@ import {
   type SavedView,
   type WallFilters,
 } from './model';
+import { loadPersonPortrait, type Portrait } from './portraits';
 import { Minimap } from './Minimap';
 import { buildCorkWear } from './corkWear';
 
@@ -91,6 +93,7 @@ function buildStyle(): StylesheetJson {
         'transition-duration': 0.2,
       },
     },
+    { selector: 'node[kind = "person"]', style: { 'text-halign': 'right', 'text-max-width': '104px', 'text-margin-right': 5, 'text-margin-y': 26 } },
     { selector: 'node[kind = "theory"]', style: { width: CARD_W + 30, height: CARD_H + 16, 'font-size': 15, 'font-family': 'Playfair Display, Georgia, serif', 'font-weight': 700 } },
     { selector: 'node:selected', style: { 'border-width': 4, 'border-color': '#e8c547', 'underlay-color': '#e8c547', 'underlay-opacity': 0.25, 'underlay-padding': 10 } },
     { selector: 'node.match', style: { 'border-width': 4, 'border-color': '#e8c547' } },
@@ -145,6 +148,7 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
   const [dirty, setDirty] = useState<Map<number, Position>>(new Map());
   const [animate, setAnimate] = useState(board.edges.length <= 400);
   const [message, setMessage] = useState<string | null>(null);
+  const [portraits, setPortraits] = useState<Record<number, Portrait>>({});
   const [edgeForm, setEdgeForm] = useState<{ kind: RelationKind; verification: RelationVerification; label: string }>({
     kind: 'documented',
     verification: 'suggested',
@@ -192,6 +196,25 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
     // Rebuild only when the board identity or its size changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [board, locale]);
+
+  // Load reusable Commons portraits for every archive person card. The lookup is cached per tab.
+  useEffect(() => {
+    if (!cy) return;
+    let cancelled = false;
+    setPortraits({});
+    // Only archive-backed public profiles are looked up. Never send names from a visitor's private notes to Commons.
+    const people = board.nodes.filter((node) => node.kind === 'person' && node.entityType === 'person' && node.entityId !== null);
+    for (const node of people) {
+      void loadPersonPortrait(node.title).then((portrait) => {
+        if (cancelled || !portrait) return;
+        cy.batch(() => {
+          cy.getElementById(`n${node.id}`).data('img', cardImage('person', kindLabel('person'), portrait.dataUrl));
+        });
+        setPortraits((current) => ({ ...current, [node.id]: portrait }));
+      });
+    }
+    return () => { cancelled = true; };
+  }, [board, cy, kindLabel]);
 
   // ---------------------------------------------------------------- events
   useEffect(() => {
@@ -667,6 +690,12 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
                 <CategoryBadge category={selected.node.category} />
               </div>
               {selected.node.summary && <p className="small">{selected.node.summary}</p>}
+              {selected.node.kind === 'person' && portraits[selected.node.id] && (
+                <p className="small muted">
+                  {t('app.sources')}: <a href={portraits[selected.node.id].sourceUrl} target="_blank" rel="noreferrer">{portraits[selected.node.id].fileTitle}</a>
+                  <br />{portraits[selected.node.id].credit} · {portraits[selected.node.id].license}
+                </p>
+              )}
               {selected.node.entityType && entityPath(selected.node.entityType, selected.node.entitySlug) && (
                 <Link className="btn btn--small" to={entityPath(selected.node.entityType, selected.node.entitySlug)!}>
                   {t('wall.openEntry')} →
@@ -760,3 +789,4 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
 }
 
 export type { EdgeSingular };
+

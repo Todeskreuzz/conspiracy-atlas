@@ -34,30 +34,30 @@ describe('cost safety (free-only)', () => {
     const sections = [...toml.matchAll(/^\[\[?([a-z0-9_.]+)\]?\]/gm)].map((m) => m[1]);
     expect(sections.sort()).toEqual(['d1_databases', 'vars']);
     // Images go to D1, within the free database size.
-    expect(Number(toml.match(/IMAGE_STORAGE_LIMIT_MB = "(\\d+)"/)?.[1])).toBeLessThanOrEqual(400);
+    expect(Number(toml.match(/IMAGE_STORAGE_LIMIT_MB = "(\d+)"/)?.[1])).toBeLessThanOrEqual(400);
     expect(toml).not.toMatch(/^\s*(TURNSTILE_SECRET_KEY|ADMIN_PASSWORD_HASH|SESSION_SECRET|ADMIN_USERNAME)\s*=/m);
   });
 
   it('the server only contacts Turnstile and the free Wikidata/Wikipedia APIs (import)', () => {
-    const files = readdirSync('server', { recursive: true }).map((f) => String(f).replace(/\\\\/g, '/')).filter((f) => f.endsWith('.ts'));
-    const fetchers = files.filter((f) => /\\bfetch\\w*\\(/.test(readFileSync(join('server', f), 'utf8')));
+    const files = readdirSync('server', { recursive: true }).map((f) => String(f).replace(/\\/g, '/')).filter((f) => f.endsWith('.ts'));
+    const fetchers = files.filter((f) => /\bfetch\w*\(/.test(readFileSync(join('server', f), 'utf8')));
     expect(fetchers.sort()).toEqual(['casePage.ts', 'homePage.ts', 'importer.ts', 'routes/community.ts', 'routes/public.ts', 'security.ts']);
     // The case-page Function only reads the site's own static index.html.
-    expect(readFileSync('server/casePage.ts', 'utf8').match(/\\bfetch\\w*\\(/g)).toEqual(['fetch(']);
+    expect(readFileSync('server/casePage.ts', 'utf8').match(/\bfetch\w*\(/g)).toEqual(['fetch(']);
     expect(readFileSync('server/casePage.ts', 'utf8')).toContain('env.ASSETS.fetch(');
     expect(readFileSync('server/homePage.ts', 'utf8')).toContain('env.ASSETS.fetch(');
     const importer = readFileSync('server/importer.ts', 'utf8');
-    const hosts = new Set([...importer.matchAll(/https:\\/\\/([a-z0-9.-]+)/g)].map((m) => m[1]));
+    const hosts = new Set([...importer.matchAll(/https:\/\/([a-z0-9.-]+)/g)].map((m) => m[1]));
     expect([...hosts].sort()).toEqual(['commons.wikimedia.org', 'conspiracy-atlas.pages.dev', 'de.wikipedia.org', 'en.wikipedia.org', 'query.wikidata.org', 'thumb.wikimedia.org', 'upload.wikimedia.org']);
   });
 
   it('no secrets are committed', () => {
     expect(existsSync('.dev.vars.example')).toBe(true);
     const example = readFileSync('.dev.vars.example', 'utf8');
-    expect(example).toMatch(/ADMIN_PASSWORD_HASH=\\s*$/m);
-    expect(example).toMatch(/SESSION_SECRET=\\s*$/m);
+    expect(example).toMatch(/ADMIN_PASSWORD_HASH=\s*$/m);
+    expect(example).toMatch(/SESSION_SECRET=\s*$/m);
     const gitignore = readFileSync('.gitignore', 'utf8');
-    expect(gitignore).toMatch(/\\.dev\\.vars/);
+    expect(gitignore).toMatch(/\.dev\.vars/);
     expect(gitignore).toMatch(/backups/);
   });
 });
@@ -75,10 +75,10 @@ describe('static Pages build', () => {
       expect(files).toContain('_headers');
       expect(JSON.parse(readFileSync(join(outDir, '_routes.json'), 'utf8')).include).toEqual(['/api/*', '/theory/*', '/de', '/de/theory/*', '/fr', '/fr/theory/*', '/es', '/es/theory/*', '/og/*', '/sitemap.xml', '/feed.xml', '/googlee808fb02e2c3ca02.html']);
       expect(files).toContain('robots.txt');
-      const js = files.filter((f) => f.endsWith('.js')).map((f) => readFileSync(join(outDir, f), 'utf8')).join('\\n');
+      const js = files.filter((f) => f.endsWith('.js')).map((f) => readFileSync(join(outDir, f), 'utf8')).join('\n');
       for (const re of FORBIDDEN_PATTERNS as RegExp[]) expect(re.test(js), String(re)).toBe(false);
       // No map tile servers: the map is rendered from bundled data only.
-      expect(js).not.toMatch(/tile\\.openstreetmap|\\{z\\}\\/\\{x\\}\\/\\{y\\}/);
+      expect(js).not.toMatch(/tile\.openstreetmap|\{z\}\/\{x\}\/\{y\}/);
       expect(readFileSync(join(outDir, '_headers'), 'utf8')).toContain('Content-Security-Policy');
     },
     60_000,

@@ -781,6 +781,24 @@
   gap: 12px;
   align-items: baseline;
 }
+.x-card-download {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0;
+}
+.x-card-download img {
+  width: min(100%, 400px);
+  height: auto;
+  border: 1px solid var(--paper-2);
+}
+.x-card-download__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
 .x-count {
   font-family: var(--font-mono);
   font-size: 0.78rem;

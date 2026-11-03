@@ -171,6 +171,7 @@
   },
   "wall": {
     "title": "Investigation Wall",
+    "createPersonalWall": "Build your own wall",
     "intro": "Drag to move, scroll to zoom, double-click a card to focus. Red threads show how entries are connected.",
     "mainBoard": "Overview wall",
     "archiveNetwork": "People & cases",
@@ -339,7 +340,7 @@
   },
   "investigations": {
     "title": "Investigations",
-    "intro": "Your private research projects: notes, hypotheses, sources, counter-arguments, document links, a private board and a timeline.",
+    "intro": "Create your own investigations, arrange cases, people and notes on a visual wall, and share that wall with a link when you choose.",
     "privacy": "Private by default. Your projects are linked to a secret key stored in this browser. Only the wall becomes public if you explicitly create a share link; your notes stay private.",
     "keyTitle": "Your access key",
     "keyHelp": "Keep a copy of this key to open your investigations on another device. Anyone with the key can read and edit them.",

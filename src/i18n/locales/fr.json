@@ -171,6 +171,7 @@
   },
   "wall": {
     "title": "Mur d'enquête",
+    "createPersonalWall": "Créer votre propre mur",
     "intro": "Glissez pour déplacer, faites défiler pour zoomer, double-cliquez sur une carte pour la centrer. Les fils rouges montrent comment les entrées sont liées.",
     "mainBoard": "Tableau général",
     "archiveNetwork": "Personnes et dossiers",
@@ -339,7 +340,7 @@
   },
   "investigations": {
     "title": "Enquêtes",
-    "intro": "Vos projets de recherche privés : notes, hypothèses, sources, contre-arguments, liens vers des documents, un tableau privé et une frise.",
+    "intro": "Créez vos enquêtes, organisez dossiers, personnes et notes sur un mur visuel, puis partagez-le par lien si vous le souhaitez.",
     "privacy": "Privé par défaut. Vos projets sont liés à une clé secrète stockée dans ce navigateur. Seul le tableau devient visible si vous créez explicitement un lien de partage ; vos notes restent privées.",
     "keyTitle": "Votre clé d'accès",
     "keyHelp": "Gardez une copie de cette clé pour ouvrir vos enquêtes sur un autre appareil. Quiconque a la clé peut les lire et les modifier.",

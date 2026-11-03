@@ -171,6 +171,7 @@
   },
   "wall": {
     "title": "Ermittlungswand",
+    "createPersonalWall": "Eigene Pinnwand gestalten",
     "intro": "Ziehen zum Verschieben, Scrollen zum Zoomen, Doppelklick auf eine Karte zum Fokussieren. Rote Fäden zeigen die Verbindungen.",
     "mainBoard": "Übersichts-Wall",
     "archiveNetwork": "Personen & Akten",
@@ -339,7 +340,7 @@
   },
   "investigations": {
     "title": "Recherchen",
-    "intro": "Deine privaten Rechercheprojekte: Notizen, Hypothesen, Quellen, Gegenargumente, Dokumentenlinks, eine private Pinnwand und ein Zeitstrahl.",
+    "intro": "Erstelle eigene Recherchen, ordne Akten, Personen und Notizen auf einer visuellen Pinnwand und teile sie bei Bedarf per Freigabelink.",
     "privacy": "Standardmäßig privat. Deine Projekte sind mit einem geheimen Schlüssel verknüpft, der in diesem Browser gespeichert ist. Nur die Pinnwand wird öffentlich, wenn du ausdrücklich einen Freigabelink erstellst; deine Notizen bleiben privat.",
     "keyTitle": "Dein Zugangsschlüssel",
     "keyHelp": "Bewahre eine Kopie dieses Schlüssels auf, um deine Recherchen auf einem anderen Gerät zu öffnen. Wer den Schlüssel hat, kann sie lesen und bearbeiten.",

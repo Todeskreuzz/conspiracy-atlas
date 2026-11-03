@@ -171,6 +171,7 @@
   },
   "wall": {
     "title": "Muro de investigación",
+    "createPersonalWall": "Diseña tu propio muro",
     "intro": "Arrastra para mover, desplázate para ampliar, haz doble clic en una ficha para centrarla. Los hilos rojos muestran cómo se conectan las entradas.",
     "mainBoard": "Muro general",
     "archiveNetwork": "Personas y expedientes",
@@ -339,7 +340,7 @@
   },
   "investigations": {
     "title": "Investigaciones",
-    "intro": "Tus proyectos de investigación privados: notas, hipótesis, fuentes, contraargumentos, enlaces a documentos, un tablero privado y una línea de tiempo.",
+    "intro": "Crea tus propias investigaciones, organiza casos, personas y notas en un muro visual y compártelo mediante un enlace cuando quieras.",
     "privacy": "Privado por defecto. Tus proyectos están ligados a una clave secreta guardada en este navegador. Solo el muro se hace público si creas expresamente un enlace para compartir; tus notas siguen siendo privadas.",
     "keyTitle": "Tu clave de acceso",
     "keyHelp": "Guarda una copia de esta clave para abrir tus investigaciones en otro dispositivo. Quien tenga la clave puede leerlas y editarlas.",

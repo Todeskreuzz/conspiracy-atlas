@@ -1,3 +1,4 @@
+Warning: f was declared with const; use let for reassignable variables.
 import { Hono } from 'hono';
 import type { AppEnv, Ctx } from '../http';
 import { readJson } from '../http';
@@ -14,8 +15,8 @@ import { MAX_NODES_PER_PRIVATE_BOARD, addEdge, addNode, deleteEdge, deleteNode, 
 /**
  * Investigation Mode: private research projects.
  * Ownership is proven with a random key that only the visitor's browser knows (X-Investigation-Key).
- * The server stores only its SHA-256 hash. Nothing here is ever public unless the visitor
- * explicitly submits it through the moderated community form.
+ * The server stores only its SHA-256 hash. Nothing here is public unless the visitor explicitly
+ * creates a read-only wall share link or separately submits content through the community form.
  */
 export const investigationRoutes = new Hono<AppEnv>();
 
@@ -49,6 +50,7 @@ const mapInvestigation = (r: Record<string, unknown>) => ({
   title: String(r.title),
   description: (r.description as string) ?? null,
   boardSlug: String(r.board_slug),
+  shareEnabled: Boolean(r.share_token_hash),
   createdAt: String(r.created_at),
   updatedAt: String(r.updated_at),
 });
@@ -131,6 +133,23 @@ investigationRoutes.delete('/investigations/:id', async (c) => {
   const db = Db.from(c.env);
   const inv = await loadOwned(db, c);
   await db.run('DELETE FROM investigations WHERE id = ?', inv.id);
+  return c.json({ ok: true });
+});
+
+/** Enable or rotate an unlisted read-only share link. The raw token is returned only once. */
+investigationRoutes.post('/investigations/:id/share', async (c) => {
+  const db = Db.from(c.env);
+  const inv = await loadOwned(db, c);
+  const token = randomToken();
+  await db.run("UPDATE investigations SET share_token_hash = ?, updated_at = datetime('now') WHERE id = ?", await sha256Hex(`investigation-share|${token}`), inv.id);
+  return c.json({ token });
+});
+
+/** Revoke the current unlisted share link. */
+investigationRoutes.delete('/investigations/:id/share', async (c) => {
+  const db = Db.from(c.env);
+  const inv = await loadOwned(db, c);
+  await db.run("UPDATE investigations SET share_token_hash = NULL, updated_at = datetime('now') WHERE id = ?", inv.id);
   return c.json({ ok: true });
 });
 

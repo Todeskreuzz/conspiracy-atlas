@@ -1,3 +1,4 @@
+Warning: f was declared with const; use let for reassignable variables.
 {
   "app": {
     "rss": "Canal RSS",
@@ -6,12 +7,7 @@
     "tagline": "Un archivo mundial interactivo de teorías, misterios y conexiones.",
     "skip": "Saltar al contenido",
     "language": "Idioma",
-    "languageName": {
-      "en": "English",
-      "de": "Deutsch",
-      "fr": "Français",
-      "es": "Español"
-    },
+    "languageName": { "en": "English", "de": "Deutsch", "fr": "Français", "es": "Español" },
     "menu": "Menú",
     "loading": "Cargando…",
     "retry": "Reintentar",
@@ -177,6 +173,9 @@
   "wall": {
     "title": "Muro de investigación",
     "intro": "Arrastra para mover, desplázate para ampliar, haz doble clic en una ficha para centrarla. Los hilos rojos muestran cómo se conectan las entradas.",
+    "mainBoard": "Muro general",
+    "archiveNetwork": "Personas y expedientes",
+    "archiveNetworkScope": "Los hilos mostrados proceden de los vínculos de personas ya registrados en expedientes publicados del archivo. Los PDF y correos externos aún no se buscan automáticamente. Una mención no es una acusación.",
     "filters": "Filtros",
     "kinds": "Tipos de ficha",
     "relations": "Hilos",
@@ -342,7 +341,7 @@
   "investigations": {
     "title": "Investigaciones",
     "intro": "Tus proyectos de investigación privados: notas, hipótesis, fuentes, contraargumentos, enlaces a documentos, un tablero privado y una línea de tiempo.",
-    "privacy": "Privado por defecto. Tus proyectos están ligados a una clave secreta guardada en este navegador. Nada se hace público hasta que tú lo envíes a revisión.",
+    "privacy": "Privado por defecto. Tus proyectos están ligados a una clave secreta guardada en este navegador. Solo el muro se hace público si creas expresamente un enlace para compartir; tus notas siguen siendo privadas.",
     "keyTitle": "Tu clave de acceso",
     "keyHelp": "Guarda una copia de esta clave para abrir tus investigaciones en otro dispositivo. Quien tenga la clave puede leerlas y editarlas.",
     "showKey": "Mostrar la clave",
@@ -375,8 +374,25 @@
     "publishHint": "Abre el editor relleno con esta investigación. Solo se publica después de la moderación.",
     "deleteConfirm": "¿Eliminar esta investigación de forma permanente?",
     "addArchiveCard": "Añadir una entrada del archivo",
+    "addPersonCard": "Añadir persona del archivo",
+    "searchPeople": "Buscar personas…",
     "addOwnCard": "Añadir una ficha propia",
-    "threadsSuggested": "Los hilos de tu tablero privado se marcan siempre como sugeridos."
+    "threadsSuggested": "Los hilos de tu tablero privado se marcan siempre como sugeridos. Una tarjeta de persona enlaza a una ficha del archivo; por sí sola no afirma que exista una relación.",
+    "enableShare": "Crear enlace para compartir",
+    "rotateShare": "Renovar enlace",
+    "revokeShare": "Desactivar enlace",
+    "sharePrivacy": "Tu investigación sigue siendo privada hasta que crees un enlace. Quien tenga el enlace podrá ver el título, la descripción y el tablero. Tus notas seguirán siendo privadas.",
+    "shareLink": "Enlace para compartir",
+    "copyShare": "Copiar enlace",
+    "shareReady": "Enlace creado. Solo se muestra aquí; guárdalo en un lugar seguro.",
+    "shareCopied": "Enlace copiado.",
+    "shareCopyManual": "No se pudo copiar. Selecciona el enlace del campo y cópialo manualmente.",
+    "shareRevoked": "Enlace desactivado.",
+    "revokeConfirm": "¿Desactivar este enlace? El enlace actual dejará de funcionar.",
+    "rotateConfirm": "¿Crear un nuevo enlace? El enlace actual dejará de funcionar.",
+    "sharedLabel": "Muro de investigación compartido",
+    "sharedNotice": "Vista de solo lectura. Quien creó el muro añadió sus conexiones.",
+    "sharedNotFound": "Este muro no está disponible. Puede que se haya desactivado el enlace."
   },
   "community": {
     "title": "Teorías de la comunidad",
@@ -768,6 +784,12 @@
       "draftN": "Publicación {n}",
       "caseKicker": "Expediente del día · {day}",
       "casePosted": "Publicado para esta fecha.",
+      "threadTitle": "Recomendado: publicación principal + respuesta",
+      "threadIntro": "Publica este hilo en dos pasos. Añade la foto del expediente a la publicación principal.",
+      "stepMain": "1. Publica primero esto como publicación principal, sin enlace. Añade arriba la foto del expediente.",
+      "stepReply": "2. Responde a tu nueva publicación con este texto, que incluye el enlace al expediente.",
+      "singleTitle": "Alternativa: una publicación con enlace",
+      "singleIntro": "Publica solo esta versión. Incluye la vista previa del enlace; no hace falta una respuesta aparte.",
       "hook": "Publicación principal · sin enlace",
       "reply": "Respuesta · incluye enlace al expediente",
       "withLink": "Publicación única · con enlace",
@@ -788,13 +810,7 @@
       "marked": "Marcado como publicado en X. No se volverá a proponer.",
       "restored": "Devuelto a la cola.",
       "postedTitle": "Ya publicado en X",
-      "undo": "Devolver a la cola",
-      "threadTitle": "Recomendado: publicación principal + respuesta",
-      "threadIntro": "Publica este hilo en dos pasos. Añade la foto del expediente a la publicación principal.",
-      "stepMain": "1. Publica primero esto como publicación principal, sin enlace. Añade arriba la foto del expediente.",
-      "stepReply": "2. Responde a tu nueva publicación con este texto, que incluye el enlace al expediente.",
-      "singleTitle": "Alternativa: una publicación con enlace",
-      "singleIntro": "Publica solo esta versión. Incluye la vista previa del enlace; no hace falta una respuesta aparte."
+      "undo": "Devolver a la cola"
     }
   },
   "rss": {

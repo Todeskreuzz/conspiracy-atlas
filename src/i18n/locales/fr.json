@@ -1,3 +1,4 @@
+Warning: f was declared with const; use let for reassignable variables.
 {
   "app": {
     "rss": "Flux RSS",
@@ -6,12 +7,7 @@
     "tagline": "Une archive mondiale interactive des théories, des mystères et des liens.",
     "skip": "Aller au contenu",
     "language": "Langue",
-    "languageName": {
-      "en": "English",
-      "de": "Deutsch",
-      "fr": "Français",
-      "es": "Español"
-    },
+    "languageName": { "en": "English", "de": "Deutsch", "fr": "Français", "es": "Español" },
     "menu": "Menu",
     "loading": "Chargement…",
     "retry": "Réessayer",
@@ -177,6 +173,9 @@
   "wall": {
     "title": "Mur d'enquête",
     "intro": "Glissez pour déplacer, faites défiler pour zoomer, double-cliquez sur une carte pour la centrer. Les fils rouges montrent comment les entrées sont liées.",
+    "mainBoard": "Tableau général",
+    "archiveNetwork": "Personnes et dossiers",
+    "archiveNetworkScope": "Les fils affichés proviennent des liens de personnes déjà enregistrés dans les dossiers publiés de l'archive. Les PDF et e-mails externes ne sont pas encore parcourus automatiquement. Une mention ne constitue pas une accusation.",
     "filters": "Filtres",
     "kinds": "Types de cartes",
     "relations": "Fils",
@@ -342,7 +341,7 @@
   "investigations": {
     "title": "Enquêtes",
     "intro": "Vos projets de recherche privés : notes, hypothèses, sources, contre-arguments, liens vers des documents, un tableau privé et une frise.",
-    "privacy": "Privé par défaut. Vos projets sont liés à une clé secrète stockée dans ce navigateur. Rien ne devient public tant que vous ne le soumettez pas vous-même à la relecture.",
+    "privacy": "Privé par défaut. Vos projets sont liés à une clé secrète stockée dans ce navigateur. Seul le tableau devient visible si vous créez explicitement un lien de partage ; vos notes restent privées.",
     "keyTitle": "Votre clé d'accès",
     "keyHelp": "Gardez une copie de cette clé pour ouvrir vos enquêtes sur un autre appareil. Quiconque a la clé peut les lire et les modifier.",
     "showKey": "Afficher la clé",
@@ -375,8 +374,25 @@
     "publishHint": "Ouvre l'éditeur prérempli avec cette enquête. Elle n'est publiée qu'après modération.",
     "deleteConfirm": "Supprimer cette enquête définitivement ?",
     "addArchiveCard": "Ajouter une entrée de l'archive",
+    "addPersonCard": "Ajouter une personne de l'archive",
+    "searchPeople": "Rechercher des personnes…",
     "addOwnCard": "Ajouter une carte personnelle",
-    "threadsSuggested": "Les fils de votre tableau privé sont toujours marqués comme suggérés."
+    "threadsSuggested": "Les fils de votre tableau privé sont toujours marqués comme suggérés. Une carte de personne renvoie à une fiche de l'archive ; elle ne prétend pas à elle seule qu'il existe un lien.",
+    "enableShare": "Créer un lien de partage",
+    "rotateShare": "Renouveler le lien",
+    "revokeShare": "Désactiver le partage",
+    "sharePrivacy": "Votre enquête reste privée tant que vous ne créez pas de lien. Toute personne possédant ce lien peut voir son titre, sa description et le tableau. Vos notes restent privées.",
+    "shareLink": "Lien de partage",
+    "copyShare": "Copier le lien",
+    "shareReady": "Lien créé. Il ne s'affiche qu'ici : conservez-le en lieu sûr.",
+    "shareCopied": "Lien copié.",
+    "shareCopyManual": "Copie impossible. Sélectionnez le lien dans le champ et copiez-le manuellement.",
+    "shareRevoked": "Lien désactivé.",
+    "revokeConfirm": "Désactiver ce lien ? Le lien actuel ne fonctionnera plus.",
+    "rotateConfirm": "Créer un nouveau lien ? Le lien actuel ne fonctionnera plus.",
+    "sharedLabel": "Tableau d'enquête partagé",
+    "sharedNotice": "Vue en lecture seule. Les liens sur ce tableau ont été ajoutés par son créateur.",
+    "sharedNotFound": "Ce tableau est indisponible. Son lien a peut-être été désactivé."
   },
   "community": {
     "title": "Théories de la communauté",
@@ -768,6 +784,12 @@
       "draftN": "Billet {n}",
       "caseKicker": "Dossier du jour · {day}",
       "casePosted": "Publié pour cette date.",
+      "threadTitle": "Conseillé : billet principal + réponse",
+      "threadIntro": "Publiez ce fil en deux étapes. Ajoutez la photo du dossier au billet principal.",
+      "stepMain": "1. Publiez d'abord ce billet principal sans lien. Ajoutez la photo du dossier ci-dessus.",
+      "stepReply": "2. Répondez à votre nouveau billet avec ce texte, qui contient le lien du dossier.",
+      "singleTitle": "Alternative : un seul billet avec lien",
+      "singleIntro": "Publiez uniquement cette version. Elle contient l'aperçu du lien ; aucune réponse séparée n'est nécessaire.",
       "hook": "Billet principal · sans lien",
       "reply": "Réponse · avec lien du dossier",
       "withLink": "Billet unique · avec lien",
@@ -788,13 +810,7 @@
       "marked": "Marqué comme publié sur X. Il ne sera plus proposé.",
       "restored": "Remis dans la file.",
       "postedTitle": "Déjà publié sur X",
-      "undo": "Remettre dans la file",
-      "threadTitle": "Conseillé : billet principal + réponse",
-      "threadIntro": "Publiez ce fil en deux étapes. Ajoutez la photo du dossier au billet principal.",
-      "stepMain": "1. Publiez d'abord ce billet principal sans lien. Ajoutez la photo du dossier ci-dessus.",
-      "stepReply": "2. Répondez à votre nouveau billet avec ce texte, qui contient le lien du dossier.",
-      "singleTitle": "Alternative : un seul billet avec lien",
-      "singleIntro": "Publiez uniquement cette version. Elle contient l'aperçu du lien ; aucune réponse séparée n'est nécessaire."
+      "undo": "Remettre dans la file"
     }
   },
   "rss": {

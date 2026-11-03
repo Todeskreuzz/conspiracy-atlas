@@ -1,3 +1,4 @@
+Warning: f was declared with const; use let for reassignable variables.
 {
   "app": {
     "rss": "RSS-Feed",
@@ -6,12 +7,7 @@
     "tagline": "Ein interaktives globales Archiv für Theorien, Geheimnisse und Zusammenhänge.",
     "skip": "Zum Inhalt springen",
     "language": "Sprache",
-    "languageName": {
-      "en": "English",
-      "de": "Deutsch",
-      "fr": "Français",
-      "es": "Español"
-    },
+    "languageName": { "en": "English", "de": "Deutsch", "fr": "Français", "es": "Español" },
     "menu": "Menü",
     "loading": "Wird geladen …",
     "retry": "Erneut versuchen",
@@ -177,6 +173,9 @@
   "wall": {
     "title": "Ermittlungswand",
     "intro": "Ziehen zum Verschieben, Scrollen zum Zoomen, Doppelklick auf eine Karte zum Fokussieren. Rote Fäden zeigen die Verbindungen.",
+    "mainBoard": "Übersichts-Wall",
+    "archiveNetwork": "Personen & Akten",
+    "archiveNetworkScope": "Alle hier gezeigten Fäden stammen aus vorhandenen Verknüpfungen zwischen veröffentlichten Akten und Personen im Archiv. Externe PDFs und E-Mails werden noch nicht automatisch durchsucht. Eine Erwähnung ist keine Schuldzuweisung.",
     "filters": "Filter",
     "kinds": "Kartentypen",
     "relations": "Fäden",
@@ -342,7 +341,7 @@
   "investigations": {
     "title": "Recherchen",
     "intro": "Deine privaten Rechercheprojekte: Notizen, Hypothesen, Quellen, Gegenargumente, Dokumentenlinks, eine private Pinnwand und ein Zeitstrahl.",
-    "privacy": "Standardmäßig privat. Deine Projekte sind mit einem geheimen Schlüssel verknüpft, der in diesem Browser gespeichert ist. Nichts wird öffentlich, solange du es nicht selbst zur Prüfung einreichst.",
+    "privacy": "Standardmäßig privat. Deine Projekte sind mit einem geheimen Schlüssel verknüpft, der in diesem Browser gespeichert ist. Nur die Pinnwand wird öffentlich, wenn du ausdrücklich einen Freigabelink erstellst; deine Notizen bleiben privat.",
     "keyTitle": "Dein Zugangsschlüssel",
     "keyHelp": "Bewahre eine Kopie dieses Schlüssels auf, um deine Recherchen auf einem anderen Gerät zu öffnen. Wer den Schlüssel hat, kann sie lesen und bearbeiten.",
     "showKey": "Schlüssel anzeigen",
@@ -375,8 +374,25 @@
     "publishHint": "Öffnet den Editor mit dieser Recherche vorausgefüllt. Veröffentlicht wird erst nach der Moderation.",
     "deleteConfirm": "Diese Recherche endgültig löschen?",
     "addArchiveCard": "Archiveintrag hinzufügen",
+    "addPersonCard": "Person aus dem Archiv hinzufügen",
+    "searchPeople": "Personen suchen …",
     "addOwnCard": "Eigene Karte hinzufügen",
-    "threadsSuggested": "Fäden auf deiner privaten Pinnwand sind immer als vorgeschlagen gekennzeichnet."
+    "threadsSuggested": "Fäden auf deiner privaten Pinnwand sind immer als vorgeschlagen gekennzeichnet. Eine Personenkarte verweist auf den Archiveintrag; sie behauptet für sich allein keine Verbindung.",
+    "enableShare": "Freigabelink erstellen",
+    "rotateShare": "Link erneuern",
+    "revokeShare": "Freigabe beenden",
+    "sharePrivacy": "Deine Recherche bleibt privat, bis du einen Link erstellst. Wer den Link hat, kann Titel, Beschreibung und Pinnwand ansehen. Deine Notizen bleiben privat.",
+    "shareLink": "Geteilter Link",
+    "copyShare": "Link kopieren",
+    "shareReady": "Freigabelink erstellt. Er wird nur hier angezeigt – bewahre ihn sicher auf.",
+    "shareCopied": "Link kopiert.",
+    "shareCopyManual": "Kopieren nicht möglich. Du kannst den Link im Feld markieren und kopieren.",
+    "shareRevoked": "Freigabelink deaktiviert.",
+    "revokeConfirm": "Freigabelink deaktivieren? Der bisherige Link funktioniert danach nicht mehr.",
+    "rotateConfirm": "Einen neuen Freigabelink erstellen? Der bisherige Link funktioniert danach nicht mehr.",
+    "sharedLabel": "Geteilte Investigation Wall",
+    "sharedNotice": "Schreibgeschützte Ansicht. Verbindungen auf dieser Wall stammen von der Person, die sie erstellt hat.",
+    "sharedNotFound": "Diese Wall ist nicht verfügbar. Der Link wurde möglicherweise deaktiviert."
   },
   "community": {
     "title": "Community-Verschwörungstheorien",
@@ -768,6 +784,12 @@
       "draftN": "Beitrag {n}",
       "caseKicker": "Fall des Tages · {day}",
       "casePosted": "Für dieses Datum gepostet.",
+      "threadTitle": "Empfohlen: Hauptbeitrag + Antwort",
+      "threadIntro": "Veröffentliche den Thread in zwei Schritten. Füge das Fallbild beim Hauptbeitrag hinzu.",
+      "stepMain": "1. Zuerst als Hauptbeitrag ohne Link posten. Füge oben das Fallbild hinzu.",
+      "stepReply": "2. Antworte auf deinen neuen Beitrag mit diesem Text. Er enthält den Link zur Fallakte.",
+      "singleTitle": "Alternative: ein Beitrag mit Link",
+      "singleIntro": "Poste nur diese Version. Sie enthält die Link-Vorschau; eine separate Antwort ist nicht nötig.",
       "hook": "Hauptbeitrag · ohne Link",
       "reply": "Antwort · mit Fallakten-Link",
       "withLink": "Einzelbeitrag · mit Link",
@@ -788,13 +810,7 @@
       "marked": "Als auf X gepostet markiert. Er wird nicht wieder vorgeschlagen.",
       "restored": "Wieder in die Liste gelegt.",
       "postedTitle": "Schon auf X gepostet",
-      "undo": "Wieder in die Liste",
-      "threadTitle": "Empfohlen: Hauptbeitrag + Antwort",
-      "threadIntro": "Veröffentliche den Thread in zwei Schritten. Füge das Fallbild beim Hauptbeitrag hinzu.",
-      "stepMain": "1. Zuerst als Hauptbeitrag ohne Link posten. Füge oben das Fallbild hinzu.",
-      "stepReply": "2. Antworte auf deinen neuen Beitrag mit diesem Text. Er enthält den Link zur Fallakte.",
-      "singleTitle": "Alternative: ein Beitrag mit Link",
-      "singleIntro": "Poste nur diese Version. Sie enthält die Link-Vorschau; eine separate Antwort ist nicht nötig."
+      "undo": "Wieder in die Liste"
     }
   },
   "rss": {

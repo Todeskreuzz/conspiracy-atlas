@@ -1,3 +1,4 @@
+Warning: f was declared with const; use let for reassignable variables.
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import cytoscape, { type Core, type EdgeSingular, type NodeSingular, type StylesheetJson } from 'cytoscape';
@@ -723,6 +724,15 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
                 {t('wall.threadVerification')}: {t(`verification.${selected.edge.verification}`)}
               </p>
               {selected.edge.label && <p className="small">{selected.edge.label}</p>}
+              {selected.edge.citation && (
+                <p className="small">
+                  {t('app.sources')}: {selected.edge.citation.url ? (
+                    <a href={selected.edge.citation.url} target="_blank" rel="noopener noreferrer nofollow">
+                      {selected.edge.citation.title} ↗
+                    </a>
+                  ) : selected.edge.citation.title}
+                </p>
+              )}
               {editor && (
                 <button className="btn btn--small btn--danger" onClick={() => removeEdge(selected.edge!.id)}>
                   {t('wall.deleteThread')}

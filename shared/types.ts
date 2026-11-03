@@ -1,3 +1,4 @@
+Warning: f was declared with const; use let for reassignable variables.
 import type { PublicImage } from './images';
 import type {
   CategorySlug,
@@ -209,6 +210,8 @@ export interface BoardEdge {
   kind: RelationKind;
   verification: RelationVerification;
   label: string | null;
+  /** Optional source attached to an archive relationship. */
+  citation?: { title: string; url: string | null } | null;
   /** Derived at read time: both cases name the same person, organization or place. Never stored. */
   auto?: boolean;
   shared?: EntityRef[];
@@ -265,8 +268,17 @@ export interface Investigation {
   title: string;
   description: string | null;
   boardSlug: string;
+  /** Whether the owner has enabled an unlisted, read-only share link. */
+  shareEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Public share payload intentionally excludes private investigation notes and owner credentials. */
+export interface SharedInvestigation {
+  title: string;
+  description: string | null;
+  board: Board;
 }
 
 export interface InvestigationNote {

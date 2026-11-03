@@ -29,6 +29,91 @@ import {
 
 export const publicRoutes = new Hono<AppEnv>();
 
+interface PortraitData {
+  dataUrl: string;
+  fileTitle: string;
+  credit: string;
+  license: string;
+  sourceUrl: string;
+}
+
+const portraitCache = new Map<string, Promise<PortraitData | null>>();
+
+function portraitText(value?: string): string {
+  return (value ?? '').replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+  }
+  return btoa(binary);
+}
+
+async function findArchivePortrait(name: string): Promise<PortraitData | null> {
+  const label = JSON.stringify(name);
+  const query = `SELECT ?image WHERE { ?person wdt:P18 ?image . { ?person rdfs:label ${label}@en . } UNION { ?person skos:altLabel ${label}@en . } } LIMIT 1`;
+  const sparql = new URLSearchParams({ query, format: 'json' });
+  const wikidataResponse = await fetch(`https://query.wikidata.org/sparql?${sparql}`, {
+    headers: { accept: 'application/sparql-results+json', 'user-agent': 'ConspiracyAtlas/1.0 (https://conspiracy-atlas.pages.dev)' },
+  });
+  if (!wikidataResponse.ok) throw new Error(`Wikidata returned ${wikidataResponse.status}`);
+  const wikidata = await wikidataResponse.json() as { results?: { bindings?: Array<{ image?: { value?: string } }> } };
+  const imageValue = wikidata.results?.bindings?.[0]?.image?.value;
+  if (!imageValue) return null;
+  const file = decodeURIComponent(new URL(imageValue).pathname.split('/').pop() ?? '');
+  if (!file) return null;
+
+  const commonsQuery = new URLSearchParams({
+    action: 'query',
+    titles: `File:${file}`,
+    prop: 'imageinfo',
+    iiprop: 'url|extmetadata',
+    iiurlwidth: '240',
+    format: 'json',
+  });
+  const commonsResponse = await fetch(`https://commons.wikimedia.org/w/api.php?${commonsQuery}`);
+  if (!commonsResponse.ok) throw new Error(`Wikimedia Commons returned ${commonsResponse.status}`);
+  const commons = await commonsResponse.json() as {
+    query?: { pages?: Record<string, { title: string; imageinfo?: Array<{ thumburl?: string; url?: string; extmetadata?: Record<string, { value?: string }> }> }> };
+  };
+  const page = Object.values(commons.query?.pages ?? {}).find((item) => !('missing' in item));
+  const info = page?.imageinfo?.[0];
+  const imageUrl = info?.thumburl ?? info?.url;
+  if (!page || !info || !imageUrl) return null;
+
+  const imageResponse = await fetch(imageUrl);
+  if (!imageResponse.ok) throw new Error(`Wikimedia image returned ${imageResponse.status}`);
+  const mime = (imageResponse.headers.get('content-type') ?? 'image/jpeg').split(';', 1)[0].toLowerCase();
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(mime)) return null;
+  const bytes = new Uint8Array(await imageResponse.arrayBuffer());
+  if (bytes.length > 500_000) return null;
+  const metadata = info.extmetadata ?? {};
+  return {
+    dataUrl: `data:${mime};base64,${bytesToBase64(bytes)}`,
+    fileTitle: page.title.replace(/^File:/, ''),
+    credit: portraitText(metadata.Credit?.value || metadata.Artist?.value || 'Wikimedia Commons'),
+    license: portraitText(metadata.LicenseShortName?.value || 'Lizenzangabe auf Wikimedia Commons'),
+    sourceUrl: `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`,
+  };
+}
+
+function archivePortrait(name: string): Promise<PortraitData | null> {
+  const key = name.trim().toLocaleLowerCase();
+  const cached = portraitCache.get(key);
+  if (cached) return cached;
+  const request = findArchivePortrait(name).catch((error) => {
+    console.error('Archive portrait lookup failed', error);
+    return null;
+  });
+  portraitCache.set(key, request);
+  void request.then((portrait) => { if (!portrait) portraitCache.delete(key); });
+  return request;
+}
+
+
+
 const likeEscape = (q: string) => `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
 
 /** Feature availability. Pure configuration check: no database reads. */
@@ -208,6 +293,16 @@ publicRoutes.get('/people', async (c) => {
   const items = await translate(db, c.get('locale'), 'person', rows.map(mapPerson), { role: 'role', description: 'description' });
   publicCache(c, 300);
   return c.json(paged(items, page, pageSize));
+});
+
+
+publicRoutes.get('/people/:slug/portrait', async (c) => {
+  const db = Db.from(c.env);
+  const person = await db.first<{ name: string }>('SELECT name FROM people WHERE slug = ?', c.req.param('slug'));
+  if (!person) throw notFound('Person');
+  const portrait = await archivePortrait(person.name);
+  publicCache(c, portrait ? 86400 : 300);
+  return c.json(portrait);
 });
 
 publicRoutes.get('/people/:slug', async (c) => {

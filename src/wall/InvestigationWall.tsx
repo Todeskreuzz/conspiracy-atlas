@@ -203,9 +203,9 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
     let cancelled = false;
     setPortraits({});
     // Only archive-backed public profiles are looked up. Never send names from a visitor's private notes to Commons.
-    const people = board.nodes.filter((node) => node.kind === 'person' && node.entityType === 'person' && node.entityId !== null);
+    const people = board.nodes.filter((node) => node.kind === 'person' && node.entityType === 'person' && node.entityId !== null && !!node.entitySlug);
     for (const node of people) {
-      void loadPersonPortrait(node.title).then((portrait) => {
+      void loadPersonPortrait(node.entitySlug!).then((portrait) => {
         if (cancelled || !portrait) return;
         cy.batch(() => {
           cy.getElementById(`n${node.id}`).data('img', cardImage('person', kindLabel('person'), portrait.dataUrl));

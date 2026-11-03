@@ -41,7 +41,7 @@ describe('cost safety (free-only)', () => {
   it('the server only contacts Turnstile and the free Wikidata/Wikipedia APIs (import)', () => {
     const files = readdirSync('server', { recursive: true }).map((f) => String(f).replace(/\\/g, '/')).filter((f) => f.endsWith('.ts'));
     const fetchers = files.filter((f) => /\bfetch\w*\(/.test(readFileSync(join('server', f), 'utf8')));
-    expect(fetchers.sort()).toEqual(['casePage.ts', 'homePage.ts', 'importer.ts', 'routes/community.ts', 'security.ts']);
+    expect(fetchers.sort()).toEqual(['casePage.ts', 'homePage.ts', 'importer.ts', 'routes/community.ts', 'routes/public.ts', 'security.ts']);
     // The case-page Function only reads the site's own static index.html.
     expect(readFileSync('server/casePage.ts', 'utf8').match(/\bfetch\w*\(/g)).toEqual(['fetch(']);
     expect(readFileSync('server/casePage.ts', 'utf8')).toContain('env.ASSETS.fetch(');

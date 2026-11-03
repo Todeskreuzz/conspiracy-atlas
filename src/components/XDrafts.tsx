@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useEffect, useState } from 'react';
+import { type SyntheticEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDate, useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
@@ -37,60 +37,49 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 
-const X_CARD_STYLE: Record<CategorySlug, { label: string; emoji: string; color: string }> = {
-  'politics-power': { label: 'Politics & Power', emoji: '🏛️', color: '#a33a2b' },
-  'secret-organizations': { label: 'Secret Societies', emoji: '🕯️', color: '#735184' },
-  'intelligence-agencies': { label: 'Intelligence', emoji: '🕵️', color: '#3e607c' },
-  'space-ufos': { label: 'UFOs & Space', emoji: '🛸', color: '#386b70' },
-  'science-technology': { label: 'Science & Tech', emoji: '⚛️', color: '#34745d' },
-  history: { label: 'History', emoji: '📜', color: '#91622e' },
-  'economy-finance': { label: 'Economy', emoji: '💰', color: '#56733c' },
-  'media-society': { label: 'Media & Society', emoji: '📺', color: '#a34e63' },
-  'internet-modern-myths': { label: 'Internet Myths', emoji: '🌐', color: '#5067a2' },
-  'secret-operations': { label: 'Covert Ops', emoji: '🗂️', color: '#705a47' },
-};
-
 function XCardImage({ draft }: { draft: XDraft }) {
   const { t } = useI18n();
-  const [image, setImage] = useState<{ blob: Blob; url: string } | null>(null);
+  const [image, setImage] = useState<{ original: Blob; png: Blob; extension: string } | null>(null);
+  const [failed, setFailed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const path = `/og/theory/${encodeURIComponent(draft.slug)}.png`;
 
-  useEffect(() => () => {
-    if (image) URL.revokeObjectURL(image.url);
-  }, [image]);
-
-  const compose = async (event: SyntheticEvent<HTMLImageElement>) => {
-    if (image) return;
+  const prepare = async (event: SyntheticEvent<HTMLImageElement>) => {
+    if (image || !draft.imagePath) return;
     const source = event.currentTarget;
-    const { label, emoji, color } = X_CARD_STYLE[draft.category];
-    const canvas = document.createElement('canvas');
-    canvas.width = source.naturalWidth;
-    canvas.height = source.naturalHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx || !canvas.width || !canvas.height) return;
-    ctx.drawImage(source, 0, 0);
-    const text = `${emoji}  ${label}`;
-    ctx.font = '600 18px "IBM Plex Sans", sans-serif';
-    const width = Math.ceil(ctx.measureText(text).width) + 28;
-    const x = canvas.width - width - 54;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.roundRect(x, 43, width, 38, 8);
-    ctx.fill();
-    ctx.fillStyle = '#fff8ed';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, x + 14, 62, width - 28);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-    if (!blob) return;
-    setImage({ blob, url: URL.createObjectURL(blob) });
+    try {
+      const response = await fetch(draft.imagePath);
+      if (!response.ok) throw new Error();
+      const original = await response.blob();
+      const canvas = document.createElement('canvas');
+      canvas.width = source.naturalWidth;
+      canvas.height = source.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx || !canvas.width || !canvas.height) throw new Error();
+      ctx.drawImage(source, 0, 0);
+      const png = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!png) throw new Error();
+      const extension = ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' } as Record<string, string>)[original.type] ?? 'img';
+      setImage({ original, png, extension });
+    } catch {
+      setFailed(true);
+    }
+  };
+
+  const downloadImage = () => {
+    if (!image) return;
+    const url = URL.createObjectURL(image.original);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${draft.slug}-case-image.${image.extension}`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const copyImage = async () => {
     setMessage(null);
     try {
       if (!image || !navigator.clipboard.write || typeof ClipboardItem === 'undefined') throw new Error();
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': image.blob })]);
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': image.png })]);
       setMessage(t('admin.x.imageCopied'));
     } catch {
       setMessage(t('admin.x.imageCopyFailed'));
@@ -99,14 +88,17 @@ function XCardImage({ draft }: { draft: XDraft }) {
 
   return (
     <div className="x-card-download">
-      <img src={image?.url ?? path} onLoad={compose} alt="" loading="lazy" />
-      <div className="x-card-download__actions">
-        <a className="btn btn--small" href={image?.url ?? path} onClick={(event) => { if (!image) event.preventDefault(); }} download={`${draft.slug}-conspiracy-atlas.png`} aria-disabled={!image}>
-          {t('admin.x.downloadImage')}
-        </a>
-        <button type="button" className="btn btn--small" disabled={!image} onClick={copyImage}>{t('admin.x.copyImage')}</button>
-        {message && <span className="small" role="status">{message}</span>}
-      </div>
+      {draft.imagePath ? (
+        <img src={draft.imagePath} onLoad={prepare} onError={() => setFailed(true)} alt={draft.title} loading="lazy" />
+      ) : <p className="small muted">{t('admin.x.imageUnavailable')}</p>}
+      {draft.imagePath && (
+        <div className="x-card-download__actions">
+          <button type="button" className="btn btn--small" disabled={!image} onClick={downloadImage}>{t('admin.x.downloadImage')}</button>
+          <button type="button" className="btn btn--small" disabled={!image} onClick={copyImage}>{t('admin.x.copyImage')}</button>
+          {failed && <span className="small" role="status">{t('admin.x.imageUnavailable')}</span>}
+          {message && <span className="small" role="status">{message}</span>}
+        </div>
+      )}
     </div>
   );
 }

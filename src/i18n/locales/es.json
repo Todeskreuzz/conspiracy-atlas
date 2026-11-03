@@ -778,6 +778,7 @@
       "copyImage": "Copiar imagen",
       "imageCopied": "Imagen copiada. Pégala en tu publicación de X.",
       "imageCopyFailed": "No se pudo copiar la imagen. Descárgala y adjúntala a tu publicación.",
+      "imageUnavailable": "Este borrador no tiene una imagen de expediente.",
       "markPosted": "Marcar como publicado",
       "marked": "Marcado como publicado en X. No se volverá a proponer.",
       "restored": "Devuelto a la cola.",

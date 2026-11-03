@@ -27,7 +27,7 @@ export async function assertXTables(db: Db): Promise<void> {
 }
 
 const CANDIDATE_SQL = `
-  SELECT t.id, t.slug, t.title, t.summary, t.evidence_status, t.updated_at, t.content_language, c.slug AS category,
+  SELECT t.id, t.slug, t.title, t.summary, t.image_path, t.evidence_status, t.updated_at, t.content_language, c.slug AS category,
          (SELECT COUNT(*) FROM claims cl WHERE cl.theory_id = t.id) AS claim_count,
          (SELECT COUNT(*) FROM counter_arguments ca WHERE ca.theory_id = t.id) AS counter_count,
          (SELECT COUNT(*) FROM comments cm WHERE cm.theory_id = t.id AND cm.status = 'visible') AS comment_count,
@@ -43,6 +43,7 @@ interface Candidate {
   id: number;
   slug: string;
   title: string;
+  imagePath: string | null;
   summary: string;
   category: CategorySlug;
   evidenceStatus: EvidenceStatus;
@@ -62,6 +63,7 @@ function mapCandidate(r: Row): Candidate {
     id: Number(r.id),
     slug: String(r.slug),
     title: String(r.title),
+    imagePath: (r.image_path as string) ?? null,
     summary: String(r.summary),
     category: r.category as CategorySlug,
     evidenceStatus: r.evidence_status as EvidenceStatus,
@@ -92,7 +94,7 @@ async function pool(db: Db): Promise<Candidate[]> {
 
 async function loadOne(db: Db, theoryId: number): Promise<Candidate | null> {
   const row = await db.first(
-    `SELECT t.id, t.slug, t.title, t.summary, t.evidence_status, t.updated_at, t.content_language, c.slug AS category,
+    `SELECT t.id, t.slug, t.title, t.summary, t.image_path, t.evidence_status, t.updated_at, t.content_language, c.slug AS category,
             0 AS claim_count, 0 AS counter_count, 0 AS connection_count, 0 AS comment_count, 0 AS vote_count
      FROM theories t JOIN categories c ON c.id = t.category_id
      WHERE t.id = ? AND t.is_published = 1`,
@@ -172,6 +174,7 @@ function toDraft(c: Candidate, origin: string, day: string, score: number, daily
       id: c.id,
       slug: c.slug,
       title: c.title,
+      imagePath: c.imagePath,
       summary: c.summary,
       category: c.category,
       evidenceStatus: c.evidenceStatus,

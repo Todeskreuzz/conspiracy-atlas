@@ -93,7 +93,7 @@ function buildStyle(): StylesheetJson {
         'transition-duration': 0.2,
       },
     },
-    { selector: 'node[kind = "person"]', style: { 'text-halign': 'right', 'text-max-width': '104px', 'text-margin-right': 5, 'text-margin-y': 26 } },
+    { selector: 'node[kind = "person"]', style: { 'text-halign': 'center', 'text-max-width': '104px', 'text-margin-right': 0, 'text-margin-y': 26 } },
     { selector: 'node[kind = "theory"]', style: { width: CARD_W + 30, height: CARD_H + 16, 'font-size': 15, 'font-family': 'Playfair Display, Georgia, serif', 'font-weight': 700 } },
     { selector: 'node:selected', style: { 'border-width': 4, 'border-color': '#e8c547', 'underlay-color': '#e8c547', 'underlay-opacity': 0.25, 'underlay-padding': 10 } },
     { selector: 'node.match', style: { 'border-width': 4, 'border-color': '#e8c547' } },

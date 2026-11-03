@@ -59,7 +59,7 @@ async function findPortrait(name: string): Promise<Portrait | null> {
   const escapedName = name.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   const sparql = `SELECT ?image WHERE { ?person wdt:P18 ?image . { ?person rdfs:label "${escapedName}"@en . } UNION { ?person skos:altLabel "${escapedName}"@en . } } LIMIT 1`;
   const sparqlQuery = new URLSearchParams({ query: sparql, format: 'json' });
-  const entityResponse = await fetch(`https://query.wikidata.org/sparql?${sparqlQuery}`, { headers: { accept: 'application/sparql-results+json' } });
+  const entityResponse = await fetch(`https://query.wikidata.org/sparql?${sparqlQuery}`, );
   if (!entityResponse.ok) return null;
   const entityPayload = await entityResponse.json() as { results?: { bindings?: Array<{ image?: { value?: string } }> } };
   const imageValue = entityPayload.results?.bindings?.[0]?.image?.value;

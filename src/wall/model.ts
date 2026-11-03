@@ -70,9 +70,9 @@ const EMBLEMS: Record<NodeKind, string> = {
 const imageCache = new Map<string, string>();
 
 /** Card face as an SVG data URI (paper, coloured header band, stripe, emblem, pin). */
-export function cardImage(kind: NodeKind, label: string): string {
+export function cardImage(kind: NodeKind, label: string, portrait?: string): string {
   const key = `${kind}|${label}`;
-  const hit = imageCache.get(key);
+  const hit = portrait ? undefined : imageCache.get(key);
   if (hit) return hit;
   const band = KIND_COLORS[kind] ?? '#333';
   const safeLabel = label.replace(/[<>&"]/g, '');
@@ -80,6 +80,7 @@ export function cardImage(kind: NodeKind, label: string): string {
 <defs><linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1e6cd"/><stop offset="1" stop-color="#dcc9a2"/></linearGradient>
 <radialGradient id="g" cx="0.35" cy="0.35" r="0.7"><stop offset="0" stop-color="#f5958b"/><stop offset="0.55" stop-color="#b3261e"/><stop offset="1" stop-color="#5a0f0a"/></radialGradient></defs>
 <rect width="${CARD_W}" height="${CARD_H}" fill="url(#p)"/>
+${kind === 'person' && portrait ? `<image href="${portrait}" x="11" y="40" width="66" height="72" preserveAspectRatio="xMidYMid slice"/><rect x="10" y="39" width="68" height="74" fill="none" stroke="#756145" stroke-width="1"/>` : ''}
 <rect width="${CARD_W}" height="30" fill="${band}"/>
 <rect x="0" y="30" width="6" height="${CARD_H - 30}" fill="${CARD_STRIPE}"/>
 <g transform="translate(18 16)" fill="none" stroke="#e9dcc0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${EMBLEMS[kind] ?? ''}</g>
@@ -88,7 +89,7 @@ export function cardImage(kind: NodeKind, label: string): string {
 <circle cx="${CARD_W / 2}" cy="9" r="6.5" fill="url(#g)"/><circle cx="${CARD_W / 2 - 2}" cy="7" r="1.6" fill="#ffd2cc"/>
 </svg>`;
   const uri = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  imageCache.set(key, uri);
+  if (!portrait) imageCache.set(key, uri);
   return uri;
 }
 
@@ -280,3 +281,4 @@ export const savedViews = {
   load: (slug: string) => readJson<SavedView[]>(savedViews.key(slug), []),
   save: (slug: string, views: SavedView[]) => writeJson(savedViews.key(slug), views.slice(-20)),
 };
+

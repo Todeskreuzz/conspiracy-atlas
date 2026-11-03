@@ -8,6 +8,14 @@
   overflow: hidden;
   background: #120b06;
 }
+.wall-page__switch {
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+  background: var(--paper);
+}
 .wall:fullscreen {
   height: 100vh !important;
 }

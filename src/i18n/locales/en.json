@@ -6,12 +6,7 @@
     "tagline": "An Interactive Global Archive of Theories, Mysteries & Connections.",
     "skip": "Skip to content",
     "language": "Language",
-    "languageName": {
-      "en": "English",
-      "de": "Deutsch",
-      "fr": "Français",
-      "es": "Español"
-    },
+    "languageName": { "en": "English", "de": "Deutsch", "fr": "Français", "es": "Español" },
     "menu": "Menu",
     "loading": "Loading…",
     "retry": "Try again",
@@ -177,6 +172,9 @@
   "wall": {
     "title": "Investigation Wall",
     "intro": "Drag to move, scroll to zoom, double-click a card to focus. Red threads show how entries are connected.",
+    "mainBoard": "Overview wall",
+    "archiveNetwork": "People & cases",
+    "archiveNetworkScope": "Threads shown here come from person links already recorded in published archive cases. External PDFs and emails are not automatically searched yet. A mention is not an accusation.",
     "filters": "Filters",
     "kinds": "Card types",
     "relations": "Threads",
@@ -342,7 +340,7 @@
   "investigations": {
     "title": "Investigations",
     "intro": "Your private research projects: notes, hypotheses, sources, counter-arguments, document links, a private board and a timeline.",
-    "privacy": "Private by default. Your projects are linked to a secret key stored in this browser. Nothing becomes public unless you submit it for review yourself.",
+    "privacy": "Private by default. Your projects are linked to a secret key stored in this browser. Only the wall becomes public if you explicitly create a share link; your notes stay private.",
     "keyTitle": "Your access key",
     "keyHelp": "Keep a copy of this key to open your investigations on another device. Anyone with the key can read and edit them.",
     "showKey": "Show key",
@@ -375,8 +373,25 @@
     "publishHint": "Opens the editor pre-filled with this investigation. It is only published after moderation.",
     "deleteConfirm": "Delete this investigation permanently?",
     "addArchiveCard": "Add archive entry",
+    "addPersonCard": "Add person from archive",
+    "searchPeople": "Search people…",
     "addOwnCard": "Add own card",
-    "threadsSuggested": "Threads on your private board are always marked as suggested."
+    "threadsSuggested": "Threads on your private board are always marked as suggested. A person card links to an archive entry; by itself it does not claim a connection.",
+    "enableShare": "Create share link",
+    "rotateShare": "Rotate link",
+    "revokeShare": "Turn off sharing",
+    "sharePrivacy": "Your investigation stays private until you create a link. Anyone with the link can view its title, description, and wall. Your notes stay private.",
+    "shareLink": "Share link",
+    "copyShare": "Copy link",
+    "shareReady": "Share link created. It is shown only here, so keep it somewhere safe.",
+    "shareCopied": "Link copied.",
+    "shareCopyManual": "Could not copy. Select the link in the field and copy it manually.",
+    "shareRevoked": "Share link disabled.",
+    "revokeConfirm": "Turn off this share link? The current link will stop working.",
+    "rotateConfirm": "Create a new share link? The current link will stop working.",
+    "sharedLabel": "Shared Investigation Wall",
+    "sharedNotice": "Read-only view. Connections on this wall were added by its creator.",
+    "sharedNotFound": "This wall is unavailable. Its link may have been disabled."
   },
   "community": {
     "title": "Community conspiracy theories",
@@ -768,6 +783,12 @@
       "draftN": "Post {n}",
       "caseKicker": "Case of the Day · {day}",
       "casePosted": "Posted for this date.",
+      "threadTitle": "Recommended: main post + reply",
+      "threadIntro": "Post this as a two-part thread. Attach the case photo to the main post.",
+      "stepMain": "1. Publish this first as the main post, without a link. Add the case photo above.",
+      "stepReply": "2. Reply to your new post with this text. It contains the case-file link.",
+      "singleTitle": "Alternative: one post with a link",
+      "singleIntro": "Post only this version. It includes the link preview, so do not post a separate reply.",
       "hook": "Main post · no link",
       "reply": "Reply · includes case-file link",
       "withLink": "Single post · with link",
@@ -788,13 +809,7 @@
       "marked": "Marked as posted on X. It will not be suggested again.",
       "restored": "Put back into the queue.",
       "postedTitle": "Already posted on X",
-      "undo": "Put back in the queue",
-      "threadTitle": "Recommended: main post + reply",
-      "threadIntro": "Post this as a two-part thread. Attach the case photo to the main post.",
-      "stepMain": "1. Publish this first as the main post, without a link. Add the case photo above.",
-      "stepReply": "2. Reply to your new post with this text. It contains the case-file link.",
-      "singleTitle": "Alternative: one post with a link",
-      "singleIntro": "Post only this version. It includes the link preview, so do not post a separate reply."
+      "undo": "Put back in the queue"
     }
   },
   "rss": {

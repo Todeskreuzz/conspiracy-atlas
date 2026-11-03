@@ -2,8 +2,9 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../http';
 import { publicCache } from '../http';
 import { Db, pageParams, paged } from '../db';
-import { computeFeatures, turnstileConfigured } from '../features';
+import { computeFeatures, requireFeature, turnstileConfigured } from '../features';
 import { notFound, classifyDbError } from '../errors';
+import { sha256Hex } from '../crypto';
 import { EVIDENCE_STATUSES, CATEGORY_SLUGS } from '../../shared/constants';
 import type { TimelineCase } from '../../shared/types';
 import {
@@ -13,6 +14,7 @@ import {
   THEORY_SUMMARY_SELECT,
   deriveSharedThreads,
   loadBoardContent,
+  loadArchivePersonNetwork,
   loadRelationships,
   loadTheoryDetail,
   mapDocument,
@@ -38,6 +40,36 @@ publicRoutes.get('/status', (c) => {
     turnstileSiteKey: turnstileConfigured(c.env) ? c.env.TURNSTILE_SITE_KEY : null,
     plan: 'free-only',
   });
+});
+
+/** Public, read-only view for an explicitly shared investigation wall. Notes and owner keys are never returned. */
+publicRoutes.get('/shared-investigations/:token', async (c) => {
+  requireFeature(c.env, 'investigations');
+  const token = c.req.param('token');
+  if (!/^[0-9a-f]{64}$/.test(token)) throw notFound('Investigation');
+  const db = Db.from(c.env);
+  const row = await db.first(
+    `SELECT i.title, i.description, b.id AS board_id, b.slug AS board_slug, b.title AS board_title, b.description AS board_description
+       FROM investigations i JOIN boards b ON b.investigation_id = i.id
+      WHERE i.share_token_hash = ?`,
+    await sha256Hex(`investigation-share|${token}`),
+  );
+  if (!row) throw notFound('Investigation');
+  const boardId = Number(row.board_id);
+  const content = await loadBoardContent(db, boardId, c.get('locale'));
+  return c.json({
+    title: String(row.title),
+    description: (row.description as string) ?? null,
+    board: { id: boardId, slug: String(row.board_slug), title: String(row.board_title), description: (row.board_description as string) ?? null, ...content },
+  });
+});
+
+/** Cases and people connected by relationships already recorded in the public archive. */
+publicRoutes.get('/archive-person-network', async (c) => {
+  const db = Db.from(c.env);
+  const graph = await loadArchivePersonNetwork(db, c.get('locale'));
+  publicCache(c, 120);
+  return c.json({ id: 0, slug: 'archive-person-network', title: 'Archive person network', description: null, ...graph });
 });
 
 /** Connectivity check for the database (one trivial query). */
@@ -169,7 +201,10 @@ publicRoutes.get('/organizations/:slug', async (c) => {
 publicRoutes.get('/people', async (c) => {
   const db = Db.from(c.env);
   const { page, pageSize, offset, limit } = pageParams(c.req.query());
-  const rows = await db.all('SELECT * FROM people ORDER BY name COLLATE NOCASE LIMIT ? OFFSET ?', limit, offset);
+  const q = (c.req.query('q') ?? '').trim().slice(0, 100);
+  const rows = q
+    ? await db.all("SELECT * FROM people WHERE name LIKE ? ESCAPE '\\' OR role LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\' ORDER BY name COLLATE NOCASE LIMIT ? OFFSET ?", likeEscape(q), likeEscape(q), likeEscape(q), limit, offset)
+    : await db.all('SELECT * FROM people ORDER BY name COLLATE NOCASE LIMIT ? OFFSET ?', limit, offset);
   const items = await translate(db, c.get('locale'), 'person', rows.map(mapPerson), { role: 'role', description: 'description' });
   publicCache(c, 300);
   return c.json(paged(items, page, pageSize));

@@ -4,7 +4,7 @@ import { formatDate, useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
 import { getInvestigationKey, invApi } from '../api/investigations';
 import { api } from '../api/client';
-import type { Board, BoardEdge, BoardNode, Investigation, InvestigationNote, Paged, TheorySummary } from '../../shared/types';
+import type { Board, BoardEdge, BoardNode, Investigation, InvestigationNote, Paged, Person, TheorySummary } from '../../shared/types';
 import { INVESTIGATION_NOTE_KINDS, type InvestigationNoteKind } from '../../shared/constants';
 import { textToDoc } from '../../shared/richtext';
 import { LoadState } from '../components/Unavailable';
@@ -32,9 +32,15 @@ export default function InvestigationPage() {
   const detail = useAsync((signal) => client.get<Detail>(`/${encodeURIComponent(id)}`, signal), [id]);
   const board = useAsync((signal) => (tab === 'board' ? client.get<Board>(`/${encodeURIComponent(id)}/board`, signal) : Promise.resolve(null)), [id, tab]);
   const theories = useAsync((signal) => (tab === 'board' ? api<Paged<TheorySummary>>('/theories?pageSize=50&sort=title', { signal }) : Promise.resolve(null)), [tab, locale]);
+  const [peoplePage, setPeoplePage] = useState(1);
+  const [personSearch, setPersonSearch] = useState('');
+  const people = useAsync((signal) => (tab === 'board' ? api<Paged<Person>>(`/people?page=${peoplePage}&pageSize=50&q=${encodeURIComponent(personSearch)}`, { signal }) : Promise.resolve(null)), [tab, locale, peoplePage, personSearch]);
   const [form, setForm] = useState<{ kind: InvestigationNoteKind; title: string; body: string; url: string; eventDate: string }>({ kind: 'note', title: '', body: '', url: '', eventDate: '' });
   const [error, setError] = useState<string | null>(null);
   const [archivePick, setArchivePick] = useState('');
+  const [personPick, setPersonPick] = useState('');
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   const inv = detail.data;
   const notes = inv?.notes ?? [];
@@ -100,6 +106,7 @@ export default function InvestigationPage() {
   const addArchiveCard = async () => {
     const th = theories.data?.items.find((x) => String(x.id) === archivePick);
     if (!th || !board.data) return;
+    if (board.data.nodes.some((node) => node.entityType === 'theory' && node.entityId === th.id)) return;
     await client.post(`/${id}/board/nodes`, {
       kind: 'theory',
       entityType: 'theory',
@@ -113,6 +120,58 @@ export default function InvestigationPage() {
     });
     setArchivePick('');
     board.reload();
+  };
+
+  const addPersonCard = async () => {
+    const person = people.data?.items.find((x) => String(x.id) === personPick);
+    if (!person || !board.data || board.data.nodes.some((node) => node.entityType === 'person' && node.entityId === person.id)) return;
+    await client.post(`/${id}/board/nodes`, {
+      kind: 'person',
+      entityType: 'person',
+      entityId: person.id,
+      title: person.name,
+      summary: [person.role, person.description].filter(Boolean).join(' · ').slice(0, 1000),
+      x: Math.round(Math.random() * 400),
+      y: Math.round(Math.random() * 300),
+    });
+    setPersonPick('');
+    board.reload();
+  };
+
+  const rotateShareLink = async () => {
+    if (inv?.shareEnabled && !window.confirm(t('investigations.rotateConfirm'))) return;
+    setShareMessage(null);
+    try {
+      const result = await client.post<{ token: string }>(`/${id}/share`, {});
+      setShareUrl(new URL(`/share/investigation/${result.token}`, window.location.origin).toString());
+      setShareMessage(t('investigations.shareReady'));
+      detail.reload();
+    } catch (err) {
+      setShareMessage((err as Error).message);
+    }
+  };
+
+  const revokeShareLink = async () => {
+    if (!window.confirm(t('investigations.revokeConfirm'))) return;
+    setShareMessage(null);
+    try {
+      await client.del(`/${id}/share`);
+      setShareUrl(null);
+      setShareMessage(t('investigations.shareRevoked'));
+      detail.reload();
+    } catch (err) {
+      setShareMessage((err as Error).message);
+    }
+  };
+
+  const copyShareLink = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareMessage(t('investigations.shareCopied'));
+    } catch {
+      setShareMessage(t('investigations.shareCopyManual'));
+    }
   };
 
   const timeline = notes.filter((n) => n.eventDate).sort((a, b) => (a.eventDate! < b.eventDate! ? -1 : 1));
@@ -138,10 +197,25 @@ export default function InvestigationPage() {
           <button className="btn btn--paper btn--small" onClick={publish} title={t('investigations.publishHint')}>
             {t('investigations.publish')}
           </button>
+          <button className="btn btn--small" onClick={rotateShareLink}>
+            {inv.shareEnabled ? t('investigations.rotateShare') : t('investigations.enableShare')}
+          </button>
+          {inv.shareEnabled && <button className="btn btn--small btn--ghost" onClick={revokeShareLink}>{t('investigations.revokeShare')}</button>}
           <button className="btn btn--danger btn--small" onClick={deleteInvestigation}>
             {t('app.delete')}
           </button>
         </div>
+        <p className="small muted" style={{ marginTop: 8 }}>{t('investigations.sharePrivacy')}</p>
+        {shareUrl && (
+          <div className="field" style={{ maxWidth: 720 }}>
+            <label htmlFor="investigation-share-url">{t('investigations.shareLink')}</label>
+            <div className="btn-row">
+              <input id="investigation-share-url" type="url" readOnly value={shareUrl} onFocus={(e) => e.currentTarget.select()} />
+              <button className="btn btn--small" onClick={copyShareLink}>{t('investigations.copyShare')}</button>
+            </div>
+          </div>
+        )}
+        {shareMessage && <p className="notice" role="status">{shareMessage}</p>}
         <p className="small muted" style={{ marginTop: 8 }}>
           {t('investigations.publishHint')}
         </p>
@@ -222,15 +296,39 @@ export default function InvestigationPage() {
             <select value={archivePick} onChange={(e) => setArchivePick(e.target.value)} aria-label={t('investigations.addArchiveCard')} style={{ maxWidth: 320 }}>
               <option value="">{t('investigations.addArchiveCard')} …</option>
               {theories.data?.items.map((th) => (
-                <option key={th.id} value={th.id}>
+                <option key={th.id} value={th.id} disabled={!!board.data?.nodes.some((node) => node.entityType === 'theory' && node.entityId === th.id)}>
                   {th.title}
                 </option>
               ))}
             </select>
-            <button className="btn btn--small" disabled={!archivePick} onClick={addArchiveCard}>
+            <button className="btn btn--small" disabled={!archivePick || !!board.data?.nodes.some((node) => node.entityType === 'theory' && node.entityId === Number(archivePick))} onClick={addArchiveCard}>
               +
             </button>
+            <input
+              type="search"
+              value={personSearch}
+              onChange={(e) => { setPersonSearch(e.target.value); setPeoplePage(1); setPersonPick(''); }}
+              placeholder={t('investigations.searchPeople')}
+              aria-label={t('investigations.searchPeople')}
+              style={{ maxWidth: 220 }}
+            />
+            <select value={personPick} onChange={(e) => setPersonPick(e.target.value)} aria-label={t('investigations.addPersonCard')} style={{ maxWidth: 320 }}>
+              <option value="">{t('investigations.addPersonCard')} …</option>
+              {people.data?.items.map((person) => (
+                <option key={person.id} value={person.id} disabled={!!board.data?.nodes.some((node) => node.entityType === 'person' && node.entityId === person.id)}>
+                  {person.name}{person.role ? ` · ${person.role}` : ''}
+                </option>
+              ))}
+            </select>
+            <button className="btn btn--small" disabled={!personPick || !!board.data?.nodes.some((node) => node.entityType === 'person' && node.entityId === Number(personPick))} onClick={addPersonCard}>+</button>
           </div>
+          {people.data && (people.data.page > 1 || people.data.hasMore) && (
+            <div className="btn-row" style={{ marginBottom: 10 }}>
+              <button className="btn btn--small" disabled={people.data.page <= 1} onClick={() => setPeoplePage((p) => Math.max(1, p - 1))}>{t('app.previous')}</button>
+              <span className="small muted">{t('app.page', { page: people.data.page })}</span>
+              <button className="btn btn--small" disabled={!people.data.hasMore} onClick={() => setPeoplePage((p) => p + 1)}>{t('app.next')}</button>
+            </div>
+          )}
           <LoadState loading={board.loading} error={board.error} onRetry={board.reload} />
           {board.data && (
             <div style={{ border: '1px solid var(--ink-700)', borderRadius: 6, overflow: 'hidden' }}>

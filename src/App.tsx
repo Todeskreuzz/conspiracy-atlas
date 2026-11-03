@@ -25,6 +25,7 @@ const MapPage = lazy(() => import('./pages/Map'));
 const SubmitPage = lazy(() => import('./pages/Submit'));
 const InvestigationsPage = lazy(() => import('./pages/Investigations'));
 const InvestigationPage = lazy(() => import('./pages/Investigation'));
+const SharedInvestigationPage = lazy(() => import('./pages/SharedInvestigation'));
 const AdminPage = lazy(() => import('./pages/Admin'));
 const SavedPage = lazy(() => import('./pages/Saved'));
 const LoginPage = lazy(() => import('./pages/Login'));
@@ -72,6 +73,7 @@ export function AppRoutes() {
           <Route path="/map" element={<MapPage />} />
           <Route path="/investigations" element={<InvestigationsPage />} />
           <Route path="/investigations/:id" element={<InvestigationPage />} />
+          <Route path="/share/investigation/:token" element={<SharedInvestigationPage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/submit" element={<SubmitPage />} />
           <Route path="/knowledge" element={<KnowledgePage />} />

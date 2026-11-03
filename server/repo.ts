@@ -467,6 +467,65 @@ export async function loadBoardContent(db: Db, boardId: number, locale: Locale) 
   return { nodes, edges: [...edges, ...(await deriveSharedThreads(db, nodes, edges))] };
 }
 
+/** Full read-only network of published cases and archive person links. It uses only explicit archive relationships. */
+export async function loadArchivePersonNetwork(db: Db, locale: Locale): Promise<{ nodes: BoardNode[]; edges: BoardEdge[] }> {
+  const caseRows = await db.all(
+    `${THEORY_SUMMARY_SELECT}
+     WHERE t.is_published = 1 ORDER BY t.title COLLATE NOCASE LIMIT 3000`,
+  );
+  const cases = await translate(db, locale, 'theory', caseRows.map(mapTheorySummary), THEORY_FIELDS);
+  if (!cases.length) return { nodes: [], edges: [] };
+
+  const relations = await db.all(
+    `WITH archive_cases AS (SELECT id FROM theories WHERE is_published = 1 ORDER BY title COLLATE NOCASE LIMIT 3000)
+     SELECT r.id, r.kind, r.verification, r.label, r.note, s.title AS source_title, s.url AS source_url,
+            CASE WHEN r.from_type = 'theory' THEN r.from_id ELSE r.to_id END AS case_id,
+            CASE WHEN r.from_type = 'person' THEN r.from_id ELSE r.to_id END AS person_id
+       FROM relationships r
+       JOIN archive_cases t ON t.id = CASE WHEN r.from_type = 'theory' THEN r.from_id ELSE r.to_id END
+       JOIN people p ON p.id = CASE WHEN r.from_type = 'person' THEN r.from_id ELSE r.to_id END
+       LEFT JOIN sources s ON s.id = r.source_id
+      WHERE (r.from_type = 'theory' AND r.to_type = 'person') OR (r.from_type = 'person' AND r.to_type = 'theory')
+      ORDER BY case_id, person_id, r.id LIMIT 20000`,
+  );
+  const caseIds = new Set(cases.map((item) => item.id));
+  const includedRelations = relations.filter((r) => caseIds.has(Number(r.case_id)));
+  const peopleIds = [...new Set(includedRelations.map((r) => Number(r.person_id)))];
+  const personRows: Row[] = [];
+  for (const part of chunk(peopleIds)) {
+    personRows.push(...(await db.all(`SELECT * FROM people WHERE id IN (${placeholders(part.length)})`, ...part)));
+  }
+  const people = await translate(db, locale, 'person', personRows.map(mapPerson), { role: 'role', description: 'description' });
+  const caseNodeIds = new Map<number, number>();
+  const personNodeIds = new Map<number, number>();
+  const nodes: BoardNode[] = [];
+  cases.forEach((item, index) => {
+    const id = index + 1;
+    caseNodeIds.set(item.id, id);
+    nodes.push({ id, entityType: 'theory', entityId: item.id, entitySlug: item.slug, kind: 'theory', title: item.title, summary: item.summary, category: item.category, evidenceStatus: null, imagePath: item.imagePath, tags: item.tags, groupKey: 'theory', x: 0, y: index * 145 });
+  });
+  people.forEach((item, index) => {
+    const id = cases.length + index + 1;
+    personNodeIds.set(item.id, id);
+    nodes.push({ id, entityType: 'person', entityId: item.id, entitySlug: item.slug, kind: 'person', title: item.name, summary: [item.role, item.description].filter(Boolean).join(' · ') || null, category: null, evidenceStatus: null, imagePath: '/media/cards/person.svg', tags: [], groupKey: 'person', x: 900, y: index * 145 });
+  });
+  const edges: BoardEdge[] = includedRelations.flatMap((r) => {
+    const source = caseNodeIds.get(Number(r.case_id));
+    const target = personNodeIds.get(Number(r.person_id));
+    if (source === undefined || target === undefined) return [];
+    return [{
+      id: Number(r.id),
+      source,
+      target,
+      kind: r.kind as BoardEdge['kind'],
+      verification: r.verification as BoardEdge['verification'],
+      label: (r.label as string) ?? (r.note as string) ?? null,
+      citation: r.source_title ? { title: String(r.source_title), url: (r.source_url as string) ?? null } : null,
+    }];
+  });
+  return { nodes, edges };
+}
+
 /** An entity named by more cases than this is too generic to say anything (e.g. "Washington, D.C."). */
 export const SHARED_ENTITY_MAX_CASES = 6;
 const SHARED_TYPES: EntityType[] = ['person', 'organization', 'location'];

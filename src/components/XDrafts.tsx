@@ -110,6 +110,12 @@ export function XDrafts({ a }: { a: Api }) {
       <PostBlock label={t('admin.x.hook')} piece={d.post} />
       <PostBlock label={t('admin.x.reply')} piece={d.reply} />
       <PostBlock label={t('admin.x.withLink')} piece={d.withLink} />
+      <div className="x-card-download">
+        <img src={`/og/theory/${encodeURIComponent(d.slug)}.png`} alt="" loading="lazy" />
+        <a className="btn btn--small" href={`/og/theory/${encodeURIComponent(d.slug)}.png`} download={`${d.slug}-conspiracy-atlas.png`}>
+          {t('admin.x.downloadImage')}
+        </a>
+      </div>
       <div className="btn-row">
         <button type="button" className="btn btn--small btn--primary" onClick={() => onCopy(`${key}:post`, d.post.composed)}>
           {copied === `${key}:post` ? t('admin.x.copied') : t('admin.x.copyPost')}

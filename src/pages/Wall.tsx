@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';
@@ -16,7 +15,6 @@ export default function WallPage() {
   const { t, locale } = useI18n();
   const [params] = useSearchParams();
   const stress = Math.min(2000, Math.max(0, parseInt(params.get('stress') ?? '0', 10) || 0));
-  const networkView = params.get('view') === 'network';
   const focusParam = params.get('focus');
   const focus = useMemo(() => {
     const m = focusParam?.match(/^(\w+):(\d+)$/);
@@ -28,13 +26,13 @@ export default function WallPage() {
   const res = useAsync<Board>(
     async (signal) => {
       if (stress) return { id: 0, slug: `stress-${stress}`, title: 'Stress test', description: null, ...syntheticBoard(stress) };
-      return api<Board>(networkView ? '/archive-person-network' : `/boards/${MAIN}`, { signal });
+      return api<Board>(`/boards/${MAIN}`, { signal });
     },
-    [stress, locale, networkView],
+    [stress, locale],
   );
 
   const editor: WallEditor | null = useMemo(() => {
-    if (!editMode || stress || networkView || !session.csrfToken) return null;
+    if (!editMode || stress || !session.csrfToken) return null;
     const a = adminApi(session.csrfToken);
     return {
       allowDocumented: true,
@@ -50,7 +48,7 @@ export default function WallPage() {
       },
       deleteNode: (id) => a.del(`/boards/${MAIN}/nodes/${id}`).then(() => undefined),
     };
-  }, [editMode, stress, networkView, session.csrfToken]);
+  }, [editMode, stress, session.csrfToken]);
 
   if (!res.data) {
     return (
@@ -62,12 +60,6 @@ export default function WallPage() {
   }
   return (
     <div className="wall-page">
-      {!stress && (
-        <nav className="wall-page__switch" aria-label={t('wall.views')}>
-          <Link className={`btn btn--small${networkView ? '' : ' btn--primary'}`} to="/wall">{t('wall.mainBoard')}</Link>
-          <Link className={`btn btn--small${networkView ? ' btn--primary' : ''}`} to="/wall?view=network">{t('wall.archiveNetwork')}</Link>
-        </nav>
-      )}
       <h1 className="sr-only">{t('wall.title')}</h1>
       <p className="sr-only">{t('wall.intro')}</p>
       <InvestigationWall
@@ -76,8 +68,8 @@ export default function WallPage() {
         editor={editor}
         focus={focus}
         localLayout={!stress}
-        banner={stress ? t('wall.stressTest', { count: stress }) : networkView ? t('wall.archiveNetworkScope') : null}
-        height={stress ? 'calc(100vh - var(--header-h))' : 'calc(100vh - var(--header-h) - 44px)'}
+        banner={stress ? t('wall.stressTest', { count: stress }) : null}
+        height="calc(100vh - var(--header-h))"
       />
     </div>
   );

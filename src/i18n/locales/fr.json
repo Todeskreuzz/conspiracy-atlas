@@ -778,6 +778,7 @@
       "copyImage": "Copier l’image",
       "imageCopied": "Image copiée. Collez-la dans votre publication X.",
       "imageCopyFailed": "Impossible de copier l’image. Téléchargez-la et ajoutez-la à votre publication.",
+      "imageUnavailable": "Aucune image n’est disponible pour ce dossier.",
       "markPosted": "Marquer comme publié",
       "marked": "Marqué comme publié sur X. Il ne sera plus proposé.",
       "restored": "Remis dans la file.",

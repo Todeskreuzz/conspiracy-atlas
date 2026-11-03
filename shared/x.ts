@@ -39,6 +39,8 @@ export type XHook = 'question' | 'gap' | 'timeline' | 'split';
 export interface XDraft {
   theoryId: number;
   slug: string;
+  title: string;
+  imagePath: string | null;
   caseUrl: string;
   hook: XHook;
   /** Hook without the URL, so X is more likely to show it. */
@@ -61,6 +63,7 @@ export interface XCaseInput {
   id: number;
   slug: string;
   title: string;
+  imagePath?: string | null;
   summary: string;
   category: CategorySlug;
   evidenceStatus: EvidenceStatus;
@@ -181,6 +184,8 @@ export function buildXDraft(input: XCaseInput, opts: { origin: string; day: stri
   return {
     theoryId: input.id,
     slug: input.slug,
+    title: input.title,
+    imagePath: input.imagePath ?? null,
     caseUrl: link,
     hook: kind,
     post,

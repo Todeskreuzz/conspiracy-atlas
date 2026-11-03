@@ -778,6 +778,7 @@
       "copyImage": "Copy image",
       "imageCopied": "Image copied. Paste it into your X post.",
       "imageCopyFailed": "Could not copy the image. Download it and attach it to your post.",
+      "imageUnavailable": "No case image is available for this draft.",
       "markPosted": "Mark as posted",
       "marked": "Marked as posted on X. It will not be suggested again.",
       "restored": "Put back into the queue.",

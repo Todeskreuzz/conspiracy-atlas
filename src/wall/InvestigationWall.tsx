@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import cytoscape, { type Core, type EdgeSingular, type NodeSingular, type StylesheetJson } from 'cytoscape';
 import type { Board, BoardEdge, BoardNode } from '../../shared/types';
@@ -49,6 +49,7 @@ interface Props {
   localLayout?: boolean;
   height?: string;
   banner?: string | null;
+  toolbarAction?: ReactNode;
 }
 
 function buildStyle(): StylesheetJson {
@@ -131,7 +132,7 @@ function buildStyle(): StylesheetJson {
   ] as StylesheetJson;
 }
 
-export function InvestigationWall({ board, editor, focus, localLayout = true, height = 'calc(100vh - var(--header-h))', banner }: Props) {
+export function InvestigationWall({ board, editor, focus, localLayout = true, height = 'calc(100vh - var(--header-h))', banner, toolbarAction }: Props) {
   const { t, locale } = useI18n();
   const wrapRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<HTMLDivElement>(null);
@@ -518,6 +519,7 @@ export function InvestigationWall({ board, editor, focus, localLayout = true, he
         <button className="btn btn--small" aria-expanded={panelOpen} onClick={() => setPanelOpen((o) => !o)}>
           ☰ {t('wall.filters')}
         </button>
+        {toolbarAction}
       </div>
 
       {panelOpen && (

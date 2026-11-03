@@ -178,22 +178,45 @@ export function XDrafts({ a }: { a: Api }) {
       <PostBlock label={t('admin.x.reply')} piece={d.reply} />
       <PostBlock label={t('admin.x.withLink')} piece={d.withLink} />
       <XCardImage draft={d} />
-      <div className="btn-row">
-        <button type="button" className="btn btn--small btn--primary" onClick={() => onCopy(`${key}:post`, d.post.composed)}>
-          {copied === `${key}:post` ? t('admin.x.copied') : t('admin.x.copyPost')}
-        </button>
-        <button type="button" className="btn btn--small" onClick={() => onCopy(`${key}:reply`, d.reply.composed)}>
-          {copied === `${key}:reply` ? t('admin.x.copied') : t('admin.x.copyReply')}
-        </button>
-        <a className="btn btn--small" href={d.intentUrl} target="_blank" rel="noopener noreferrer">
-          {t('admin.x.openX')}
-        </a>
-        <button type="button" className="btn btn--small" onClick={() => onCopy(`${key}:link`, d.withLink.composed)}>
-          {copied === `${key}:link` ? t('admin.x.copied') : t('admin.x.copyWithLink')}
-        </button>
-        <a className="btn btn--small" href={d.intentWithLinkUrl} target="_blank" rel="noopener noreferrer">
-          {t('admin.x.openXLink')}
-        </a>
+      <div className="x-posting-guide">
+        <section className="x-posting-mode x-posting-mode--recommended">
+          <h4>{t('admin.x.threadTitle')}</h4>
+          <p className="small muted">{t('admin.x.threadIntro')}</p>
+          <div className="x-posting-step">
+            <p className="x-posting-step__label">{t('admin.x.stepMain')}</p>
+            <PostBlock label={t('admin.x.hook')} piece={d.post} />
+            <div className="btn-row">
+              <button type="button" className="btn btn--small btn--primary" onClick={() => onCopy(`${key}:post`, d.post.composed)}>
+                {copied === `${key}:post` ? t('admin.x.copied') : t('admin.x.copyPost')}
+              </button>
+              <a className="btn btn--small" href={d.intentUrl} target="_blank" rel="noopener noreferrer">
+                {t('admin.x.openX')}
+              </a>
+            </div>
+          </div>
+          <div className="x-posting-step">
+            <p className="x-posting-step__label">{t('admin.x.stepReply')}</p>
+            <PostBlock label={t('admin.x.reply')} piece={d.reply} />
+            <button type="button" className="btn btn--small" onClick={() => onCopy(`${key}:reply`, d.reply.composed)}>
+              {copied === `${key}:reply` ? t('admin.x.copied') : t('admin.x.copyReply')}
+            </button>
+          </div>
+        </section>
+        <section className="x-posting-mode">
+          <h4>{t('admin.x.singleTitle')}</h4>
+          <p className="small muted">{t('admin.x.singleIntro')}</p>
+          <PostBlock label={t('admin.x.withLink')} piece={d.withLink} />
+          <div className="btn-row">
+            <button type="button" className="btn btn--small" onClick={() => onCopy(`${key}:link`, d.withLink.composed)}>
+              {copied === `${key}:link` ? t('admin.x.copied') : t('admin.x.copyWithLink')}
+            </button>
+            <a className="btn btn--small" href={d.intentWithLinkUrl} target="_blank" rel="noopener noreferrer">
+              {t('admin.x.openXLink')}
+            </a>
+          </div>
+        </section>
+      </div>
+      <div className="btn-row x-posting-footer">
         <Link className="btn btn--small" to={`/theory/${d.slug}`}>
           {t('admin.x.openCase')}
         </Link>

@@ -1,4 +1,3 @@
-Warning: f was declared with const; use let for reassignable variables.
 {
   "app": {
     "rss": "RSS feed",

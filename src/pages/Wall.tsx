@@ -1,4 +1,3 @@
-Warning: f was declared with const; use let for reassignable variables.
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';

@@ -1,4 +1,3 @@
-Warning: f was declared with const; use let for reassignable variables.
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { formatDate, useI18n } from '../i18n';

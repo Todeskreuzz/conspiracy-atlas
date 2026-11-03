@@ -1,4 +1,3 @@
-Warning: f was declared with const; use let for reassignable variables.
 import { Hono } from 'hono';
 import type { AppEnv } from '../http';
 import { publicCache } from '../http';

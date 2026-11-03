@@ -1,4 +1,3 @@
-Warning: f was declared with const; use let for reassignable variables.
 import { lazy, Suspense, useEffect } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { I18nProvider, useT } from './i18n';

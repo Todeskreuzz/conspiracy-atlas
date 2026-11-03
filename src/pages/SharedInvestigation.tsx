@@ -1,4 +1,3 @@
-Warning: f was declared with const; use let for reassignable variables.
 import { Link, useParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useAsync } from '../hooks/useAsync';

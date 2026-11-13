@@ -45,7 +45,7 @@
     "@tiptap/react": "^3.32.1",
     "@tiptap/starter-kit": "^3.32.1",
     "cytoscape": "^3.34.4",
-    "hono": "^4.13.14",
+    "hono": "^4.13.16",
     "leaflet": "^1.9.4",
     "qrcode-generator": "^2.0.4",
     "react": "^19.3.1",
